@@ -2,23 +2,29 @@ package org.firstinspires.ftc.teamcode.teleop;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
-@TeleOp
-public class Test extends LinearOpMode {
-
+@TeleOp(name="TetRobotCode")
+public class TetRobotCode extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         DcMotor frontLeft = hardwareMap.dcMotor.get("frontLeft");
         DcMotor frontRight = hardwareMap.dcMotor.get("frontRight");
         DcMotor backLeft = hardwareMap.dcMotor.get("backLeft");
         DcMotor backRight = hardwareMap.dcMotor.get("backRight");
-        frontLeft.setDirection(DcMotor.Direction.REVERSE);
-        backRight.setDirection(DcMotor.Direction.REVERSE);
+        CRServo intake = hardwareMap.crservo.get("Intake");
+        Servo rotation = hardwareMap.servo.get("Rotation");
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
 
         waitForStart();
 
-        while (opModeIsActive()){
+        rotation.setPosition(0);
+
+        while (opModeIsActive()) {
 
             double speed_multiplier = 0.5; //Used to limit speed for testing/safety
             double y = -gamepad1.left_stick_y; // Forward/Backward
@@ -29,10 +35,10 @@ public class Test extends LinearOpMode {
             // This ensures all the powers maintain the same ratio,
             // but only if at least one is out of the range [-1, 1]
             double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
-            double frontLeftPower = (y - x - rx) * speed_multiplier / denominator;
-            double backLeftPower = (y - x + rx) * speed_multiplier / denominator;
-            double frontRightPower = (y + x + rx) * speed_multiplier / denominator;
-            double backRightPower = (y + x - rx) * speed_multiplier / denominator;
+            double frontLeftPower = (y + x + rx) / denominator  * speed_multiplier ;
+            double backLeftPower = (y - x + rx) / denominator * speed_multiplier;
+            double frontRightPower = (y - x - rx) / denominator * speed_multiplier;
+            double backRightPower = (y + x - rx) / denominator * speed_multiplier;
 
 
             frontLeft.setPower(frontLeftPower);
@@ -40,15 +46,20 @@ public class Test extends LinearOpMode {
             backLeft.setPower(backLeftPower);
             backRight.setPower(backRightPower);
 
+            if (gamepad1.right_trigger > 0.5) {
+                intake.setPower(1);
+            } else if (gamepad1.left_trigger > 0.5) {
+                intake.setPower(-1);
+            } else {
+                intake.setPower(0);
+            }
 
-            telemetry.addData("y", y);
-            telemetry.addData("x", x);
-            telemetry.addData("rx", rx);
-            telemetry.addData("frontLeftPower", frontLeftPower);
-            telemetry.addData("frontRightPower", frontRightPower);
-            telemetry.addData("backLeftPower", backLeftPower);
-            telemetry.addData("backRightPower", backRightPower);
-            telemetry.update();
+            if (gamepad1.dpad_down) {
+                rotation.setPosition(0.9);
+            } else if (gamepad1.dpad_up) {
+                rotation.setPosition(0.2);
+            }
+
 
         }
     }
