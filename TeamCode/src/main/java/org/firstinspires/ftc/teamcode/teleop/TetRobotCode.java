@@ -57,7 +57,8 @@ public class TetRobotCode extends LinearOpMode {
             if (gamepad1.dpad_down) {
                 rotation.setPosition(0.9);
             } else if (gamepad1.dpad_up) {
-                rotation.setPosition(0.2);
+                rotation.setPosition(0.20
+                );
             }
 
 
