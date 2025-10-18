@@ -7,10 +7,11 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
-@TeleOp(name="TetRobotCode")
-public class TetRobotCode extends LinearOpMode {
+@TeleOp(name="2-Player Outreach Code")
+public class TwoPlayerOutreachCode extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
+
         DcMotor frontLeft = hardwareMap.dcMotor.get("frontLeft");
         DcMotor frontRight = hardwareMap.dcMotor.get("frontRight");
         DcMotor backLeft = hardwareMap.dcMotor.get("backLeft");
@@ -40,26 +41,24 @@ public class TetRobotCode extends LinearOpMode {
             double frontRightPower = (y - x - rx) / denominator * speed_multiplier;
             double backRightPower = (y + x - rx) / denominator * speed_multiplier;
 
-
             frontLeft.setPower(frontLeftPower);
             frontRight.setPower(frontRightPower);
             backLeft.setPower(backLeftPower);
             backRight.setPower(backRightPower);
 
-            if (gamepad1.right_trigger > 0.5) {
+            if (gamepad2.right_trigger > 0.5) {
                 intake.setPower(-1);
-            } else if (gamepad1.left_trigger > 0.5) {
+            } else if (gamepad2.left_trigger > 0.5) {
                 intake.setPower(1);
             } else {
                 intake.setPower(0);
-            }
+                }
 
-            if (gamepad1.dpad_down) {
+            if (gamepad2.dpad_down) {
                 rotation.setPosition(0.9);
-            } else if (gamepad1.dpad_up) {
+            } else if (gamepad2.dpad_up) {
                 rotation.setPosition(0.20);
             }
-
 
         }
     }
