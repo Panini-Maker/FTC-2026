@@ -21,6 +21,35 @@ public class Test extends LinearOpMode {
 
         while (opModeIsActive()){
 
+            //Start Debug Section
+            //Set to true to enable debug controls
+            boolean debug = true;
+            if (debug) {
+                if (gamepad1.dpad_up) {
+                    frontLeft.setPower(1);
+                    backLeft.setPower(0);
+                    frontRight.setPower(0);
+                    backRight.setPower(0);
+                } else if (gamepad1.dpad_down) {
+                    backLeft.setPower(1);
+                    frontLeft.setPower(0);
+                    frontRight.setPower(0);
+                    backRight.setPower(0);
+                } else if (gamepad1.y) {
+                    frontRight.setPower(1);
+                    frontLeft.setPower(0);
+                    backLeft.setPower(0);
+                    backRight.setPower(0);
+                } else if (gamepad1.a) {
+                    backRight.setPower(1);
+                    frontLeft.setPower(0);
+                    backLeft.setPower(0);
+                    frontRight.setPower(0);
+                }
+            }
+
+            //End Debug Section
+
             double multiplier = 0.5; //Used to limit speed for testing/safety
             double y = -gamepad1.left_stick_y; // Forward/Backward
             double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing

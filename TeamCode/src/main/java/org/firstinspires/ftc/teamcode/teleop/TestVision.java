@@ -22,7 +22,6 @@ public class TestVision extends LinearOpMode {
         //Pose cameraPose = new Pose(0, 0, 0, 0, 0, 0);  X, Y, Z, Pitch, Roll, Yaw
 
         AprilTagLibrary.Builder aprilTagLibraryBuilder;
-        AprilTagProcessor.Builder aprilTagProcessorBuilder;
         AprilTagLibrary aprilTagLibrary;
 
         //Create a new AprilTagLibrary.Builder object and assigns it to a variable.
