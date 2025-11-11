@@ -27,7 +27,7 @@ public class TwoPlayerOutreachCode extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-            double speed_multiplier = 0.3; //Used to limit speed for testing/safety
+            double speed_multiplier = 0.4; //Used to limit speed for testing/safety
             double y = -gamepad1.left_stick_y; // Forward/Backward
             double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
             double rx = gamepad1.right_stick_x; // Turning
@@ -52,12 +52,12 @@ public class TwoPlayerOutreachCode extends LinearOpMode {
                 intake.setPower(1);
             } else {
                 intake.setPower(0);
-                }
+            }
 
             if (gamepad2.dpad_down) {
                 rotation.setPosition(0.9);
             } else if (gamepad2.dpad_up) {
-                rotation.setPosition(0.20);
+                rotation.setPosition(0.40);
             }
 
         }

@@ -31,8 +31,8 @@ public class TestVision extends LinearOpMode {
         aprilTagLibraryBuilder.addTags(AprilTagGameDatabase.getCurrentGameTagLibrary());
         //Add a tag,without pose information,to the AprilTagLibrary.Builder.
 
-        for(int i = 1; i < 22; i++) {
-            aprilTagLibraryBuilder.addTag(i, "ID " + i, 6.21875, DistanceUnit.INCH);
+        for(int i = 1; i < 30; i++) {
+            aprilTagLibraryBuilder.addTag(i, "ID " + i, 200, DistanceUnit.MM);
         }
 
         //Build the AprilTag library and assign it to a variable.

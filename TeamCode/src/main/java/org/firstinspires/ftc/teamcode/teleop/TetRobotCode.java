@@ -26,7 +26,7 @@ public class TetRobotCode extends LinearOpMode {
 
         while (opModeIsActive()) {
 
-            double speed_multiplier = 0.3; //Used to limit speed for testing/safety
+            double speed_multiplier = 0.4; //Used to limit speed for testing/safety
             double y = -gamepad1.left_stick_y; // Forward/Backward
             double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
             double rx = gamepad1.right_stick_x; // Turning

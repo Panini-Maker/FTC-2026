@@ -16,13 +16,11 @@ public class TeleOpV1 extends LinearOpMode {
         DcMotor frontRight = hardwareMap.dcMotor.get("frontRight");
         DcMotor backLeft = hardwareMap.dcMotor.get("backLeft");
         DcMotor backRight = hardwareMap.dcMotor.get("backRight");
+        DcMotor loadingTransfer = hardwareMap.dcMotor.get("loading");
         frontRight.setDirection(DcMotor.Direction.REVERSE);
         backRight.setDirection(DcMotor.Direction.REVERSE);
 
-        //Servo loadingServo = hardwareMap.servo.get("loadingServo");
-
         DcMotor intakeTransfer = hardwareMap.dcMotor.get("intakeTransfer");
-        intakeTransfer.setDirection(DcMotorSimple.Direction.REVERSE);
 
         DcMotorEx leftShooter = hardwareMap.get(DcMotorEx.class, "leftShooter");
         leftShooter.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -55,8 +53,11 @@ public class TeleOpV1 extends LinearOpMode {
             //double rightOutput = kP * rightError + kI * rightIntegral + kD * rightDerivative;
 
             if (gamepad2.right_trigger > 0) {
-                leftShooter.setPower(leftOutput);
+                leftShooter.setPower(0.8); // add leftOutput once tuned
                 //rightShooter.setPower(rightOutput);
+            } else if (gamepad2.left_trigger > 0) {
+                leftShooter.setPower(-0.3); //for intaking human player balls
+
             } else {
                 leftShooter.setPower(0);
                 //rightShooter.setPower(0);
@@ -74,7 +75,7 @@ public class TeleOpV1 extends LinearOpMode {
             //telemetry.addData("Right Error", rightError);
             telemetry.update();
 
-            double multiplier = 0.5; //Used to limit speed for testing/safety
+            double multiplier = 0.8; //Used teo limit speed for testing/safety
             double y = -gamepad1.left_stick_y; // Forward/Backward
             double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
             double rx = gamepad1.right_stick_x; // Turning
@@ -99,27 +100,26 @@ public class TeleOpV1 extends LinearOpMode {
             // if both triggers are pressed, the robot will do both actions simultaneously
             // right button is the outake in case we intake too many artifacts
 
-            if (gamepad2.left_trigger > 0) {
-                intakeTransfer.setPower(0.8);
-            } else {
-                intakeTransfer.setPower(0);
-            }
-
             if (gamepad2.right_bumper) {
+                intakeTransfer.setPower(0.8);
+            } else if (gamepad2.left_bumper) {
                 intakeTransfer.setPower(-0.8);
             } else {
                 intakeTransfer.setPower(0);
             }
 
-            // Loading Servo Control (Not in use due to mechanical issues)
-            /*
-            if (gamepad2.x) {
-                loadingServo.setPosition(0.8); // Adjust position as needed
+
+            // Loading Controls
+
+            if (gamepad2.dpad_up) {
+                loadingTransfer.setPower(0.8); // Adjust position as needed
+            } else if (gamepad2.dpad_down) {
+                loadingTransfer.setPower(-0.5); // Adjust position as needed
             } else {
-                loadingServo.setPosition(0); // Adjust position as needed
+                loadingTransfer.setPower(0); // Adjust position as needed
             }
 
-             */
+
         }
     }
 }
