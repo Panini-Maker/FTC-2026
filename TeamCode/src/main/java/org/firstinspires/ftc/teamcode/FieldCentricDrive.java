@@ -9,7 +9,6 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
 
 import java.util.Locale;
 
@@ -19,21 +18,19 @@ public class FieldCentricDrive extends LinearOpMode {
 
     GoBildaPinpointDriver odo;
 
-    double oldTime = 0;
-
     @Override
 
     public void runOpMode() throws InterruptedException {
 
         // Configure motors
-        DcMotor frontLeftMotor = hardwareMap.dcMotor.get("frontLeft");
-        DcMotor backLeftMotor = hardwareMap.dcMotor.get("backLeft");
-        DcMotor frontRightMotor = hardwareMap.dcMotor.get("frontRight");
-        DcMotor backRightMotor = hardwareMap.dcMotor.get("backRight");
+        DcMotor frontLeft = hardwareMap.dcMotor.get("frontLeft");
+        DcMotor backLeft = hardwareMap.dcMotor.get("backLeft");
+        DcMotor frontRight = hardwareMap.dcMotor.get("frontRight");
+        DcMotor backRight = hardwareMap.dcMotor.get("backRight");
 
         // Reverse the right/left side motors
-        frontRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
-        backRightMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+        frontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        backRight.setDirection(DcMotorSimple.Direction.REVERSE);
 
         // Configure odometry
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
@@ -88,10 +85,10 @@ public class FieldCentricDrive extends LinearOpMode {
             double frontRightPower = (rotY - rotX - rx) / denominator;
             double backRightPower = (rotY + rotX - rx) / denominator;
 
-            frontLeftMotor.setPower(frontLeftPower * power);
-            backLeftMotor.setPower(backLeftPower * power);
-            frontRightMotor.setPower(frontRightPower * power);
-            backRightMotor.setPower(backRightPower * power);
+            frontLeft.setPower(frontLeftPower * power);
+            backLeft.setPower(backLeftPower * power);
+            frontRight.setPower(frontRightPower * power);
+            backRight.setPower(backRightPower * power);
 
             Pose2D pos = odo.getPosition();
             String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
