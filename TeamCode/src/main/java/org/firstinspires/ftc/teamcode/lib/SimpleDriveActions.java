@@ -1,32 +1,45 @@
 package org.firstinspires.ftc.teamcode.lib;
 
-import com.qualcomm.hardware.bosch.BHI260IMU;
+import static java.lang.Thread.sleep;
+
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
-
 public class SimpleDriveActions {
     //declares hardware and variables
     public Telemetry telemetry;
-    public DcMotorEx frontRightMotor, frontLeftMotor, backRightMotor, backLeftMotor;
+    public DcMotor frontRightMotor, frontLeftMotor, backRightMotor, backLeftMotor;
+
+    public DcMotorEx shooterMotor;
+    public GoBildaPinpointDriver odo;
 
     public double forward;
     public double right;
     public double rotate;
     public long timeouts_ms; //timeout in milliseconds
+    protected double minMotorPower = 0.2;
+    public ElapsedTime runTime;
 
     //initializes hardware and variables for the DriveActions class
-    public SimpleDriveActions(DcMotorEx frontLeftMotor, DcMotorEx frontRightMotor,
-                              DcMotorEx backRightMotor, DcMotorEx backLeftMotor,
-                              Telemetry telemetry) {
+    public SimpleDriveActions(DcMotor frontLeftMotor, DcMotor frontRightMotor,
+                              DcMotor backRightMotor, DcMotor backLeftMotor,
+                              Telemetry telemetry, GoBildaPinpointDriver odo,
+                              DcMotorEx shooterMotor, ElapsedTime runTime) {
 
         this.frontLeftMotor = frontLeftMotor;
         this.frontRightMotor = frontRightMotor;
         this.backLeftMotor = backLeftMotor;
         this.backRightMotor = backRightMotor;
         this.telemetry = telemetry;
+        this.odo = odo;
+        this.shooterMotor = shooterMotor;
+        this.runTime = runTime;
     }
 
     //basic drive function, drives using power and time
@@ -53,7 +66,32 @@ public class SimpleDriveActions {
         backLeftMotor.setPower(backLeftPower);
         backRightMotor.setPower(backRightPower);
 
-        Thread.sleep(timeouts_ms);
+        sleep(timeouts_ms);
+        stopMotor();
+    }
+
+    public void turnToHeadingWithOdo(double targetHeading, double power, double toleranceAngle, long timeoutMs) throws InterruptedException {
+        runTime.reset();
+        setMotorRunwithoutEncoder();
+        odo.update();
+        Pose2D pos;
+
+        double currentHeading;
+        double headingError;
+        double rotationPower;
+        //number of degrees off current heading is compared to target
+        while (true) { //keeps running
+            odo.update();
+            pos = odo.getPosition();
+            currentHeading = pos.getHeading(AngleUnit.DEGREES);
+            headingError = targetHeading - currentHeading;
+            rotationPower = (headingError / (Math.abs(headingError))) * power; //tune constant if needed
+
+            drive(0, 0, rotationPower, 100);
+            //if the heading error is less than ANGLE_TOLERANCE or time has ran out the robot will stop
+            if ((Math.abs(headingError) < toleranceAngle) || (runTime.milliseconds() >= timeoutMs))
+                break;
+        }
         stopMotor();
     }
 
@@ -63,5 +101,81 @@ public class SimpleDriveActions {
         frontLeftMotor.setPower(0);
         backRightMotor.setPower(0);
         backLeftMotor.setPower(0);
+    }
+
+    public void setMotorRunwithoutEncoder() {
+        frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void moveToPosition(double forwardDistance, double rightDistance, double maxPower, double tolerance, double timeout_MS) throws InterruptedException {
+        odo.resetPosAndIMU(); // Reset odometry to start from the current position
+        Pose2D pose;
+        pose = odo.getPosition();
+
+        double targetX = pose.getX(DistanceUnit.INCH) + rightDistance;
+        double targetY = pose.getY(DistanceUnit.INCH) + forwardDistance;
+
+        ElapsedTime timer = new ElapsedTime();
+        timer.reset();
+        // Timeout in seconds
+
+        while (timer.milliseconds() < timeout_MS) {
+            odo.update();
+            pose = odo.getPosition();
+
+            double currentX = pose.getX(DistanceUnit.INCH);
+            double currentY = pose.getY(DistanceUnit.INCH);
+
+            double xError = targetX - currentX;
+            double yError = targetY - currentY;
+
+            // Calculate distance to the target position
+            double distanceToTarget = Math.sqrt(xError * xError + yError * yError);
+
+            // Break the loop if the robot is close enough to the target position
+            if (distanceToTarget < tolerance) {
+                stopMotor();
+                break;
+            }
+
+            // Adjust proportional gains for forward and strafe movements
+            double forwardPower = yError; // Proportional control for forward movement
+            double strafePower = xError; // Proportional control for strafing
+
+            // Normalize motor powers to ensure no motor exceeds the maximum power
+            double maxCalculatedPower = Math.max(Math.max(forwardPower + strafePower, forwardPower - strafePower),
+                    Math.max(-forwardPower - strafePower, -forwardPower + strafePower));
+
+            forwardPower = (forwardPower / maxCalculatedPower) * maxPower;
+            strafePower = (strafePower / maxCalculatedPower) * maxPower;
+
+            // Set motor powers
+            frontLeftMotor.setPower(forwardPower + strafePower);
+            frontRightMotor.setPower(forwardPower - strafePower);
+            backLeftMotor.setPower(forwardPower - strafePower);
+            backRightMotor.setPower(forwardPower + strafePower);
+
+            sleep(100);
+
+            // Debugging telemetry
+            telemetry.addData("X Error", xError);
+            telemetry.addData("Y Error", yError);
+            telemetry.addData("X Position", currentX);
+            telemetry.addData("Y Position", currentY);
+            telemetry.addData("Distance to Target", distanceToTarget);
+            telemetry.addData("Forward Power", forwardPower);
+            telemetry.addData("Strafe Power", strafePower);
+            telemetry.addData("Time Elapsed", timer.seconds());
+            telemetry.update();
+        }
+
+        // Stop all motors after reaching the position
+        frontLeftMotor.setPower(0);
+        frontRightMotor.setPower(0);
+        backLeftMotor.setPower(0);
+        backRightMotor.setPower(0);
     }
 }
