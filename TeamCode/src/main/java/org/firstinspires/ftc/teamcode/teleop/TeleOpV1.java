@@ -1,5 +1,10 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -42,17 +47,13 @@ public class TeleOpV1 extends LinearOpMode {
 
         // Configure odometry
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        odo.setOffsets(75, -146, DistanceUnit.MM); // Set offsets
+        odo.setOffsets(odoXOffset, odoYOffset, DistanceUnit.MM); // Set offsets
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
-        double targetVelocity = 2100; // 4500 RPM in ticks/sec
-        double kP = 0.001, kI = 0.0001, kD = 0.0001;
-        double leftIntegral = 0, rightIntegral = 0;
-        double leftLastError = 0, rightLastError = 0;
 
         boolean mode = true;
-        double shooterPower = 2000;
+        double shooterPower;
 
         // Recalibrate Odometry
         odo.resetPosAndIMU();
@@ -70,34 +71,16 @@ public class TeleOpV1 extends LinearOpMode {
 
             odo.update();
 
-            /// Shooter
-            double leftCurrentVelocity = leftShooter.getVelocity();
-            //double rightCurrentVelocity = rightShooter.getVelocity();
-
-            double leftError = targetVelocity - leftCurrentVelocity;
-            //double rightError = targetVelocity - rightCurrentVelocity;
-
-            leftIntegral += leftError * timer.seconds();
-            //rightIntegral += rightError * timer.seconds();
-
-            double leftDerivative = (leftError - leftLastError) / timer.seconds();
-            //double rightDerivative = (rightError - rightLastError) / timer.seconds();
-
-            double leftOutput = kP * leftError + kI * leftIntegral + kD * leftDerivative;
-            //double rightOutput = kP * rightError + kI * rightIntegral + kD * rightDerivative;
-
-            double current_time = getRuntime();
-
             if (gamepad2.yWasPressed()) {
                 mode = !mode;
 
             }
 
             if (mode) {
-                shooterPower = 2000;
+                shooterPower = shotgun;
                 telemetry.addData("Shooter Mode:", "Shotgun");
             } else {
-                shooterPower = 2250;
+                shooterPower = sniper;
                 telemetry.addData("Shooter Mode", "Sniper");
             }
 
@@ -112,8 +95,6 @@ public class TeleOpV1 extends LinearOpMode {
                 //rightShooter.setPower(0);
             }
 
-            leftLastError = leftError;
-            //rightLastError = rightError;
             timer.reset();
 
             double power = 0.8; //Used teo limit speed for testing/safety
@@ -176,13 +157,6 @@ public class TeleOpV1 extends LinearOpMode {
                 transfer.setPower(0); // Adjust position as needed
             }
 
-            telemetry.addData("Left Target Velocity", targetVelocity);
-            telemetry.addData("Left Current Velocity", leftCurrentVelocity);
-            telemetry.addData("Left Error", leftError);
-            telemetry.addData("Right Target Velocity", targetVelocity);
-            //telemetry.addData("Right Current Velocity", rightCurrentVelocity);
-            //telemetry.addData("Right Error", rightError);
-
             Pose2D pos = odo.getPosition();
             String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
             telemetry.addData("Position", data);
@@ -192,3 +166,4 @@ public class TeleOpV1 extends LinearOpMode {
         }
     }
 }
+
