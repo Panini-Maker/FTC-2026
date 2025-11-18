@@ -2,6 +2,9 @@ package org.firstinspires.ftc.teamcode.autonomous;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootDurationMs;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.transferDelayMs;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -63,6 +66,6 @@ public class AutonomousLongV1 extends LinearOpMode {
 
         drive.moveToPosition(0, -3, 0.3, 1, 1500);
         drive.turnToHeadingWithOdo(-27, 0.2, 3, 1500);
-        //shooter.shoot(sniper, shootDurationMs, transferDelayMs);
+        shooter.shoot(sniper, shootDurationMs, transferDelayMs);
     }
 }

@@ -46,7 +46,7 @@ public class PathfindingWithVision extends LinearOpMode {
         aprilTagLibraryBuilder.addTags(AprilTagGameDatabase.getCurrentGameTagLibrary());
         //Add a tag,without pose information,to the AprilTagLibrary.Builder.
 
-        for (int i = 1; i < 22; i++) {
+        for (int i = 1; i < 24; i++) {
             aprilTagLibraryBuilder.addTag(i, "ID " + i, 6.21875, DistanceUnit.INCH);
         }
 
