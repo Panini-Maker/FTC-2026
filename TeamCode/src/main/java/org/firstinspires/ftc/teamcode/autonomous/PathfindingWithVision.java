@@ -15,6 +15,8 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
+import java.util.List;
+
 //Not finished
 //@Autonomous
 public class PathfindingWithVision extends LinearOpMode {
@@ -72,69 +74,62 @@ public class PathfindingWithVision extends LinearOpMode {
 
         waitForStart();
 
-        while (tagProcessor.getDetections().isEmpty() && opModeIsActive()) {
-            drive.CalcSpeeds(0, 0, 1, 0.3,
-                    frontLeft, frontRight, backLeft, backRight);
-            telemetry(tagProcessor);
-            telemetry.addLine("Searching for a tag...");
+        // --- Constants to Tune --- //
+        final double Y_TARGET = 12.0;      // How far from the tag you want to stop (inches)
+
+        // Proportional gain constants (tune these to adjust robot behavior)
+        final double Kp_TURN = 0.02;     // Proportional gain for turning
+        final double Kp_STRAFE = 0.03;   // Proportional gain for strafing
+        final double Kp_FORWARD = 0.04;  // Proportional gain for driving forward/backward
+
+        final double MAX_SPEED = 0.4; // Maximum robot speed
+
+        // Tolerance constants for the "done" condition
+        final double X_TOLERANCE = 0.5; // Side-to-side tolerance (inches)
+        final double Y_TOLERANCE = 0.5; // Forward/backward tolerance (inches)
+        final double BEARING_TOLERANCE = 1.0; // Rotational tolerance (degrees)
+
+        while (opModeIsActive()) {
+            List<AprilTagDetection> detections = tagProcessor.getDetections();
+
+            if (detections.isEmpty()) {
+                // No tag is visible, so search for one by rotating.
+                telemetry.addData("Status", "Searching for a tag...");
+                drive.CalcSpeeds(0, 0, 1, 0.3,
+                        frontLeft, frontRight, backLeft, backRight);
+            } else {
+                // A tag is visible, so start alignment.
+                AprilTagDetection tag = detections.get(0); // Align to the first tag detected.
+                telemetry.addData("Status", "Aligning to Tag ID: " + tag.id);
+
+                // Calculate errors from the target position.
+                double bearingError = tag.ftcPose.bearing; // Error in rotation
+                double xError = tag.ftcPose.x;           // Error in strafe (left/right)
+                double yError = tag.ftcPose.y - Y_TARGET;  // Error in distance (forward/backward)
+
+                // Check if the robot is aligned within the tolerances.
+                if (Math.abs(xError) <= X_TOLERANCE && Math.abs(yError) <= Y_TOLERANCE && Math.abs(bearingError) <= BEARING_TOLERANCE) {
+                    // Robot is aligned. Stop the motors.
+                    telemetry.addLine("Aligned!");
+                    drive.CalcSpeeds(0, 0, 0, 0,
+                            frontLeft, frontRight, backLeft, backRight);
+                } else {
+                    // Robot is not aligned. Calculate motor powers using proportional control.
+                    double turnPower = bearingError * Kp_TURN;
+                    double strafePower = xError * Kp_STRAFE;
+                    double forwardPower = yError * Kp_FORWARD;
+
+                    // Combine powers and send to CalcSpeeds. The MecanumDriveAuto class will handle scaling.
+                    drive.CalcSpeeds(forwardPower, strafePower, turnPower, MAX_SPEED,
+                            frontLeft, frontRight, backLeft, backRight);
+                }
+
+                // Add telemetry for debugging.
+                telemetry.addData("Bearing Error", bearingError);
+                telemetry.addData("X Error", xError);
+                telemetry.addData("Y Error", yError);
+            }
             telemetry.update();
         }
-
-        drive.CalcSpeeds(0, 0, 0, 0,
-                frontLeft, frontRight, backLeft, backRight);
-
-        //Lines 85 and 89 need to be changed as there is an array index
-        //out of bounds exception
-        AprilTagDetection tag = tagProcessor.getDetections().get(0);
-        double distance = getDistances(tag.ftcPose.x, tag.ftcPose.y,
-                tag.ftcPose.yaw, tag.ftcPose.bearing);
-
-        while (tag.ftcPose.x != distance) {
-            tag = tagProcessor.getDetections().get(0);
-            if (distance >= 0) {
-                drive.CalcSpeeds(0, 1, 0, 0.3,
-                        frontLeft, frontRight, backLeft, backRight);
-            } else {
-                drive.CalcSpeeds(0, -1, 0, 0.3,
-                        frontLeft, frontRight, backLeft, backRight);
-            }
-        }
-
-
-    }
-
-    private double getDistances(double x, double y, double yaw, double bearing) {
-        double distance;
-        if (x >= 0) {
-            distance = y * Math.sin(yaw);
-        } else {
-            distance = -y * Math.sin(yaw);
-        }
-
-        return distance;
-    }
-
-    private void telemetry(AprilTagProcessor tagProcessor) {
-        if (!tagProcessor.getDetections().isEmpty()) {
-            AprilTagDetection tag = tagProcessor.getDetections().get(0);
-
-            if (tag.ftcPose != null) {
-                telemetry.addData("tag ID", tag.id);
-                telemetry.addData("x", tag.ftcPose.x);
-                telemetry.addData("y", tag.ftcPose.y);
-                telemetry.addData("z", tag.ftcPose.z);
-                telemetry.addData("roll", tag.ftcPose.roll);
-                telemetry.addData("pitch", tag.ftcPose.pitch);
-                telemetry.addData("yaw", tag.ftcPose.yaw);
-                telemetry.addData("range", tag.ftcPose.range);
-                telemetry.addData("bearing", tag.ftcPose.bearing);
-                telemetry.addData("elevation", tag.ftcPose.elevation);
-            } else {
-                telemetry.addData("tag ID", tag.id);
-                telemetry.addLine("no pose :(");
-            }
-        }
-
-        telemetry.update();
     }
 }

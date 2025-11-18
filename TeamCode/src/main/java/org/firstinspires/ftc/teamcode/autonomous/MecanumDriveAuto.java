@@ -2,8 +2,8 @@ package org.firstinspires.ftc.teamcode.autonomous;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 public class MecanumDriveAuto {
-    public void CalcSpeeds(int forward, int strafe,
-                               int rotate, double multiplier,
+    public void CalcSpeeds(double forward, double strafe,
+                               double rotate, double multiplier,
                                DcMotor frontLeft, DcMotor frontRight,
                                DcMotor backLeft, DcMotor backRight) {
 
