@@ -1,9 +1,11 @@
 package org.firstinspires.ftc.teamcode.lib;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.idealVoltage;
 import static java.lang.Thread.sleep;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
@@ -15,22 +17,25 @@ public class SimpleDriveActions {
     //declares hardware and variables
     public Telemetry telemetry;
     public DcMotor frontRightMotor, frontLeftMotor, backRightMotor, backLeftMotor;
-
     public DcMotorEx shooterMotor;
     public GoBildaPinpointDriver odo;
+    public DcMotor intake;
+    public DcMotor transfer;
+    public VoltageSensor voltageSensor;
 
     public double forward;
     public double right;
     public double rotate;
     public long timeouts_ms; //timeout in milliseconds
-    protected double minMotorPower = 0.2;
     public ElapsedTime runTime;
 
     //initializes hardware and variables for the DriveActions class
     public SimpleDriveActions(DcMotor frontLeftMotor, DcMotor frontRightMotor,
                               DcMotor backRightMotor, DcMotor backLeftMotor,
                               Telemetry telemetry, GoBildaPinpointDriver odo,
-                              DcMotorEx shooterMotor, ElapsedTime runTime) {
+                              DcMotorEx shooterMotor, DcMotor intake,
+                              DcMotor transfer, VoltageSensor voltageSensor,
+                              ElapsedTime runTime) {
 
         this.frontLeftMotor = frontLeftMotor;
         this.frontRightMotor = frontRightMotor;
@@ -40,6 +45,13 @@ public class SimpleDriveActions {
         this.odo = odo;
         this.shooterMotor = shooterMotor;
         this.runTime = runTime;
+        this.intake = intake;
+        this.transfer = transfer;
+        this.voltageSensor = voltageSensor;
+    }
+    private double getVoltageCompensatedPower(double power) {
+        double currentVoltage = voltageSensor.getVoltage();
+        return power * (idealVoltage / currentVoltage);
     }
 
     //basic drive function, drives using power and time
@@ -61,10 +73,10 @@ public class SimpleDriveActions {
             backLeftPower /= maxPower;
             backRightPower /= maxPower;
         }
-        frontRightMotor.setPower(frontRightPower);
-        frontLeftMotor.setPower(frontLeftPower);
-        backLeftMotor.setPower(backLeftPower);
-        backRightMotor.setPower(backRightPower);
+        frontRightMotor.setPower(frontRightPower * getVoltageCompensatedPower(1));
+        frontLeftMotor.setPower(frontLeftPower * getVoltageCompensatedPower(1));
+        backLeftMotor.setPower(backLeftPower * getVoltageCompensatedPower(1));
+        backRightMotor.setPower(backRightPower * getVoltageCompensatedPower(1));
 
         sleep(timeouts_ms);
         stopMotor();
@@ -72,7 +84,7 @@ public class SimpleDriveActions {
 
     public void turnToHeadingWithOdo(double targetHeading, double power, double toleranceAngle, long timeoutMs) throws InterruptedException {
         runTime.reset();
-        setMotorRunwithoutEncoder();
+        setMotorRunWithoutEncoder();
         odo.update();
         Pose2D pos;
 
@@ -103,15 +115,18 @@ public class SimpleDriveActions {
         backLeftMotor.setPower(0);
     }
 
-    public void setMotorRunwithoutEncoder() {
+    public void setMotorRunWithoutEncoder() {
         frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
-    public void moveToPosition(double forwardDistance, double rightDistance, double maxPower, double tolerance, double timeout_MS) throws InterruptedException {
-        odo.resetPosAndIMU(); // Reset odometry to start from the current position
+    public  void moveToPosition(double forwardDistance, double rightDistance, double maxPower, double tolerance, double timeout_MS) throws InterruptedException {
+        moveToPosition(forwardDistance, rightDistance, maxPower, tolerance, timeout_MS, false);
+    }
+    public void moveToPosition(double forwardDistance, double rightDistance, double maxPower, double tolerance, double timeout_MS, boolean runIntake) throws InterruptedException {
+        odo.update(); // Reset odometry to start from the current position
         Pose2D pose;
         pose = odo.getPosition();
 
@@ -158,6 +173,11 @@ public class SimpleDriveActions {
             backLeftMotor.setPower(forwardPower - strafePower);
             backRightMotor.setPower(forwardPower + strafePower);
 
+            if (runIntake) {
+                intake.setPower(0.8); // Run the intake motor
+                transfer.setPower(0.3); // Run the transfer motor
+            }
+
             sleep(100);
 
             // Debugging telemetry
@@ -165,6 +185,7 @@ public class SimpleDriveActions {
             telemetry.addData("Y Error", yError);
             telemetry.addData("X Position", currentX);
             telemetry.addData("Y Position", currentY);
+            telemetry.addData("Rotation", pose.getHeading(AngleUnit.DEGREES));
             telemetry.addData("Distance to Target", distanceToTarget);
             telemetry.addData("Forward Power", forwardPower);
             telemetry.addData("Strafe Power", strafePower);
@@ -173,9 +194,10 @@ public class SimpleDriveActions {
         }
 
         // Stop all motors after reaching the position
-        frontLeftMotor.setPower(0);
-        frontRightMotor.setPower(0);
-        backLeftMotor.setPower(0);
-        backRightMotor.setPower(0);
+        stopMotor();
+        if (runIntake) {
+            intake.setPower(0); // Stop the intake motor
+            transfer.setPower(0); // Stop the transfer motor
+        }
     }
 }

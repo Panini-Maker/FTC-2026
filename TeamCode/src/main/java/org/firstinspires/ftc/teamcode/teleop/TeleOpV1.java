@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.idealVoltage;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
@@ -10,6 +11,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -42,14 +44,14 @@ public class TeleOpV1 extends LinearOpMode {
         leftShooter.setDirection(DcMotorSimple.Direction.REVERSE);
         leftShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        //DcMotorEx rightShooter = hardwareMap.get(DcMotorEx.class, "rightShooter");
-        //rightShooter.setDirection(DcMotor.Direction.REVERSE);
 
         // Configure odometry
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         odo.setOffsets(odoXOffset, odoYOffset, DistanceUnit.MM); // Set offsets
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+
+        VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
 
         boolean mode = true;
@@ -121,10 +123,10 @@ public class TeleOpV1 extends LinearOpMode {
             // This ensures all the powers maintain the same ratio,
             // but only if at least one is out of the range [-1, 1]
             double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
-            double frontLeftPower = (rotY + rotX + rx) * power / denominator;
-            double backLeftPower = (rotY - rotX + rx) * power / denominator;
-            double frontRightPower = (rotY - rotX - rx) * power / denominator;
-            double backRightPower = (rotY + rotX - rx) * power / denominator;
+            double frontLeftPower = ((rotY + rotX + rx) * power / denominator) * (idealVoltage / voltageSensor.getVoltage());
+            double backLeftPower = ((rotY - rotX + rx) * power / denominator) * (idealVoltage / voltageSensor.getVoltage());
+            double frontRightPower = ((rotY - rotX - rx) * power / denominator) * (idealVoltage / voltageSensor.getVoltage());
+            double backRightPower = ((rotY + rotX - rx) * power / denominator) * (idealVoltage / voltageSensor.getVoltage());
 
             frontLeft.setPower(frontLeftPower);
             frontRight.setPower(frontRightPower);

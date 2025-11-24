@@ -18,7 +18,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 
 //Not finished
-//@Autonomous
+@Autonomous
 public class PathfindingWithVision extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {

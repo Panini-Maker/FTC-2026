@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.autonomous;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootDurationMs;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.rampUpTime;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -14,6 +14,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
@@ -21,7 +22,7 @@ import org.firstinspires.ftc.teamcode.lib.ShootingAction;
 import org.firstinspires.ftc.teamcode.lib.SimpleDriveActions;
 
 @Autonomous
-public class AutonomousLongV1 extends LinearOpMode {
+public class AutonomousShortV1 extends LinearOpMode {
     GoBildaPinpointDriver odo;
 
     @Override
@@ -66,15 +67,27 @@ public class AutonomousLongV1 extends LinearOpMode {
 
         waitForStart();
         odo.update();
-
+        Pose2D currentPos;
         //Shoot first 3 artifacts
-        drive.moveToPosition(0, -3, 0.3, 1, 1500);
-        drive.turnToHeadingWithOdo(-27, 0.2, 1.2, 1500);
-        shooter.shoot(sniper, shootDurationMs, rampUpTime);
-        Pose2D currentPose = odo.getPosition();
-        //Move to collect next 3 artifacts
-        drive.moveToPosition(9, -30, 0.3, 2, 6000);
-        //drive.moveToPosition(15 * Math.cos(currentPose.getHeading(AngleUnit.RADIANS)), -15 * Math.sin(currentPose.getHeading(AngleUnit.RADIANS)), 0.3, 1, 3000);
-        drive.moveToPosition(15, 5, 0.3, 2, 3000, true);
+        drive.moveToPosition(0, 50, 0.3, 2, 10000);
+        odo.update();
+        currentPos = odo.getPosition();
+        drive.turnToHeadingWithOdo(-currentPos.getHeading(AngleUnit.DEGREES) - 3.424, 0.15, 1, 2000);
+        shooter.shoot(shotgun, shootDurationMs, rampUpTime);
+
+        odo.update();
+        currentPos = odo.getPosition();
+        //Move to pick up next 3 artifacts
+        drive.moveToPosition(0, -4, 0.3, 2, 2000);
+        drive.moveToPosition(30 * Math.cos((Math.PI/4) + currentPos.getHeading(AngleUnit.RADIANS)), -30 * Math.sin((Math.PI/4) + currentPos.getHeading(AngleUnit.RADIANS)), 0.3, 2, 8000, true);
+        //Shoot next 3 artifacts
+        drive.moveToPosition(-30 * Math.cos((Math.PI/4) + currentPos.getHeading(AngleUnit.RADIANS)), 30 * Math.sin((Math.PI/4) + currentPos.getHeading(AngleUnit.RADIANS)), 0.3, 2, 8000);
+        drive.moveToPosition(0, 4, 0.3, 2, 2000);
+        odo.update();
+        currentPos = odo.getPosition();
+        drive.turnToHeadingWithOdo(-currentPos.getHeading(AngleUnit.DEGREES) - 3.424, 0.15, 1, 2000);
+        shooter.shoot(shotgun, shootDurationMs, rampUpTime);
+
+        //Note: Consider doing 80 - 20 move ratio to decrease time but keep accuracy
     }
 }
