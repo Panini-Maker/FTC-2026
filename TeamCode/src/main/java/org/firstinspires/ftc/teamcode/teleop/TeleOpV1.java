@@ -104,29 +104,14 @@ public class TeleOpV1 extends LinearOpMode {
             double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
             double rx = gamepad1.right_stick_x; // Turning
 
-            // Reset odometry during match if necessary
-            // Start button on Xbox-style controller, hard to hit on accident
-            if (gamepad1.options) {
-                odo.resetPosAndIMU();
-            }
-
-            // Get heading
-            double botHeading = odo.getPosition().getHeading(AngleUnit.RADIANS);
-
-            // Rotate movement direction
-            double rotX = x * Math.cos(-botHeading) - y * Math.sin(-botHeading);
-            double rotY = x * Math.sin(-botHeading) + y * Math.cos(-botHeading);
-
-            rotX = rotX * 1.1;
-
             // Denominator is the largest motor power (absolute value) or 1
             // This ensures all the powers maintain the same ratio,
             // but only if at least one is out of the range [-1, 1]
-            double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
-            double frontLeftPower = ((rotY + rotX + rx) * power / denominator) * (idealVoltage / voltageSensor.getVoltage());
-            double backLeftPower = ((rotY - rotX + rx) * power / denominator) * (idealVoltage / voltageSensor.getVoltage());
-            double frontRightPower = ((rotY - rotX - rx) * power / denominator) * (idealVoltage / voltageSensor.getVoltage());
-            double backRightPower = ((rotY + rotX - rx) * power / denominator) * (idealVoltage / voltageSensor.getVoltage());
+
+            double frontLeftPower = (y + x + rx) / Math.max(Math.abs(y + x + rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
+            double frontRightPower = (y - x - rx) / Math.max(Math.abs(y - x - rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
+            double backLeftPower = (y - x + rx) / Math.max(Math.abs(y - x + rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
+            double backRightPower = (y + x - rx) / Math.max(Math.abs(y + x - rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
 
             frontLeft.setPower(frontLeftPower);
             frontRight.setPower(frontRightPower);
@@ -140,9 +125,9 @@ public class TeleOpV1 extends LinearOpMode {
             // right button is the outake in case we intake too many artifacts
 
             if (gamepad2.right_bumper) {
-                intake.setPower(0.8);
+                intake.setPower(1);
             } else if (gamepad2.left_bumper) {
-                intake.setPower(-0.8);
+                intake.setPower(-1);
             } else {
                 intake.setPower(0);
             }
