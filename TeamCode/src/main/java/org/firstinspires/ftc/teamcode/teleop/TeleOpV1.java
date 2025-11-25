@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.teleop;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.idealVoltage;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 
@@ -18,6 +19,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
+import org.firstinspires.ftc.teamcode.lib.CameraMovement;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.teamcode.lib.AprilTag;
 
 import java.util.Locale;
 
@@ -26,6 +30,7 @@ import java.util.Locale;
 public class TeleOpV1 extends LinearOpMode {
 
     GoBildaPinpointDriver odo;
+    CameraMovement camera;
 
     @Override
 
@@ -53,7 +58,6 @@ public class TeleOpV1 extends LinearOpMode {
 
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-
         boolean mode = true;
         double shooterPower;
 
@@ -62,6 +66,11 @@ public class TeleOpV1 extends LinearOpMode {
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
+        AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
+        tagProcessor.setDecimation(0.5f); // Adjust for lighting conditions
+        CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, odo, intake, transfer, voltageSensor, telemetry, tagProcessor);
+
+
 
         waitForStart();
         resetRuntime();
@@ -85,16 +94,28 @@ public class TeleOpV1 extends LinearOpMode {
                 shooterPower = sniper;
                 telemetry.addData("Shooter Mode", "Sniper");
             }
+            boolean isAligned = false;
+            //boolean wasRightTriggerPressed = false;
 
             if (gamepad2.right_trigger > 0) {
-                leftShooter.setVelocity(shooterPower); // add leftOutput once tuned
-                //rightShooter.setPower(rightOutput);
+
+                if (!isAligned) {
+                    // Trigger just pressed - start shooting once
+                    leftShooter.setVelocity(shooterPower);
+                    isAligned = camera.turnToAprilTagNoOdo(redTagID);
+                }
+
+                // Keep aligning while trigger is held
+
+
             } else if (gamepad2.left_trigger > 0) {
-                leftShooter.setPower(-0.3); //for intaking human player balls
+                leftShooter.setPower(-0.3); //for intaking from human players
+                //wasRightTriggerPressed = false;
 
             } else {
                 leftShooter.setPower(0);
-                //rightShooter.setPower(0);
+                isAligned = false;
+                //wasRightTriggerPressed = false;
             }
 
             timer.reset();
@@ -144,6 +165,7 @@ public class TeleOpV1 extends LinearOpMode {
                 transfer.setPower(0); // Adjust position as needed
             }
 
+
             Pose2D pos = odo.getPosition();
             String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
             telemetry.addData("Position", data);
@@ -153,4 +175,3 @@ public class TeleOpV1 extends LinearOpMode {
         }
     }
 }
-
