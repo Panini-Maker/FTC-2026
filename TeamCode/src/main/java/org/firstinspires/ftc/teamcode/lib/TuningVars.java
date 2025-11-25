@@ -13,4 +13,6 @@ public class TuningVars {
     //Camera Tuning Vars
     public static int cameraResolutionWidth = 1280;
     public static int cameraResolutionHeight = 800;
+    public static int redTagID = 24;
+    public static int blueTagID = 20;
 }

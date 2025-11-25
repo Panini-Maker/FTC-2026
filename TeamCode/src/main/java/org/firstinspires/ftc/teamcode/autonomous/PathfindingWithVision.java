@@ -76,6 +76,8 @@ public class PathfindingWithVision extends LinearOpMode {
                 .setAutoStopLiveView(true)
                 .build();
 
+        tagProcessor.setDecimation(0.5f); // Lower decimation for lighting conditions
+
         waitForStart();
 
         // --- Constants to Tune --- //
