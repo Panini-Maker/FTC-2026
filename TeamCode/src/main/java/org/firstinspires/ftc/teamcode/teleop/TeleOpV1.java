@@ -98,10 +98,9 @@ public class TeleOpV1 extends LinearOpMode {
             //boolean wasRightTriggerPressed = false;
 
             if (gamepad2.right_trigger > 0) {
-
+                leftShooter.setVelocity(shooterPower);
                 if (!isAligned) {
                     // Trigger just pressed - start shooting once
-                    leftShooter.setVelocity(shooterPower);
                     isAligned = camera.turnToAprilTagNoOdo(redTagID);
                 }
 
