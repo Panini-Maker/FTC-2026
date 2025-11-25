@@ -81,13 +81,12 @@ public class SimpleDriveActions {
         backRightMotor.setPower(backRightPower * getVoltageCompensatedPower(1));
 
         sleep(timeouts_ms);
-        stopMotor();
+        stopMotors();
     }
 
     public void turnToHeadingWithOdo(double targetHeading, double power, double toleranceAngle, long timeoutMs) throws InterruptedException {
         runTime.reset();
         setMotorRunWithoutEncoder();
-        odo.update();
         Pose2D pos;
 
         double currentHeading;
@@ -103,25 +102,22 @@ public class SimpleDriveActions {
 
             drive(0, 0, rotationPower, 100);
             //if the heading error is less than ANGLE_TOLERANCE or time has ran out the robot will stop
-            if ((Math.abs(headingError) < toleranceAngle) || (runTime.milliseconds() >= timeoutMs))
+            if ((Math.abs(headingError) < toleranceAngle) || (runTime.milliseconds() >= timeoutMs)) {
                 break;
+            }
         }
-        stopMotor();
-    }
-
-    public void turnToHeadingWithCamera() {
-
+        stopMotors();
     }
 
     // Stop all motors
-    public void stopMotor() {
+    private void stopMotors() {
         frontRightMotor.setPower(0);
         frontLeftMotor.setPower(0);
         backRightMotor.setPower(0);
         backLeftMotor.setPower(0);
     }
 
-    public void setMotorRunWithoutEncoder() {
+    private void setMotorRunWithoutEncoder() {
         frontLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         frontRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         backRightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
@@ -133,7 +129,6 @@ public class SimpleDriveActions {
     }
 
     public void moveToPosition(double forwardDistance, double rightDistance, double maxPower, double tolerance, double timeout_MS, boolean runIntake) throws InterruptedException {
-        odo.update(); // Reset odometry to start from the current position
         Pose2D pose;
         pose = odo.getPosition();
 
@@ -159,7 +154,7 @@ public class SimpleDriveActions {
 
             // Break the loop if the robot is close enough to the target position
             if (distanceToTarget < tolerance) {
-                stopMotor();
+                stopMotors();
                 break;
             }
 
@@ -201,7 +196,7 @@ public class SimpleDriveActions {
         }
 
         // Stop all motors after reaching the position
-        stopMotor();
+        stopMotors();
         if (runIntake) {
             intake.setPower(0); // Stop the intake motor
             transfer.setPower(0); // Stop the transfer motor
@@ -249,7 +244,7 @@ public class SimpleDriveActions {
 
             // Break the loop if the robot is close enough to the target position
             if (distanceToTarget < tolerance) {
-                stopMotor();
+                stopMotors();
                 break;
             }
 

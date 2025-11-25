@@ -34,8 +34,8 @@ public class TestVision extends LinearOpMode {
         aprilTagLibraryBuilder.addTags(AprilTagGameDatabase.getCurrentGameTagLibrary());
         //Add a tag,without pose information,to the AprilTagLibrary.Builder.
 
-        for(int i = 1; i < 30; i++) {
-            aprilTagLibraryBuilder.addTag(i, "ID " + i, 200, DistanceUnit.MM);
+        for(int i = 20; i < 25; i++) {
+            aprilTagLibraryBuilder.addTag(i, "ID " + i, 6.5, DistanceUnit.INCH);
         }
 
         //Build the AprilTag library and assign it to a variable.
@@ -76,6 +76,8 @@ public class TestVision extends LinearOpMode {
                     telemetry.addData("roll", tag.ftcPose.roll);
                     telemetry.addData("pitch", tag.ftcPose.pitch);
                     telemetry.addData("yaw", tag.ftcPose.yaw);
+                    telemetry.addData("bearing", tag.ftcPose.bearing);
+                    telemetry.addData("range", tag.ftcPose.range);
                 } else {
                     telemetry.addData("tag ID", tag.id);
                     telemetry.addLine("no pose :(");

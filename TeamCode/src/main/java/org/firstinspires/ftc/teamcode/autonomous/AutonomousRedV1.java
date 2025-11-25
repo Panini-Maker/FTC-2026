@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.autonomous;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootDurationMs;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
@@ -20,6 +21,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.lib.AprilTag;
+import org.firstinspires.ftc.teamcode.lib.CameraMovement;
 import org.firstinspires.ftc.teamcode.lib.ShootingAction;
 import org.firstinspires.ftc.teamcode.lib.SimpleDriveActions;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -60,6 +62,7 @@ public class AutonomousRedV1 extends LinearOpMode {
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
+        tagProcessor.setDecimation(0.5f); // Lower decimation for lighting conditions
 
         // Recalibrate Odometry
         odo.resetPosAndIMU();
@@ -69,29 +72,34 @@ public class AutonomousRedV1 extends LinearOpMode {
 
         ShootingAction shooter = new ShootingAction(leftShooter, transfer, intake);
         SimpleDriveActions drive = new SimpleDriveActions(frontLeft, frontRight, backRight, backLeft, telemetry, odo, leftShooter, intake, transfer, voltageSensor, runTime);
+        CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, odo, intake, transfer, voltageSensor, telemetry, tagProcessor);
 
         waitForStart();
         odo.update();
         Pose2D currentPos;
+        sleep(1000);
 
         if(!tagProcessor.getDetections().isEmpty()) {
             //Long Autonomous
             //Shoot first 3 artifacts
+            camera.turnToAprilTag(redTagID);
             shooter.shoot(sniper, shootDurationMs, rampUpTime, false);
-            currentPos = odo.getPosition();
             //Move to collect next 3 artifacts
-            drive.moveToPosition(11, -31, 0.3, 2, 6000);
+            drive.moveToPosition(10, -30, 0.3, 1, 8000);
             odo.update();
-            double heading = currentPos.getHeading(AngleUnit.RADIANS);
-            drive.moveToPosition(17 * Math.cos(heading), 17 * Math.sin(heading), 0.3, 2, 4500, true);
+            currentPos = odo.getPosition();
+            drive.turnToHeadingWithOdo(25 - currentPos.getHeading(AngleUnit.DEGREES), 0.15, 1, 4000);
+            drive.moveToPosition(20, 0, 0.3, 1, 6000, true);
+            //drive.moveToPosition(25 * Math.cos(Math.toRadians(-25 + currentPos.getHeading(AngleUnit.DEGREES))), 25 * Math.sin(Math.toRadians(-25 + currentPos.getHeading(AngleUnit.DEGREES))), 0.3, 2, 6000, true);
             //Move to shoot next 3 artifacts
-            drive.moveToPosition(-17 * Math.cos(heading), -17 * Math.sin(heading), 0.3, 2, 4500);
-            drive.moveToPosition(-11, 31, 0.3, 2, 6000);
+            odo.update();
+            currentPos = odo.getPosition();
+            //drive.moveToPosition(-25 * Math.cos(Math.toRadians(-25 + currentPos.getHeading(AngleUnit.DEGREES))), -25 * Math.sin(Math.toRadians(-25 + currentPos.getHeading(AngleUnit.DEGREES))), 0.3, 2, 6000);
+            //drive.moveToPosition(-8, 32, 0.3, 2, 8000);
             //Shoot next 3 artifacts
             odo.update();
-            heading = odo.getPosition().getHeading(AngleUnit.RADIANS);
-            drive.turnToHeadingWithOdo(-heading + 4, 0.2, 1.2, 3000);
-            shooter.shoot(sniper, shootDurationMs, rampUpTime, false);
+            //camera.turnToAprilTag(redTagID);
+            //shooter.shoot(sniper, shootDurationMs, rampUpTime, false);
         } else {
             //Short Autonomous
             //Shoot first 3 artifacts

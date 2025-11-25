@@ -30,8 +30,8 @@ public class AprilTag {
         aprilTagLibraryBuilder.addTags(AprilTagGameDatabase.getCurrentGameTagLibrary());
         //Add a tag,without pose information,to the AprilTagLibrary.Builder.
 
-        for(int i = 1; i < 30; i++) {
-            aprilTagLibraryBuilder.addTag(i, "ID " + i, 200, DistanceUnit.MM);
+        for(int i = 20; i < 25; i++) {
+            aprilTagLibraryBuilder.addTag(i, "ID " + i, 6.5, DistanceUnit.INCH);
         }
 
         //Build the AprilTag library and assign it to a variable.
