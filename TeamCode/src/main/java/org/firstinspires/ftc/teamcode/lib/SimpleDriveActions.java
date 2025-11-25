@@ -13,6 +13,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
+
 public class SimpleDriveActions {
     //declares hardware and variables
     public Telemetry telemetry;
@@ -49,6 +50,7 @@ public class SimpleDriveActions {
         this.transfer = transfer;
         this.voltageSensor = voltageSensor;
     }
+
     private double getVoltageCompensatedPower(double power) {
         double currentVoltage = voltageSensor.getVoltage();
         return power * (idealVoltage / currentVoltage);
@@ -122,9 +124,10 @@ public class SimpleDriveActions {
         backLeftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
-    public  void moveToPosition(double forwardDistance, double rightDistance, double maxPower, double tolerance, double timeout_MS) throws InterruptedException {
+    public void moveToPosition(double forwardDistance, double rightDistance, double maxPower, double tolerance, double timeout_MS) throws InterruptedException {
         moveToPosition(forwardDistance, rightDistance, maxPower, tolerance, timeout_MS, false);
     }
+
     public void moveToPosition(double forwardDistance, double rightDistance, double maxPower, double tolerance, double timeout_MS, boolean runIntake) throws InterruptedException {
         odo.update(); // Reset odometry to start from the current position
         Pose2D pose;
@@ -199,5 +202,90 @@ public class SimpleDriveActions {
             intake.setPower(0); // Stop the intake motor
             transfer.setPower(0); // Stop the transfer motor
         }
+    }
+
+    public void moveToPosition(double forwardDistance, double rightDistance,
+                               double tolerance, double timeout_MS, boolean runIntake)
+            throws InterruptedException {
+        odo.update(); // Reset odometry to start from the current position
+        Pose2D pose;
+        pose = odo.getPosition();
+
+        double maxPower;
+
+        double targetX = pose.getX(DistanceUnit.INCH) + rightDistance;
+        double targetY = pose.getY(DistanceUnit.INCH) + forwardDistance;
+
+        ElapsedTime timer = new ElapsedTime();
+        timer.reset();
+        // Timeout in seconds
+
+        double totalDistance = Math.sqrt(forwardDistance * forwardDistance + rightDistance * rightDistance);
+        double distanceThreshold = totalDistance * 0.2; // 20% of the total distance
+
+        while (timer.milliseconds() < timeout_MS) {
+            odo.update();
+            pose = odo.getPosition();
+
+            double currentX = pose.getX(DistanceUnit.INCH);
+            double currentY = pose.getY(DistanceUnit.INCH);
+
+            double xError = targetX - currentX;
+            double yError = targetY - currentY;
+
+
+            // Calculate distance to the target position
+            double distanceToTarget = Math.sqrt(xError * xError + yError * yError);
+
+            if (distanceThreshold >= distanceToTarget) {
+                maxPower = 0.2;
+            } else {
+                maxPower = 0.8;
+            }
+
+            // Break the loop if the robot is close enough to the target position
+            if (distanceToTarget < tolerance) {
+                stopMotor();
+                break;
+            }
+
+            // Adjust proportional gains for forward and strafe movements
+            double forwardPower = yError; // Proportional control for forward movement
+            double strafePower = xError; // Proportional control for strafing
+
+            // Normalize motor powers to ensure no motor exceeds the maximum power
+            double maxCalculatedPower = Math.max(Math.max(forwardPower + strafePower, forwardPower - strafePower),
+                    Math.max(-forwardPower - strafePower, -forwardPower + strafePower));
+
+            forwardPower = (forwardPower / maxCalculatedPower) * maxPower;
+            strafePower = (strafePower / maxCalculatedPower) * maxPower;
+
+            // Set motor powers
+            frontLeftMotor.setPower(forwardPower + strafePower);
+            frontRightMotor.setPower(forwardPower - strafePower);
+            backLeftMotor.setPower(forwardPower - strafePower);
+            backRightMotor.setPower(forwardPower + strafePower);
+
+            if (runIntake) {
+                intake.setPower(0.8); // Run the intake motor
+                intake.setPower(0.2); // Run the intake motor
+                transfer.setPower(0.3); // Run the transfer motor
+            }
+
+            sleep(100);
+
+            // Debugging telemetry
+            telemetry.addData("X Error", xError);
+            telemetry.addData("Y Error", yError);
+            telemetry.addData("X Position", currentX);
+            telemetry.addData("Y Position", currentY);
+            telemetry.addData("Rotation", pose.getHeading(AngleUnit.DEGREES));
+            telemetry.addData("Distance to Target", distanceToTarget);
+            telemetry.addData("Forward Power", forwardPower);
+            telemetry.addData("Strafe Power", strafePower);
+            telemetry.addData("Time Elapsed", timer.seconds());
+            telemetry.update();
+        }
+
     }
 }
