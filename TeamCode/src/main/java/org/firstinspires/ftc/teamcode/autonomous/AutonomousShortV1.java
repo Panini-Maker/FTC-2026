@@ -73,7 +73,7 @@ public class AutonomousShortV1 extends LinearOpMode {
         odo.update();
         currentPos = odo.getPosition();
         drive.turnToHeadingWithOdo(-currentPos.getHeading(AngleUnit.DEGREES) - 3.424, 0.15, 1, 2000);
-        shooter.shoot(shotgun, shootDurationMs, rampUpTime);
+        shooter.shoot(shotgun, shootDurationMs, rampUpTime, true);
 
         odo.update();
         currentPos = odo.getPosition();
@@ -86,7 +86,7 @@ public class AutonomousShortV1 extends LinearOpMode {
         odo.update();
         currentPos = odo.getPosition();
         drive.turnToHeadingWithOdo(-currentPos.getHeading(AngleUnit.DEGREES) - 3.424, 0.15, 1, 2000);
-        shooter.shoot(shotgun, shootDurationMs, rampUpTime);
+        shooter.shoot(shotgun, shootDurationMs, rampUpTime, true);
 
         //Note: Consider doing 80 - 20 move ratio to decrease time but keep accuracy
     }

@@ -14,6 +14,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
@@ -68,13 +69,20 @@ public class AutonomousLongV1 extends LinearOpMode {
         odo.update();
 
         //Shoot first 3 artifacts
-        drive.moveToPosition(0, -3, 0.3, 1, 1500);
-        drive.turnToHeadingWithOdo(-27, 0.2, 1.2, 1500);
-        shooter.shoot(sniper, shootDurationMs, rampUpTime);
+        shooter.shoot(sniper, shootDurationMs, rampUpTime, false);
         Pose2D currentPose = odo.getPosition();
         //Move to collect next 3 artifacts
-        drive.moveToPosition(9, -30, 0.3, 2, 6000);
-        //drive.moveToPosition(15 * Math.cos(currentPose.getHeading(AngleUnit.RADIANS)), -15 * Math.sin(currentPose.getHeading(AngleUnit.RADIANS)), 0.3, 1, 3000);
-        drive.moveToPosition(15, 5, 0.3, 2, 3000, true);
+        drive.moveToPosition(18, -30, 0.3, 2, 6000);
+        odo.update();
+        double heading = currentPose.getHeading(AngleUnit.RADIANS);
+        drive.moveToPosition(25 * Math.cos(heading), 25 * Math.sin(heading), 0.3, 2, 4500, true);
+        //Move to shoot next 3 artifacts
+        drive.moveToPosition(-25 * Math.cos(heading), -25 * Math.sin(heading), 0.3, 2, 4500, true);
+        drive.moveToPosition(-18, 30, 0.3, 2, 6000);
+        //Shoot next 3 artifacts
+        odo.update();
+        heading = odo.getPosition().getHeading(AngleUnit.RADIANS);
+        drive.turnToHeadingWithOdo(-heading, 0.2, 1.2, 3000);
+        shooter.shoot(sniper, shootDurationMs, rampUpTime, false);
     }
 }
