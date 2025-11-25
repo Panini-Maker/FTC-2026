@@ -62,26 +62,18 @@ public class SimpleDriveActions {
         this.right = right;
         this.rotate = rotate;
         this.timeouts_ms = timeouts_ms;
-        double frontRightPower = forward + right + rotate;
-        double frontLeftPower = forward - right - rotate;
-        double backLeftPower = forward + right - rotate;
-        double backRightPower = forward - right + rotate;
-        double maxPower = Math.max(Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower)),
-                Math.max(Math.abs(backRightPower), Math.abs(backLeftPower)));
-        // Change normalization only when maxPower > 1 to only need to do division when necessary.
-        if (maxPower > 1) {
-            frontRightPower /= maxPower;
-            frontLeftPower /= maxPower;
-            backLeftPower /= maxPower;
-            backRightPower /= maxPower;
-        }
+        double frontLeftPower = (forward + right - rotate);
+        double frontRightPower = (forward - right + rotate);
+        double backRightPower = (forward + right + rotate);
+        double backLeftPower = (forward - right - rotate);
+
         frontRightMotor.setPower(frontRightPower * getVoltageCompensatedPower(1));
         frontLeftMotor.setPower(frontLeftPower * getVoltageCompensatedPower(1));
         backLeftMotor.setPower(backLeftPower * getVoltageCompensatedPower(1));
         backRightMotor.setPower(backRightPower * getVoltageCompensatedPower(1));
 
         sleep(timeouts_ms);
-        stopMotors();
+        //stopMotors();
     }
 
     public void turnToHeadingWithOdo(double targetHeading, double power, double toleranceAngle, long timeoutMs) throws InterruptedException {
@@ -100,7 +92,13 @@ public class SimpleDriveActions {
             headingError = targetHeading - currentHeading;
             rotationPower = (headingError / (Math.abs(headingError))) * power; //tune constant if needed
 
-            drive(0, 0, rotationPower, 100);
+            telemetry.addData("Target Heading", targetHeading);
+            telemetry.addData("Current Heading", currentHeading);
+            telemetry.addData("Heading Error", headingError);
+            telemetry.addData("Rotation Power", rotationPower);
+            telemetry.update();
+
+            drive(0, 0, rotationPower, 50);
             //if the heading error is less than ANGLE_TOLERANCE or time has ran out the robot will stop
             if ((Math.abs(headingError) < toleranceAngle) || (runTime.milliseconds() >= timeoutMs)) {
                 break;
@@ -169,18 +167,14 @@ public class SimpleDriveActions {
             forwardPower = (forwardPower / maxCalculatedPower) * maxPower;
             strafePower = (strafePower / maxCalculatedPower) * maxPower;
 
-            // Set motor powers
-            frontLeftMotor.setPower(forwardPower + strafePower);
-            frontRightMotor.setPower(forwardPower - strafePower);
-            backLeftMotor.setPower(forwardPower - strafePower);
-            backRightMotor.setPower(forwardPower + strafePower);
+            long baseTime = 50;
+            long incrementalTime = (long)(distanceToTarget * distanceToTarget / 10); // Increase time based on distance
+            drive(forwardPower, strafePower, 0, baseTime + incrementalTime);
 
             if (runIntake) {
                 intake.setPower(0.8); // Run the intake motor
                 transfer.setPower(0.3); // Run the transfer motor
             }
-
-            sleep(100);
 
             // Debugging telemetry
             telemetry.addData("X Error", xError);

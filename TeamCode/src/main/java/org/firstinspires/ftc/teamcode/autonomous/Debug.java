@@ -2,11 +2,6 @@ package org.firstinspires.ftc.teamcode.autonomous;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootDurationMs;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.rampUpTime;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -16,9 +11,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.lib.AprilTag;
 import org.firstinspires.ftc.teamcode.lib.CameraMovement;
@@ -27,11 +20,12 @@ import org.firstinspires.ftc.teamcode.lib.SimpleDriveActions;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 @Autonomous
-public class AutonomousRedV1 extends LinearOpMode {
+public class Debug extends LinearOpMode {
     GoBildaPinpointDriver odo;
 
     @Override
     public void runOpMode() throws InterruptedException {
+        // Your autonomous code here
         ElapsedTime runTime = new ElapsedTime();
 
         DcMotor frontLeft = hardwareMap.dcMotor.get("frontLeft");
@@ -75,54 +69,9 @@ public class AutonomousRedV1 extends LinearOpMode {
         CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, odo, intake, transfer, voltageSensor, telemetry, tagProcessor);
 
         waitForStart();
-        odo.update();
-        Pose2D currentPos;
-        sleep(1000);
 
-        if(!tagProcessor.getFreshDetections().isEmpty()) {
-            //Long Autonomous
-            //Shoot first 3 artifacts
-            camera.turnToAprilTag(redTagID);
-            sleep(250);
-            shooter.shoot(sniper, shootDurationMs, rampUpTime, false);
-            //Move to collect next 3 artifacts
-            drive.moveToPosition(10, -30, 0.3, 1, 8000);
-            sleep(500);
-            odo.update();
-            currentPos = odo.getPosition();
-            drive.turnToHeadingWithOdo(23, 0.2, 1, 4000);
-            drive.moveToPosition(20 * Math.cos(Math.toRadians(-23 + currentPos.getHeading(AngleUnit.DEGREES))), 20 * Math.sin(Math.toRadians(-23 + currentPos.getHeading(AngleUnit.DEGREES))), 0.3, 2, 6000, true);
-            //Move to shoot next 3 artifacts
-            odo.update();
-            currentPos = odo.getPosition();
-            drive.moveToPosition(-currentPos.getY(DistanceUnit.INCH), -currentPos.getX(DistanceUnit.INCH), 0.3, 2, 15000);
-            //Shoot next 3 artifacts
-            odo.update();
-            tagProcessor.getFreshDetections();
-            sleep(200);
-            camera.turnToAprilTag(redTagID);
-            shooter.shoot(sniper, shootDurationMs, rampUpTime, false);
-        } else {
-            //Short Autonomous
-            //Shoot first 3 artifacts
-            drive.moveToPosition(0, 50, 0.3, 2, 10000);
-            odo.update();
-            currentPos = odo.getPosition();
-            drive.turnToHeadingWithOdo(-currentPos.getHeading(AngleUnit.DEGREES) - 3.424, 0.15, 1, 2000);
-            shooter.shoot(shotgun, shootDurationMs, rampUpTime, true);
-
-            odo.update();
-            currentPos = odo.getPosition();
-            //Move to pick up next 3 artifacts
-            drive.moveToPosition(0, -4, 0.3, 2, 2000);
-            drive.moveToPosition(30 * Math.cos((Math.PI/4) + currentPos.getHeading(AngleUnit.RADIANS)), -30 * Math.sin((Math.PI/4) + currentPos.getHeading(AngleUnit.RADIANS)), 0.3, 2, 8000, true);
-            //Shoot next 3 artifacts
-            drive.moveToPosition(-30 * Math.cos((Math.PI/4) + currentPos.getHeading(AngleUnit.RADIANS)), 30 * Math.sin((Math.PI/4) + currentPos.getHeading(AngleUnit.RADIANS)), 0.3, 2, 8000);
-            drive.moveToPosition(0, 4, 0.3, 2, 2000);
-            odo.update();
-            currentPos = odo.getPosition();
-            drive.turnToHeadingWithOdo(-currentPos.getHeading(AngleUnit.DEGREES) - 3.424, 0.15, 1, 2000);
-            shooter.shoot(shotgun, shootDurationMs, rampUpTime, true);
-        }
+        drive.turnToHeadingWithOdo(90, 0.2, 2, 15000);
+        sleep(2000);
+        drive.turnToHeadingWithOdo(0, 0.2, 2, 15000);
     }
 }
