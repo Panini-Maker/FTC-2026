@@ -72,17 +72,17 @@ public class AutonomousLongV1 extends LinearOpMode {
         shooter.shoot(sniper, shootDurationMs, rampUpTime, false);
         Pose2D currentPose = odo.getPosition();
         //Move to collect next 3 artifacts
-        drive.moveToPosition(18, -30, 0.3, 2, 6000);
+        drive.moveToPosition(11, -31, 0.3, 2, 6000);
         odo.update();
         double heading = currentPose.getHeading(AngleUnit.RADIANS);
-        drive.moveToPosition(25 * Math.cos(heading), 25 * Math.sin(heading), 0.3, 2, 4500, true);
+        drive.moveToPosition(17 * Math.cos(heading), 17 * Math.sin(heading), 0.3, 2, 4500, true);
         //Move to shoot next 3 artifacts
-        drive.moveToPosition(-25 * Math.cos(heading), -25 * Math.sin(heading), 0.3, 2, 4500, true);
-        drive.moveToPosition(-18, 30, 0.3, 2, 6000);
+        drive.moveToPosition(-17 * Math.cos(heading), -17 * Math.sin(heading), 0.3, 2, 4500);
+        drive.moveToPosition(-11, 31, 0.3, 2, 6000);
         //Shoot next 3 artifacts
         odo.update();
         heading = odo.getPosition().getHeading(AngleUnit.RADIANS);
-        drive.turnToHeadingWithOdo(-heading, 0.2, 1.2, 3000);
+        drive.turnToHeadingWithOdo(-heading+4, 0.2, 1.2, 3000);
         shooter.shoot(sniper, shootDurationMs, rampUpTime, false);
     }
 }

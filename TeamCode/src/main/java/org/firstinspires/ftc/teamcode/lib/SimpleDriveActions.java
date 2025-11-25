@@ -109,6 +109,10 @@ public class SimpleDriveActions {
         stopMotor();
     }
 
+    public void turnToHeadingWithCamera() {
+
+    }
+
     // Stop all motors
     public void stopMotor() {
         frontRightMotor.setPower(0);

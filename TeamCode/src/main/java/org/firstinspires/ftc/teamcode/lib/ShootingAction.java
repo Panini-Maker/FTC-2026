@@ -19,7 +19,7 @@ public class ShootingAction {
         shooterMotor.setVelocity(shooterVelocity);
         Thread.sleep(rampUpTimeMs);
         transfer.setPower(0.8);
-        intake.setPower(0.8);
+        intake.setPower(1);
         if (slowDown) {
             Thread.sleep(shootDurationMs / 3);
             shooterMotor.setVelocity(shooterVelocity - shootingSlowDownSpeed); //NOTE: set intake-transfer to 0 for slowdown
@@ -27,7 +27,7 @@ public class ShootingAction {
             intake.setPower(0);
             Thread.sleep(500);
             transfer.setPower(0.8);
-            intake.setPower(0.8);
+            intake.setPower(1);
             Thread.sleep((shootDurationMs * 2L) / 3);
         } else {
             Thread.sleep(shootDurationMs);
