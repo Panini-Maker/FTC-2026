@@ -17,7 +17,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
-@TeleOp
+//@TeleOp
 public class TestVision extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {

@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
-@TeleOp(name="2-Player Outreach Code")
+//@TeleOp(name="2-Player Outreach Code")
 public class TwoPlayerOutreachCode extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {

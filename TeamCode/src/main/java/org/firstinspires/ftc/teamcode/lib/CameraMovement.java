@@ -66,14 +66,12 @@ public class CameraMovement {
             if(tag.id == tagID) {
                 //Currently using 70% of the angle to avoid overshooting
                 //Make a function that does not need odometry and only uses the camera
-                drive.turnToHeadingWithOdo(tag.ftcPose.bearing * 0.7, 0.15, 1, 6000);
+                drive.turnToHeadingWithOdo(tag.ftcPose.bearing * 0.7, 0.3, 1, 6000);
                 /*
                 while(Math.abs(tag.ftcPose.bearing) > tolerance) {
                     drive.drive(0, 0, 0.15, 100);
                 }
                  */
-                odo.resetPosAndIMU();
-                sleep(250);
                 return;
             }
         }
@@ -89,12 +87,12 @@ public class CameraMovement {
             for (AprilTagDetection tag : tagProcessor.getDetections()) {
                 if (tag.id == tagID) {
                     // If the tag is found, check its bearing
-                    if (Math.abs(tag.ftcPose.bearing) > 5) { // Adjust tolerance as needed
+                    if (Math.abs(tag.ftcPose.bearing) > 2) { // Adjust tolerance as needed
                         // Turn towards the tag
                         //Determines the turning direction based on the sign of the bearing.
                         //Positive bearing means the tag is to the right, so the robot turns right (0.15),
                         // and negative bearing means the tag is to the left, so the robot turns left (-0.15).
-                        double turnPower = tag.ftcPose.bearing > 0 ? 0.15 : -0.15;
+                        double turnPower = tag.ftcPose.bearing > 0 ? 0.3 : -0.3;
                         drive.drive(0, 0, turnPower, 100);
                     } else {
                         // Stop turning when perpendicular

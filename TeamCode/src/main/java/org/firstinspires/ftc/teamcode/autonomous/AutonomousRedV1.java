@@ -26,7 +26,7 @@ import org.firstinspires.ftc.teamcode.lib.ShootingAction;
 import org.firstinspires.ftc.teamcode.lib.SimpleDriveActions;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
-@Autonomous
+//@Autonomous
 public class AutonomousRedV1 extends LinearOpMode {
     GoBildaPinpointDriver odo;
 

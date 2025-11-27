@@ -12,7 +12,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.lib.SimpleDriveActions;
 
-@Autonomous
+//@Autonomous
 public class OutreachDemo extends LinearOpMode {
 
     GoBildaPinpointDriver odo;
