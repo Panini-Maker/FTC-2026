@@ -1,7 +1,7 @@
 package org.firstinspires.ftc.teamcode.autonomous;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootDurationMs;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 
 import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
@@ -19,7 +19,7 @@ import org.firstinspires.ftc.teamcode.lib.ShootingAction;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 @Autonomous
-public class AutoRedLong9Artifacts extends LinearOpMode {
+public class AutoRedShort9Artifacts extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -44,74 +44,59 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
         );
 
         waitForStart();
-        //Create starting pose
-        //Long Autonomous
+        //Short Autonomous
         //Shoot first 3 artifacts
-        shooterMotor.setVelocity(sniper);
-        //Creating autonomous path
+
+        shooterMotor.setVelocity(shotgun);
         Action moveToShoot_1 = drive.actionBuilder(beginPose)
-                .strafeTo(new Vector2d(12, -60))
-                .turn(Math.toRadians(-23))
+                .splineTo(new Vector2d(12, 12), Math.toRadians(0))
+                .turn(Math.toRadians(-45))
                 .build();
+        Actions.runBlocking(moveToShoot_1);
+        shooter.shoot(shotgun, shootDurationMs, 0, false);
 
-        //Follow the path
-        Actions.runBlocking(new SequentialAction(moveToShoot_1));
-
-        shooter.shoot(sniper, shootDurationMs, 0, false);
-
-        Action collectArtifacts_1 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(new Vector2d(33, -36), Math.toRadians(0))
+        //Move to collect more artifacts
+        Action moveToCollect_1 = drive.actionBuilder(drive.localizer.getPose())
+                .splineTo(new Vector2d(48, 12), Math.toRadians(0))
                 .build();
-        Actions.runBlocking(new SequentialAction(collectArtifacts_1));
-
-        Action collectArtifacts_2 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(new Vector2d(63, -36), Math.toRadians(0))
-                .build();
-
         intake.setPower(0.8);
         transfer.setPower(0.3);
-        Actions.runBlocking(new SequentialAction(collectArtifacts_2));
+        Actions.runBlocking(moveToCollect_1);
         intake.setPower(0);
         transfer.setPower(0);
-
+        //Move to shoot again
+        shooterMotor.setVelocity(shotgun);
         Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeTo(new Vector2d(12, -60))
-                .turn(Math.toRadians(-20))
+                .splineTo(new Vector2d(12, 12), Math.toRadians(0))
+                .turn(Math.toRadians(-45))
                 .build();
-
-        shooterMotor.setVelocity(sniper);
-        Actions.runBlocking(new SequentialAction(moveToShoot_2));
-        shooter.shoot(sniper, shootDurationMs, 0, false);
-
-        Action collectArtifacts_3 = drive.actionBuilder(drive.localizer.getPose())
+        Actions.runBlocking(moveToShoot_2);
+        shooter.shoot(shotgun, shootDurationMs, 0, false);
+        //Move to collect more artifacts
+        Action moveToCollect_2 = drive.actionBuilder(drive.localizer.getPose())
                 .splineTo(new Vector2d(33, -12), Math.toRadians(0))
                 .build();
-        Actions.runBlocking(new SequentialAction(collectArtifacts_3));
+        Actions.runBlocking(moveToCollect_2);
 
-        Action collectArtifacts_4 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(new Vector2d(63, -12), Math.toRadians(0))
+        Action moveToCollect_3 = drive.actionBuilder(drive.localizer.getPose())
+                .splineTo(new Vector2d(60, -12), Math.toRadians(0))
                 .build();
         intake.setPower(0.8);
         transfer.setPower(0.3);
-        Actions.runBlocking(new SequentialAction(collectArtifacts_4));
+        Actions.runBlocking(moveToCollect_3);
         intake.setPower(0);
         transfer.setPower(0);
-
-        //Also hit the lever
+        //Move to shoot last time
+        shooterMotor.setVelocity(shotgun);
         Action moveToShoot_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeTo(new Vector2d(48, -12))
-                .turnTo(Math.toRadians(90))
-                .strafeTo(new Vector2d(58, 0))
-                .strafeToSplineHeading(new Vector2d(12, -60), Math.toRadians(-22))
+                .splineTo(new Vector2d(12, 12), Math.toRadians(0))
+                .turn(Math.toRadians(-45))
                 .build();
-        shooterMotor.setVelocity(sniper);
-        Actions.runBlocking(new SequentialAction(moveToShoot_3));
-
-        shooter.shoot(sniper, shootDurationMs, 0, false);
-
+        Actions.runBlocking(moveToShoot_3);
+        shooter.shoot(shotgun, shootDurationMs, 0, false);
         //Move out of zone
         Action moveOutOfZone = drive.actionBuilder(drive.localizer.getPose())
-                .strafeTo(new Vector2d(12, -36))
+                .strafeTo(new Vector2d(36, 12))
                 .build();
         Actions.runBlocking(new SequentialAction(moveOutOfZone));
     }
