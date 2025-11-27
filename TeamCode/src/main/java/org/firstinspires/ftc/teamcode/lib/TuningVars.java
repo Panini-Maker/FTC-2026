@@ -15,4 +15,8 @@ public class TuningVars {
     public static int cameraResolutionHeight = 800;
     public static int redTagID = 24;
     public static int blueTagID = 20;
+    //Mirror variables for blue side autonomous
+    public static int mirrorXCoordinate = -1; //Flip X coordinates
+    //Y coordinates remain the same
+    public static int heading = 180; // in degrees
 }
