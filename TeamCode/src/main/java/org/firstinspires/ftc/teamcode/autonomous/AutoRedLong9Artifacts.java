@@ -1,13 +1,9 @@
 package org.firstinspires.ftc.teamcode.autonomous;
 
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootDurationMs;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.Red;
 
-import com.acmerobotics.roadrunner.Action;
 import com.acmerobotics.roadrunner.Pose2d;
-import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.Vector2d;
-import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -46,75 +42,7 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
         );
 
         waitForStart();
-        //Create starting pose
-        //Long Autonomous
-        //Shoot first 3 artifacts
-        shooterMotor.setVelocity(sniper);
-        //Creating autonomous path
-        Action moveToShoot_1 = drive.actionBuilder(beginPose)
-                .strafeTo(new Vector2d(12, -60))
-                .turn(Math.toRadians(-23))
-                .build();
-
-        //Follow the path
-        Actions.runBlocking(new SequentialAction(moveToShoot_1));
-
-        shooter.shoot(sniper, shootDurationMs, 0, false);
-
-        Action collectArtifacts_1 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(new Vector2d(33, -36), Math.toRadians(0))
-                .build();
-        Actions.runBlocking(new SequentialAction(collectArtifacts_1));
-
-        Action collectArtifacts_2 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(new Vector2d(63, -36), Math.toRadians(0))
-                .build();
-
-        intake.setPower(0.8);
-        transfer.setPower(0.3);
-        Actions.runBlocking(new SequentialAction(collectArtifacts_2));
-        intake.setPower(0);
-        transfer.setPower(0);
-
-        Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeTo(new Vector2d(12, -60))
-                .turn(Math.toRadians(-20))
-                .build();
-
-        shooterMotor.setVelocity(sniper);
-        Actions.runBlocking(new SequentialAction(moveToShoot_2));
-        shooter.shoot(sniper, shootDurationMs, 0, false);
-
-        Action collectArtifacts_3 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(new Vector2d(33, -12), Math.toRadians(0))
-                .build();
-        Actions.runBlocking(new SequentialAction(collectArtifacts_3));
-
-        Action collectArtifacts_4 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(new Vector2d(63, -12), Math.toRadians(0))
-                .build();
-        intake.setPower(0.8);
-        transfer.setPower(0.3);
-        Actions.runBlocking(new SequentialAction(collectArtifacts_4));
-        intake.setPower(0);
-        transfer.setPower(0);
-
-        //Also hit the lever
-        Action moveToShoot_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeTo(new Vector2d(48, -12))
-                .turnTo(Math.toRadians(90))
-                .strafeTo(new Vector2d(58, 0))
-                .strafeToSplineHeading(new Vector2d(12, -60), Math.toRadians(-22))
-                .build();
-        shooterMotor.setVelocity(sniper);
-        Actions.runBlocking(new SequentialAction(moveToShoot_3));
-
-        shooter.shoot(sniper, shootDurationMs, 0, false);
-
-        //Move out of zone
-        Action moveOutOfZone = drive.actionBuilder(drive.localizer.getPose())
-                .strafeTo(new Vector2d(12, -36))
-                .build();
-        Actions.runBlocking(new SequentialAction(moveOutOfZone));
+        org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
+        auto.AutoLong9Artifacts(Red, drive, shooterMotor, intake, transfer, shooter, beginPose);
     }
 }

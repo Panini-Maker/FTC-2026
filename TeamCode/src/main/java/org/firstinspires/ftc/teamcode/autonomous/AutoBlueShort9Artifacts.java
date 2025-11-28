@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.autonomous;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.Blue;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.Red;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.mirrorXCoordinate;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootDurationMs;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 
@@ -25,12 +27,12 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
  * 11/18: Back right wheel wheel stopped working, fixed now
  */
 @Autonomous
-public class AutoRedShort9Artifacts extends LinearOpMode {
+public class AutoBlueShort9Artifacts extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
         //Create starting pose
-        Pose2d beginPose = new Pose2d(new Vector2d(39, 65.5), Math.toRadians(0));
+        Pose2d beginPose = new Pose2d(new Vector2d(mirrorXCoordinate * 39, 65.5), Math.toRadians(0));
 
         //Ineffective
         double drivePowerMag = 6.0; // the bigger the slower
@@ -54,6 +56,6 @@ public class AutoRedShort9Artifacts extends LinearOpMode {
 
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
-        auto.AutoShort9Artifacts(Red, drive, shooterMotor, intake, transfer, shooter, beginPose);
+        auto.AutoShort9Artifacts(Blue, drive, shooterMotor, intake, transfer, shooter, beginPose);
     }
 }
