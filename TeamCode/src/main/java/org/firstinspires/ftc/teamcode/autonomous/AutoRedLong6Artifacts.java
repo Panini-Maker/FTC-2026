@@ -23,11 +23,12 @@ public class AutoRedLong6Artifacts extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+        double drivePowerMag = 3.0; // the bigger the slower
         //Create starting pose
         Pose2d beginPose = new Pose2d(new Vector2d(7, -65.5), Math.toRadians(0));
 
         //Create RR drive object
-        MecanumDrive drive = new MecanumDrive(hardwareMap, beginPose);
+        MecanumDrive drive = new MecanumDrive(hardwareMap, beginPose, drivePowerMag);
         AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
         tagProcessor.setDecimation(0.5f); // Lower decimation for lighting conditions
 

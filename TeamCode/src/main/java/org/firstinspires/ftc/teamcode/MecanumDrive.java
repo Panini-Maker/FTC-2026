@@ -63,7 +63,7 @@ public final class MecanumDrive {
                 RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
 
         // drive model parameters
-        public double inPerTick = (double) 100 / 50943; // Start: 19008, End: 19496 --> 488 traveled 10 inches 10/144 start: 19065,end: 19237 --> 172
+        public double inPerTick = (double) 100 / 50943;
         //public double lateralInPerTick = inPerTick;
         public double lateralInPerTick = 0.0015507033560583454;
         public double trackWidthTicks = 5109.74154820496;
@@ -93,6 +93,7 @@ public final class MecanumDrive {
         public double headingVelGain = 0.0; // shared with turn
     }
 
+    public final double drivePowerMag;
     public static Params PARAMS = new Params();
 
     public final MecanumKinematics kinematics = new MecanumKinematics(
@@ -219,6 +220,11 @@ public final class MecanumDrive {
     }
 
     public MecanumDrive(HardwareMap hardwareMap, Pose2d pose) {
+        this(hardwareMap, pose, 1.0);
+    }
+
+    public MecanumDrive(HardwareMap hardwareMap, Pose2d pose, double drivePowerMag) {
+        this.drivePowerMag = drivePowerMag;
         LynxFirmware.throwIfModulesAreOutdated(hardwareMap);
 
         for (LynxModule module : hardwareMap.getAll(LynxModule.class)) {
@@ -259,7 +265,7 @@ public final class MecanumDrive {
         MecanumKinematics.WheelVelocities<Time> wheelVels = new MecanumKinematics(1).inverse(
                 PoseVelocity2dDual.constant(powers, 1));
 
-        double maxPowerMag = 3;// Was 1
+        double maxPowerMag = this.drivePowerMag;// Was 3
         for (DualNum<Time> power : wheelVels.all()) {
             maxPowerMag = Math.max(maxPowerMag, power.value());
         }
