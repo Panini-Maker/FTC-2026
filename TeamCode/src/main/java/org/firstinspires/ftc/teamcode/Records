@@ -36,3 +36,15 @@ Software Records:
 - Resumed testing Short Autonomous code for driver practice on Sunday (11/30/2025).
 - Full field assembly at Sasha's house for blue autonomous and driver practice.
 - Need to make short autonomous code for 6 artifacts and attempt 12 if we have time.
+- Refactored autonomous code to a separate class for better organization.
+- Improved readability and maintainability of autonomous code.
+- New functions to make autonomous code cleaner and easier to understand.
+- New variables for commonly used positions in autonomous.
+- Hardware fixing robot issues.
+- Wooden plates are cracked and need replacement.
+- Replaced small cracked wooden plates with 3d printed parts.
+- Wood plates to be replaced by aluminum plates in the future for durability.
+- Complaint from Minh: "Huy did not name the wires and wire organization is bad."
+- Plan to organize wires and label them properly.
+- Robot drive train taken apart for maintenance and fixing issues.
+- Complaint from Minh: "The robot is very slow, it runs on 200-220 rpm. It should run on 400 rpm."
