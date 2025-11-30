@@ -1,8 +1,11 @@
 package org.firstinspires.ftc.teamcode.lib;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.artifactHeadingBlue;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.artifactHeadingRed;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.beginCollectingArtifacts1;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.beginCollectingArtifacts2;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.beginCollectingArtifacts3;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.blue;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.endCollectingArtifacts1;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.endCollectingArtifacts2;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.endCollectingArtifacts3;
@@ -13,6 +16,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.mirrorXCoordinate;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.parkPositionLong;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.parkPositionShort;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.pressLever;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.red;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootDurationMs;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingPositionShort;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
@@ -33,7 +37,7 @@ public class Autonomous {
     public Vector2d mirrorCoordinates(Vector2d position, String color) {
         int xMultiplier = 1;
 
-        if(color.toLowerCase().equals("blue")) {
+        if(color.toLowerCase().equals(blue)) {
             xMultiplier = mirrorXCoordinate;
         }
 
@@ -47,9 +51,11 @@ public class Autonomous {
                                    ShootingAction shooter,
                                    Pose2d beginPose) throws InterruptedException {
         int headingMultiplier = 1;
+        int artifactOrientation = artifactHeadingRed;
 
-        if(color.toLowerCase().equals("blue")) {
+        if(color.equalsIgnoreCase("blue")) {
             headingMultiplier = mirrorHeading;
+            artifactOrientation = artifactHeadingBlue;
         }
 
         //Long Autonomous
@@ -58,7 +64,7 @@ public class Autonomous {
         //Creating autonomous path
         Action moveToShoot_1 = drive.actionBuilder(beginPose)
                 .strafeTo(mirrorCoordinates(shootingPositionLong, color))
-                .turn(Math.toRadians(headingMultiplier * -23))
+                .turnTo(Math.toRadians(headingMultiplier * -25))
                 .build();
 
         //Follow the path
@@ -67,12 +73,12 @@ public class Autonomous {
         shooter.shoot(sniper, shootDurationMs, 0, false);
 
         Action collectArtifacts_1 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(mirrorCoordinates(beginCollectingArtifacts1, color), Math.toRadians(0))
+                .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts1, color), Math.toRadians(artifactOrientation))
                 .build();
         Actions.runBlocking(new SequentialAction(collectArtifacts_1));
 
         Action collectArtifacts_2 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(mirrorCoordinates(endCollectingArtifacts1, color), Math.toRadians(0))
+                .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts1, color))
                 .build();
 
         intake.setPower(0.8);
@@ -83,7 +89,7 @@ public class Autonomous {
 
         Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeTo(mirrorCoordinates(shootingPositionLong, color))
-                .turn(Math.toRadians(headingMultiplier * -20))
+                .turnTo(Math.toRadians(headingMultiplier * -25))
                 .build();
 
         shooterMotor.setVelocity(sniper);
@@ -105,9 +111,11 @@ public class Autonomous {
                                    ShootingAction shooter,
                                    Pose2d beginPose) throws InterruptedException {
         int headingMultiplier = 1;
+        int artifactOrientation = artifactHeadingRed;
 
-        if(color.toLowerCase().equals("blue")) {
+        if(color.equalsIgnoreCase(blue)) {
             headingMultiplier = mirrorHeading;
+            artifactOrientation = artifactHeadingBlue;
         }
         //Create starting pose
         //Long Autonomous
@@ -116,7 +124,7 @@ public class Autonomous {
         //Creating autonomous path
         Action moveToShoot_1 = drive.actionBuilder(beginPose)
                 .strafeTo(mirrorCoordinates(shootingPositionLong, color))
-                .turn(Math.toRadians(headingMultiplier * -23))
+                .turnTo(Math.toRadians(headingMultiplier * -25))
                 .build();
 
         //Follow the path
@@ -125,23 +133,24 @@ public class Autonomous {
         shooter.shoot(sniper, shootDurationMs, 0, false);
 
         Action collectArtifacts_1 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(mirrorCoordinates(beginCollectingArtifacts1, color), Math.toRadians(0))
+                .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts1, color), Math.toRadians(artifactOrientation))
                 .build();
         Actions.runBlocking(new SequentialAction(collectArtifacts_1));
 
         Action collectArtifacts_2 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(mirrorCoordinates(endCollectingArtifacts1, color), Math.toRadians(0))
+                .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts1, color))
                 .build();
 
         intake.setPower(0.8);
         transfer.setPower(0.3);
         Actions.runBlocking(new SequentialAction(collectArtifacts_2));
-        intake.setPower(0);
+        //intake.setPower(0);
         transfer.setPower(0);
+
 
         Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeTo(mirrorCoordinates(shootingPositionLong, color))
-                .turn(Math.toRadians(mirrorHeading * -20))
+                .turnTo(Math.toRadians(headingMultiplier * -25))
                 .build();
 
         shooterMotor.setVelocity(sniper);
@@ -149,25 +158,22 @@ public class Autonomous {
         shooter.shoot(sniper, shootDurationMs, 0, false);
 
         Action collectArtifacts_3 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(mirrorCoordinates(beginCollectingArtifacts2, color), Math.toRadians(0))
+                .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts2, color), Math.toRadians(artifactOrientation))
                 .build();
         Actions.runBlocking(new SequentialAction(collectArtifacts_3));
 
         Action collectArtifacts_4 = drive.actionBuilder(drive.localizer.getPose())
-                .splineTo(mirrorCoordinates(endCollectingArtifacts2, color), Math.toRadians(0))
+                .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts2, color))
                 .build();
         intake.setPower(0.8);
         transfer.setPower(0.3);
         Actions.runBlocking(new SequentialAction(collectArtifacts_4));
-        intake.setPower(0);
+        //intake.setPower(0);
         transfer.setPower(0);
 
         //Also hit the lever
         Action moveToShoot_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeTo(mirrorCoordinates(intermediatePressingLever, color))
-                .turnTo(Math.toRadians(mirrorHeading * 90))
-                .strafeTo(mirrorCoordinates(pressLever, color))
-                .strafeToSplineHeading(mirrorCoordinates(shootingPositionLong, color), Math.toRadians(mirrorHeading*-22))
+                .strafeToLinearHeading(mirrorCoordinates(shootingPositionLong, color), Math.toRadians(headingMultiplier * -25))
                 .build();
         shooterMotor.setVelocity(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_3));
@@ -176,7 +182,7 @@ public class Autonomous {
 
         //Move out of zone
         Action moveOutOfZone = drive.actionBuilder(drive.localizer.getPose())
-                .strafeTo(mirrorCoordinates(parkPositionLong, color))
+                .strafeToLinearHeading(mirrorCoordinates(pressLever, color), Math.toRadians(90))
                 .build();
         Actions.runBlocking(new SequentialAction(moveOutOfZone));
     }
@@ -189,9 +195,11 @@ public class Autonomous {
                                     ShootingAction shooter,
                                     Pose2d beginPose) throws InterruptedException {
         int headingMultiplier = 1;
+        int artifactOrientation = artifactHeadingRed;
 
-        if (color.toLowerCase().equals("blue")) {
+        if (color.equalsIgnoreCase(blue)) {
             headingMultiplier = mirrorHeading;
+            artifactOrientation = artifactHeadingBlue;
         }
 
         //Short Autonomous
@@ -205,13 +213,13 @@ public class Autonomous {
         shooter.shoot(shotgun, shootDurationMs, 0, false);
         //Move to collect more artifacts
         Action moveToCollect_1 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts3, color), Math.toRadians(0))
+                .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts3, color), Math.toRadians(artifactOrientation))
                 .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts3, color))
                 .build();
         intake.setPower(0.8);
         transfer.setPower(0.3);
         Actions.runBlocking(moveToCollect_1);
-        intake.setPower(0);
+        //intake.setPower(0);
         transfer.setPower(0);
         //Move to shoot again
         shooterMotor.setVelocity(shotgun);
@@ -222,7 +230,7 @@ public class Autonomous {
         shooter.shoot(shotgun, shootDurationMs, 0, false);
         //Move to collect more artifacts
         Action moveToCollect_2 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts2, color), Math.toRadians(0))
+                .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts2, color), Math.toRadians(artifactOrientation))
                 .build();
         Actions.runBlocking(moveToCollect_2);
 
@@ -232,7 +240,7 @@ public class Autonomous {
         intake.setPower(0.8);
         transfer.setPower(0.3);
         Actions.runBlocking(moveToCollect_3);
-        intake.setPower(0);
+        //intake.setPower(0);
         transfer.setPower(0);
         //Move to shoot last time
         shooterMotor.setVelocity(shotgun);

@@ -43,8 +43,26 @@ Software Records:
 - Hardware fixing robot issues.
 - Wooden plates are cracked and need replacement.
 - Replaced small cracked wooden plates with 3d printed parts.
+- M3 screw hole could not stand the pressure of an M4 screw.
+- Solution: drill a larger hole for M4 screws and replace cracked plate later.
 - Wood plates to be replaced by aluminum plates in the future for durability.
 - Complaint from Minh: "Huy did not name the wires and wire organization is bad."
 - Plan to organize wires and label them properly.
 - Robot drive train taken apart for maintenance and fixing issues.
 - Complaint from Minh: "The robot is very slow, it runs on 200-220 rpm. It should run on 400 rpm."
+- Long autonomous code is working well from blue alliance working.
+- New issue: Due to the shooter angle, the robot spends more time turning to collect artifacts.
+- Decided to disable the 6 artifact auto now because drivers can turn the 9 artifact auto off early.
+- Design team to make a turret for shooter to reduce turning time.
+- Removed classifier ramp resetting code from autonomous for now.
+- Software team (Minh, Sasha) overrides driver decision to reset classifier ramp after autonomous.
+- Reflection code fails, roadrunner unable to move to target position.
+- Solution: move to its own class and tune them separately.
+- Roadrunner still inaccurate, may need to retune it
+
+11/30/2025:
+- Driver practice at Sasha's house with full field assembly.
+- Fixed teleop aimbot code for better accuracy.
+- Autonomous code tested and working well.
+- NOTE: Since there is time left after autonomous program ends, code can collect 3 more artifacts.
+- EDIT: The above note can be implemented during December break.

@@ -81,18 +81,19 @@ public class CameraMovement {
         // Check if any AprilTags are detected
         if (tagProcessor.getDetections().isEmpty()) {
             // If no tags are detected, keep turning slowly
-            drive.drive(0, 0, 0.15, 100);
+            drive.drive(0, 0, 0.3, 100);
         } else {
             // Process detected tags
-            for (AprilTagDetection tag : tagProcessor.getDetections()) {
+            sleep(250); // Small delay to ensure fresh detections
+            for (AprilTagDetection tag : tagProcessor.getFreshDetections()) {
                 if (tag.id == tagID) {
                     // If the tag is found, check its bearing
-                    if (Math.abs(tag.ftcPose.bearing) > 2) { // Adjust tolerance as needed
+                    if (Math.abs(tag.ftcPose.bearing) > 5) { // Adjust tolerance as needed
                         // Turn towards the tag
                         //Determines the turning direction based on the sign of the bearing.
                         //Positive bearing means the tag is to the right, so the robot turns right (0.15),
                         // and negative bearing means the tag is to the left, so the robot turns left (-0.15).
-                        double turnPower = tag.ftcPose.bearing > 0 ? 0.3 : -0.3;
+                        double turnPower = tag.ftcPose.bearing > 0 ? 0.15 : -0.15;
                         drive.drive(0, 0, turnPower, 100);
                     } else {
                         // Stop turning when perpendicular
@@ -100,6 +101,7 @@ public class CameraMovement {
                         return true;
                     }
                 }
+                sleep(250);
             }
         }return false;
     }

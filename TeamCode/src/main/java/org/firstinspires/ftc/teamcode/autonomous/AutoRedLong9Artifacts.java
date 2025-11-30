@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.autonomous;
 
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.Red;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.red;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
@@ -22,7 +22,7 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
         double drivePowerMag = 3.0; // the bigger the slower
 
         //Create starting pose
-        Pose2d beginPose = new Pose2d(new Vector2d(7, -65.5), Math.toRadians(0));
+        Pose2d beginPose = new Pose2d(new Vector2d(7, -64.5), Math.toRadians(0));
 
         //Create RR drive object
         MecanumDrive drive = new MecanumDrive(hardwareMap, beginPose, drivePowerMag);
@@ -43,6 +43,6 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
 
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
-        auto.AutoLong9Artifacts(Red, drive, shooterMotor, intake, transfer, shooter, beginPose);
+        auto.AutoLong9Artifacts(red, drive, shooterMotor, intake, transfer, shooter, beginPose);
     }
 }
