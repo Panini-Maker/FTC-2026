@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.blueTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.idealVoltage;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
@@ -20,6 +21,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.lib.CameraMovement;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.teamcode.lib.AprilTag;
 
@@ -59,7 +61,10 @@ public class TeleOpV1 extends LinearOpMode {
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         boolean mode = true;
+        boolean targetIsRed = true;
         double shooterPower;
+        int target = redTagID;
+        boolean isAligned = false;
 
         // Recalibrate Odometry
         odo.resetPosAndIMU();
@@ -87,6 +92,18 @@ public class TeleOpV1 extends LinearOpMode {
 
             }
 
+            if (gamepad2.aWasPressed()) {
+                targetIsRed = !targetIsRed;
+            }
+
+            if(targetIsRed) {
+                target = redTagID;
+                telemetry.addData("Target Color:", "Red");
+            } else {
+                target = blueTagID;
+                telemetry.addData("Target Color:", "Blue");
+            }
+
             if (mode) {
                 shooterPower = shotgun;
                 telemetry.addData("Shooter Mode:", "Shotgun");
@@ -94,14 +111,14 @@ public class TeleOpV1 extends LinearOpMode {
                 shooterPower = sniper;
                 telemetry.addData("Shooter Mode", "Sniper");
             }
-            boolean isAligned = false;
             //boolean wasRightTriggerPressed = false;
 
             if (gamepad2.right_trigger > 0) {
                 leftShooter.setVelocity(shooterPower);
+
                 if (!isAligned) {
                     // Trigger just pressed - start shooting once
-                    isAligned = camera.turnToAprilTagNoOdo(redTagID);
+                    isAligned = camera.turnToAprilTagNoOdo(target);
                 }
 
                 // Keep aligning while trigger is held
