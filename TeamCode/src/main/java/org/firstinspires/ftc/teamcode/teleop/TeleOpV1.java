@@ -1,16 +1,29 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.blueTagID;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.idealVoltage;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
+
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
+import org.firstinspires.ftc.teamcode.lib.CameraMovement;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.teamcode.lib.AprilTag;
 
 import java.util.Locale;
 
@@ -19,6 +32,7 @@ import java.util.Locale;
 public class TeleOpV1 extends LinearOpMode {
 
     GoBildaPinpointDriver odo;
+    CameraMovement camera;
 
     @Override
 
@@ -37,28 +51,31 @@ public class TeleOpV1 extends LinearOpMode {
         leftShooter.setDirection(DcMotorSimple.Direction.REVERSE);
         leftShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        //DcMotorEx rightShooter = hardwareMap.get(DcMotorEx.class, "rightShooter");
-        //rightShooter.setDirection(DcMotor.Direction.REVERSE);
 
         // Configure odometry
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        odo.setOffsets(75, -146, DistanceUnit.MM); // Set offsets
+        odo.setOffsets(odoXOffset, odoYOffset, DistanceUnit.MM); // Set offsets
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
-        double targetVelocity = 2100; // 4500 RPM in ticks/sec
-        double kP = 0.001, kI = 0.0001, kD = 0.0001;
-        double leftIntegral = 0, rightIntegral = 0;
-        double leftLastError = 0, rightLastError = 0;
+        VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         boolean mode = true;
-        double shooterPower = 2000;
+        boolean targetIsRed = true;
+        double shooterPower;
+        int target = redTagID;
+        boolean isAligned = false;
 
         // Recalibrate Odometry
         odo.resetPosAndIMU();
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
+        AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
+        tagProcessor.setDecimation(0.5f); // Adjust for lighting conditions
+        CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, odo, intake, transfer, voltageSensor, telemetry, tagProcessor);
+
+
 
         waitForStart();
         resetRuntime();
@@ -70,50 +87,53 @@ public class TeleOpV1 extends LinearOpMode {
 
             odo.update();
 
-            /// Shooter
-            double leftCurrentVelocity = leftShooter.getVelocity();
-            //double rightCurrentVelocity = rightShooter.getVelocity();
-
-            double leftError = targetVelocity - leftCurrentVelocity;
-            //double rightError = targetVelocity - rightCurrentVelocity;
-
-            leftIntegral += leftError * timer.seconds();
-            //rightIntegral += rightError * timer.seconds();
-
-            double leftDerivative = (leftError - leftLastError) / timer.seconds();
-            //double rightDerivative = (rightError - rightLastError) / timer.seconds();
-
-            double leftOutput = kP * leftError + kI * leftIntegral + kD * leftDerivative;
-            //double rightOutput = kP * rightError + kI * rightIntegral + kD * rightDerivative;
-
-            double current_time = getRuntime();
-
             if (gamepad2.yWasPressed()) {
                 mode = !mode;
 
             }
 
-            if (mode) {
-                shooterPower = 2000;
-                telemetry.addData("Shooter Mode:", "Shotgun");
-            } else {
-                shooterPower = 2250;
-                telemetry.addData("Shooter Mode", "Sniper");
+            if (gamepad2.aWasPressed()) {
+                targetIsRed = !targetIsRed;
             }
 
+            if(targetIsRed) {
+                target = redTagID;
+                telemetry.addData("Target Color:", "Red");
+            } else {
+                target = blueTagID;
+                telemetry.addData("Target Color:", "Blue");
+            }
+
+            if (mode) {
+                shooterPower = shotgun;
+                telemetry.addData("Shooter Mode:", "Shotgun");
+            } else {
+                shooterPower = sniper;
+                telemetry.addData("Shooter Mode", "Sniper");
+            }
+            //boolean wasRightTriggerPressed = false;
+
             if (gamepad2.right_trigger > 0) {
-                leftShooter.setVelocity(shooterPower); // add leftOutput once tuned
-                //rightShooter.setPower(rightOutput);
+                leftShooter.setVelocity(shooterPower);
+
+                if (!isAligned) {
+                    // Trigger just pressed - start shooting once
+                    isAligned = camera.turnToAprilTagNoOdo(target);
+                }
+
+                // Keep aligning while trigger is held
+
+
             } else if (gamepad2.left_trigger > 0) {
-                leftShooter.setPower(-0.3); //for intaking human player balls
+                leftShooter.setPower(-0.3); //for intaking from human players
+                //wasRightTriggerPressed = false;
 
             } else {
                 leftShooter.setPower(0);
-                //rightShooter.setPower(0);
+                isAligned = false;
+                //wasRightTriggerPressed = false;
             }
 
-            leftLastError = leftError;
-            //rightLastError = rightError;
             timer.reset();
 
             double power = 0.8; //Used teo limit speed for testing/safety
@@ -121,29 +141,14 @@ public class TeleOpV1 extends LinearOpMode {
             double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
             double rx = gamepad1.right_stick_x; // Turning
 
-            // Reset odometry during match if necessary
-            // Start button on Xbox-style controller, hard to hit on accident
-            if (gamepad1.options) {
-                odo.resetPosAndIMU();
-            }
-
-            // Get heading
-            double botHeading = odo.getPosition().getHeading(AngleUnit.RADIANS);
-
-            // Rotate movement direction
-            double rotX = x * Math.cos(-botHeading) - y * Math.sin(-botHeading);
-            double rotY = x * Math.sin(-botHeading) + y * Math.cos(-botHeading);
-
-            rotX = rotX * 1.1;
-
             // Denominator is the largest motor power (absolute value) or 1
             // This ensures all the powers maintain the same ratio,
             // but only if at least one is out of the range [-1, 1]
-            double denominator = Math.max(Math.abs(rotY) + Math.abs(rotX) + Math.abs(rx), 1);
-            double frontLeftPower = (rotY + rotX + rx) * power / denominator;
-            double backLeftPower = (rotY - rotX + rx) * power / denominator;
-            double frontRightPower = (rotY - rotX - rx) * power / denominator;
-            double backRightPower = (rotY + rotX - rx) * power / denominator;
+
+            double frontLeftPower = (y + x + rx) / Math.max(Math.abs(y + x + rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
+            double frontRightPower = (y - x - rx) / Math.max(Math.abs(y - x - rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
+            double backLeftPower = (y - x + rx) / Math.max(Math.abs(y - x + rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
+            double backRightPower = (y + x - rx) / Math.max(Math.abs(y + x - rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
 
             frontLeft.setPower(frontLeftPower);
             frontRight.setPower(frontRightPower);
@@ -157,9 +162,9 @@ public class TeleOpV1 extends LinearOpMode {
             // right button is the outake in case we intake too many artifacts
 
             if (gamepad2.right_bumper) {
-                intake.setPower(0.8);
+                intake.setPower(1);
             } else if (gamepad2.left_bumper) {
-                intake.setPower(-0.8);
+                intake.setPower(-1);
             } else {
                 intake.setPower(0);
             }
@@ -176,12 +181,6 @@ public class TeleOpV1 extends LinearOpMode {
                 transfer.setPower(0); // Adjust position as needed
             }
 
-            telemetry.addData("Left Target Velocity", targetVelocity);
-            telemetry.addData("Left Current Velocity", leftCurrentVelocity);
-            telemetry.addData("Left Error", leftError);
-            telemetry.addData("Right Target Velocity", targetVelocity);
-            //telemetry.addData("Right Current Velocity", rightCurrentVelocity);
-            //telemetry.addData("Right Error", rightError);
 
             Pose2D pos = odo.getPosition();
             String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));

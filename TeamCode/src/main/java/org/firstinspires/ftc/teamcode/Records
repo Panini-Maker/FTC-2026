@@ -1,0 +1,68 @@
+Software Records:
+
+11/25/2025:
+- Old DriveActions code is inconsistent.
+- Decided to switch to Roadrunner for better accuracy.
+- Began tuning roadrunner for autonomous.
+- Forward push test inconsistent due to a wrong motor naming.
+
+11/26/2025:
+- Finished tuning roadrunner.
+- Long Autonomous code testing and completion.
+- Roadrunner is very consistent.
+- Created 6 artifact and 9 artifact long autonomous code to adapt to different scenarios.
+- Quan wanted the autonomous to be empty the classifier ramp.
+- Started working on Short Autonomous code.
+
+11/27/2025:
+- Short Autonomous code testing.
+- strafeToLinearHeading() function is inaccurate.
+- Tried other functions, but still inaccurate.
+- Decided to use strafeTo() function instead.
+- Roadrunner unable to move to position (24, 24)
+- Back right wheel is unable to move.
+- Roadrunner tried to move to coordinates (24, 24) but failed.
+- Issue: Pulley came loose on back right wheel.
+- Chat with Minh about fixing the pulley issue.
+- Discussed with Minh about resetting the classifier ramp after autonomous.
+- Realized that points for pattern are only awarded at the end of autonomous.
+- Decided to focus on fixing the back right wheel issue first.
+- Planned to have a team meeting on Sunday to discuss classifier resetting in autonomous.
+
+11/28/2025:
+- Created "Records" document to log software changes and issues.
+- Documenting all changes and issues for future reference.
+- Fixed back right wheel issue.
+- Resumed testing Short Autonomous code for driver practice on Sunday (11/30/2025).
+- Full field assembly at Sasha's house for blue autonomous and driver practice.
+- Need to make short autonomous code for 6 artifacts and attempt 12 if we have time.
+- Refactored autonomous code to a separate class for better organization.
+- Improved readability and maintainability of autonomous code.
+- New functions to make autonomous code cleaner and easier to understand.
+- New variables for commonly used positions in autonomous.
+- Hardware fixing robot issues.
+- Wooden plates are cracked and need replacement.
+- Replaced small cracked wooden plates with 3d printed parts.
+- M3 screw hole could not stand the pressure of an M4 screw.
+- Solution: drill a larger hole for M4 screws and replace cracked plate later.
+- Wood plates to be replaced by aluminum plates in the future for durability.
+- Complaint from Minh: "Huy did not name the wires and wire organization is bad."
+- Plan to organize wires and label them properly.
+- Robot drive train taken apart for maintenance and fixing issues.
+- Complaint from Minh: "The robot is very slow, it runs on 200-220 rpm. It should run on 400 rpm."
+- Long autonomous code is working well from blue alliance working.
+- New issue: Due to the shooter angle, the robot spends more time turning to collect artifacts.
+- Decided to disable the 6 artifact auto now because drivers can turn the 9 artifact auto off early.
+- Design team to make a turret for shooter to reduce turning time.
+- Removed classifier ramp resetting code from autonomous for now.
+- Software team (Minh, Sasha) overrides driver decision to reset classifier ramp after autonomous.
+- Reflection code fails, roadrunner unable to move to target position.
+- Solution: move to its own class and tune them separately.
+- Roadrunner still inaccurate, may need to retune it
+
+11/30/2025:
+- Driver practice at Sasha's house with full field assembly.
+- Fixed teleop aimbot code for better accuracy.
+- Autonomous code tested and working well.
+- NOTE: Since there is time left after autonomous program ends, code can collect 3 more artifacts.
+- EDIT: The above note can be implemented during December break.
