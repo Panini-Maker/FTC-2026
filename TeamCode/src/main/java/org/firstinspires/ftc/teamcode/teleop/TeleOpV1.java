@@ -21,7 +21,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.lib.CameraMovement;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.firstinspires.ftc.teamcode.lib.AprilTag;
 
@@ -64,7 +63,7 @@ public class TeleOpV1 extends LinearOpMode {
         boolean targetIsRed = true;
         double shooterPower;
         int target = redTagID;
-        boolean isAligned = false;
+        boolean isAligned = true;
 
         // Recalibrate Odometry
         odo.resetPosAndIMU();
@@ -96,6 +95,20 @@ public class TeleOpV1 extends LinearOpMode {
                 targetIsRed = !targetIsRed;
             }
 
+            if(gamepad1.right_bumper) {
+                if(timer.milliseconds() > 200) {
+                    timer.reset();
+                    isAligned = !isAligned;
+                }
+            }
+
+
+            if (!isAligned) {
+
+                // Trigger just pressed - start shooting once
+                isAligned = camera.turnToAprilTagNoOdo(target);
+            }
+
             if(targetIsRed) {
                 target = redTagID;
                 telemetry.addData("Target Color:", "Red");
@@ -116,11 +129,6 @@ public class TeleOpV1 extends LinearOpMode {
             if (gamepad2.right_trigger > 0) {
                 leftShooter.setVelocity(shooterPower);
 
-                if (!isAligned) {
-                    // Trigger just pressed - start shooting once
-                    isAligned = camera.turnToAprilTagNoOdo(target);
-                }
-
                 // Keep aligning while trigger is held
 
 
@@ -130,11 +138,8 @@ public class TeleOpV1 extends LinearOpMode {
 
             } else {
                 leftShooter.setPower(0);
-                isAligned = false;
                 //wasRightTriggerPressed = false;
             }
-
-            timer.reset();
 
             double power = 0.8; //Used teo limit speed for testing/safety
             double y = -gamepad1.left_stick_y; // Forward/Backward
@@ -162,9 +167,9 @@ public class TeleOpV1 extends LinearOpMode {
             // right button is the outake in case we intake too many artifacts
 
             if (gamepad2.right_bumper) {
-                intake.setPower(1);
+                intake.setPower(0.8);
             } else if (gamepad2.left_bumper) {
-                intake.setPower(-1);
+                intake.setPower(-0.8);
             } else {
                 intake.setPower(0);
             }
@@ -185,9 +190,8 @@ public class TeleOpV1 extends LinearOpMode {
             Pose2D pos = odo.getPosition();
             String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
             telemetry.addData("Position", data);
+            telemetry.addData("Is Aligned:", isAligned);
             telemetry.update();
-
-
         }
     }
 }

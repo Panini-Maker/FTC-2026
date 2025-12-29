@@ -91,7 +91,7 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
         //Move to shoot second 3 artifacts
         shooterMotor.setVelocity(shotgun);
         Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToLinearHeading(new Vector2d(-24, -60), Math.toRadians(24))
+                .strafeToLinearHeading(new Vector2d(-24, -60), Math.toRadians(22))
                 .build();
         intake.setPower(0.8);
         Actions.runBlocking(new SequentialAction(moveToShoot_2));
@@ -113,7 +113,7 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
         //Move to shoot last 3 artifacts
         shooterMotor.setVelocity(sniper);
         Action moveToShoot_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToLinearHeading(new Vector2d(-24, -60), Math.toRadians(23))
+                .strafeToLinearHeading(new Vector2d(-24, -60), Math.toRadians(21))
                 .build();
         intake.setPower(0.8);
         Actions.runBlocking(new SequentialAction(moveToShoot_3));
@@ -122,6 +122,7 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
         Action parkRobot = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(new Vector2d(-40, 0), Math.toRadians(90))
                 .build();
+        intake.setPower(0.8);
         Actions.runBlocking(new SequentialAction(parkRobot));
     }
 }

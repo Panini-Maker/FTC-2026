@@ -6,11 +6,12 @@ public class TuningVars {
     public static int odoXOffset = 75; // in mm
     public static int odoYOffset = -146; // in mm
     public static int shootingSlowDownSpeed = 200;
-    public static int shotgun = 1900; //Was 2000
+    public static int shotgun = 1950; //Was 2000
     public static int sniper = 2250;
     public static int shootDurationMs = 2400; // in milliseconds
     public static int rampUpTime = 3000; // in milliseconds
     public static int idealVoltage = 12; // in volts
+    public static double searchTurnSpeed = 0.3;
 
     //Camera Tuning Vars
     public static int cameraResolutionWidth = 1280;
@@ -26,7 +27,7 @@ public class TuningVars {
     public static String red = "red";
     public static String blue = "blue";
     public static Vector2d parkPositionLong = new Vector2d(36, -36);
-    public static Vector2d shootingPositionLong = new Vector2d(12, -60);
+    public static Vector2d shootingPositionLong = new Vector2d(14, -59);
     public static Vector2d beginCollectingArtifacts1 = new Vector2d(30, -36);
     public static Vector2d endCollectingArtifacts1 = new Vector2d(59, -36);
     public static Vector2d beginCollectingArtifacts2 = new Vector2d(33, -12);

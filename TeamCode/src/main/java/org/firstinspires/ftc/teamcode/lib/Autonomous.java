@@ -184,6 +184,7 @@ public class Autonomous {
         Action moveOutOfZone = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(mirrorCoordinates(pressLever, color), Math.toRadians(90))
                 .build();
+        intake.setPower(0.8);
         Actions.runBlocking(new SequentialAction(moveOutOfZone));
     }
 

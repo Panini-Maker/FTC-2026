@@ -66,3 +66,77 @@ Software Records:
 - Autonomous code tested and working well.
 - NOTE: Since there is time left after autonomous program ends, code can collect 3 more artifacts.
 - EDIT: The above note can be implemented during December break.
+- Aimbot still inaccurate, needs further tuning.
+- Decided to try using turn to heading function for better accuracy and camera to align with the target.
+- Also considered using roadrunner to move to shooting positions in teleop.
+- Sometimes, autonomous code fails to move properly.
+- Potential issue: code is started to fast and odometry doesn't have enough time to initialize.
+- After some testing, found that auto aim works fine, the robot just can't move so the camera can take a photo.
+- Noticed that for a specific shooting position, shotgun shoots too short and sniper shoots too far.
+- Auto aim could be improved by increasing speed depending on angle difference.
+- Also, auto aim should be toggled by a button, not a trigger.
+
+12/07/2025:
+- Team discussion on further robot development.
+- Option 1: Keep the current robot design and cut aluminium plates for structural components soon.
+    The new shooter design that hardware team have been working on will not fit the current robot,
+    so it can not be used for the current design and it is very likely that the shooter will not
+    be changed. We will have the robot design as is. The scores range is about 80-98 last time you
+    guys test at Sasha’s house without any other robots on the field, split about the same between
+    autonomous and teleop. Expect it is much harder to score in games with 4 robots present, but
+    teleop should be able to score more when drivers have more time to practice.
+
+- Option 2: Go with the new design (expect to have better shooter with ability to rotate
+    horizontally and change angle vertically, better intake to grab artifacts easier and faster),
+    hardware team will need more time to finish design and, build and test the new the design with
+    wood plates, finalize and order aluminium cutting at the latest by Dec 20th. It will be very tight
+    if we get in Jan competition and want to compete with aluminium build, but should be fine for Feb comp.
+
+- Sasha to get individual opinions
+
+12/08/2025:
+- Statement: "We should go with option 2"
+- Question: "State your view on the above statement (strongly agree, agree, slightly agree,
+    neither agree nor disagree, slightly disagree, disagree, strongly disagree). Please explain your
+    choice and be honest as this will go to records"
+
+Supporting Views:
+- Minh: "Strongly Agree. Because I'm always looking to new and better improvements I think we should
+    go above and beyond, because it's a learning opportunity and taking risks is key to success"
+
+- Huy: "Strongly Agree. A renewed design would be better for our team because a better robot would
+    give us a higher chance of making it to regionals, compared to our current design."
+
+- Daniel: "I strongly agree with the new design because of the intake."
+
+- Kori: "I agree because the new robot will allow for better future performance and will be better
+    in the long term. It also outweighs the short term cons and we will probably eventually change
+    our robot anyways"
+
+- Elsa: "Slightly agree, it seems like the better choice as the robot has a lot more advantages
+    such as more advanced shooter and easier to manage. Only concerns are tight schedule and
+    drivers (if there’s enough time for them to practice before the tournament)"
+
+- Quan: "Slightly agree. Current shooter sucks but option 2 takes a lot of time slightly as in
+    (neither agree nor disagree) + 0.1."
+
+Neutral or Undecided:
+- Sasha: "Neither Agree Nor Disagree. If we go with the old design, then the drive team can get a
+    month and a half to train. However, the old design is very awkward to shoot. Switching to the
+    new design would eliminate that, but it would also mean that if this goes to plan, the drive
+    and software teams get only one week to code and train with the aluminium robot."
+
+Opposing Views: None
+
+12/09/2025:
+- Fixing auto aim code to improve accuracy.
+- Plan for new robot design development:
+    - When wood prototype is done, start testing and tuning aim-assist code with new shooter.
+    - Do not retune roadrunner until aluminium parts arrive.
+    - Once aluminium parts arrive, start assembly immediately.
+    - After assembly, start driver practice as soon as possible.
+    - Tuning roadrunner for new robot design.
+
+12/22/2025:
+- TODO: Rename all occurrences of "leftShooter" to "shooterMotor" because there is only one shooter motor now.
+    - EDIT: Never mind, there are two shooter motors, left and right.

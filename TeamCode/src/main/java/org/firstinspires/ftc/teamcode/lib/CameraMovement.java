@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.lib;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.idealVoltage;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.searchTurnSpeed;
 
 import static java.lang.Thread.sleep;
 
@@ -58,12 +59,12 @@ public class CameraMovement {
     }
 
     public void turnToAprilTag(int tagID) throws InterruptedException {
-        while(tagProcessor.getDetections().isEmpty()) {
+        while (tagProcessor.getDetections().isEmpty()) {
             drive.turnToHeadingWithOdo(-60, 0.4, 10, 2000);
         }
 
-        for(AprilTagDetection tag : tagProcessor.getDetections()) {
-            if(tag.id == tagID) {
+        for (AprilTagDetection tag : tagProcessor.getDetections()) {
+            if (tag.id == tagID) {
                 //Currently using 70% of the angle to avoid overshooting
                 //Make a function that does not need odometry and only uses the camera
                 drive.turnToHeadingWithOdo(tag.ftcPose.bearing * 0.7, 0.3, 1, 6000);
@@ -76,35 +77,36 @@ public class CameraMovement {
             }
         }
     }
-    public boolean turnToAprilTagNoOdo(int tagID) throws InterruptedException {
 
-        // Check if any AprilTags are detected
+    public boolean turnToAprilTagNoOdo(int tagID) throws InterruptedException {
         if (tagProcessor.getDetections().isEmpty()) {
-            // If no tags are detected, keep turning slowly
-            drive.drive(0, 0, 0.3, 100);
+            while (tagProcessor.getDetections().isEmpty()) {
+                drive.drive(0, 0, searchTurnSpeed, 100);
+                sleep(250);
+            }
         } else {
             // Process detected tags
             sleep(250); // Small delay to ensure fresh detections
             for (AprilTagDetection tag : tagProcessor.getFreshDetections()) {
                 if (tag.id == tagID) {
                     // If the tag is found, check its bearing
-                    if (Math.abs(tag.ftcPose.bearing) > 5) { // Adjust tolerance as needed
+                    if (Math.abs(tag.ftcPose.bearing) > 2) { // Adjust tolerance as needed
                         // Turn towards the tag
                         //Determines the turning direction based on the sign of the bearing.
                         //Positive bearing means the tag is to the right, so the robot turns right (0.15),
                         // and negative bearing means the tag is to the left, so the robot turns left (-0.15).
-                        double turnPower = tag.ftcPose.bearing > 0 ? 0.15 : -0.15;
+                        double turnPower = searchTurnSpeed * tag.ftcPose.bearing / 70;
+
                         drive.drive(0, 0, turnPower, 100);
                     } else {
-                        // Stop turning when perpendicular
+                        // Stop turning when aligned
                         drive.drive(0, 0, 0, 0);
                         return true;
                     }
                 }
                 sleep(250);
             }
-        }return false;
+        }
+        return false;
     }
-
-
 }
