@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -44,13 +45,23 @@ public class TeleOpV1 extends LinearOpMode {
         frontRight.setDirection(DcMotor.Direction.REVERSE);
         backRight.setDirection(DcMotor.Direction.REVERSE);
 
-        DcMotor transfer = hardwareMap.dcMotor.get("loading");
-        DcMotor intake = hardwareMap.dcMotor.get("intakeTransfer");
+        DcMotor intake = hardwareMap.dcMotor.get("intake");
 
         DcMotorEx leftShooter = hardwareMap.get(DcMotorEx.class, "leftShooter");
         leftShooter.setDirection(DcMotorSimple.Direction.REVERSE);
         leftShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        DcMotorEx rightShooter = hardwareMap.get(DcMotorEx.class, "rightShooter");
+        rightShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        DcMotor turret = hardwareMap.get(DcMotor.class, "turret");
+        turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        Servo hoodServo = hardwareMap.get(Servo.class, "hood");
+        Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
+        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
 
         // Configure odometry
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
@@ -73,7 +84,7 @@ public class TeleOpV1 extends LinearOpMode {
         telemetry.update();
         AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
         tagProcessor.setDecimation(0.5f); // Adjust for lighting conditions
-        CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, odo, intake, transfer, voltageSensor, telemetry, tagProcessor);
+        CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, rightShooter, hoodServo, leftLatch, rightLatch, turret , odo, intake, voltageSensor, telemetry, tagProcessor);
 
 
 
@@ -167,18 +178,6 @@ public class TeleOpV1 extends LinearOpMode {
                 intake.setPower(-1);
             } else {
                 intake.setPower(0);
-            }
-
-
-            // Loading Controls
-
-            if (gamepad2.dpad_up) {
-                transfer.setPower(0.8); // Adjust position as needed
-                intake.setPower(0.8);
-            } else if (gamepad2.dpad_down) {
-                transfer.setPower(-0.5); // Adjust position as needed
-            } else {
-                transfer.setPower(0); // Adjust position as needed
             }
 
 

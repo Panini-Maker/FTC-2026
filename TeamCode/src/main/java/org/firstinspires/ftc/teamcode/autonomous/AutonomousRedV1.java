@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -54,6 +55,17 @@ public class AutonomousRedV1 extends LinearOpMode {
         leftShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
+        DcMotorEx rightShooter = hardwareMap.get(DcMotorEx.class, "rightShooter");
+        rightShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        DcMotor turret = hardwareMap.get(DcMotor.class, "turret");
+        turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        Servo hoodServo = hardwareMap.get(Servo.class, "hood");
+        Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
+        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         odo.setOffsets(odoXOffset, odoYOffset, DistanceUnit.MM); // Set offsets
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
@@ -72,7 +84,7 @@ public class AutonomousRedV1 extends LinearOpMode {
 
         ShootingAction shooter = new ShootingAction(leftShooter, transfer, intake);
         SimpleDriveActions drive = new SimpleDriveActions(frontLeft, frontRight, backRight, backLeft, telemetry, odo, leftShooter, intake, transfer, voltageSensor, runTime);
-        CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, odo, intake, transfer, voltageSensor, telemetry, tagProcessor);
+        CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, rightShooter, hoodServo, leftLatch, rightLatch, turret, odo, intake, voltageSensor, telemetry, tagProcessor);
 
         waitForStart();
         odo.update();
