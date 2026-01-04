@@ -189,12 +189,14 @@ public class TeleOpV1 extends LinearOpMode {
             // right button is the outake in case we intake too many artifacts
 
             if (gamepad2.right_bumper) {
-                intake.setPower(1);
-            } else if (gamepad2.left_bumper) {
-                if (leftLatch.getPosition() == 0){
-                    leftLatch.setPosition(0.7);
-                    rightLatch.setPosition(0.3);
+                if (!(leftLatch.getPosition() == 1)){
+                    leftLatch.setPosition(1);
+                    rightLatch.setPosition(0);
                 }
+                intake.setPower(1);
+
+            } else if (gamepad2.left_bumper) {
+
                 intake.setPower(-1);
             } else {
                 intake.setPower(0);
@@ -219,8 +221,8 @@ public class TeleOpV1 extends LinearOpMode {
             }
 
             if(gamepad2.a){
-                leftLatch.setPosition(0.7);
-                rightLatch.setPosition(0.3);
+                leftLatch.setPosition(1);
+                rightLatch.setPosition(0);
             } else if (gamepad2.y) {
                 leftLatch.setPosition(0);
                 rightLatch.setPosition(1);
