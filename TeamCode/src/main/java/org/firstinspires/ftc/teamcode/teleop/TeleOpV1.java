@@ -63,6 +63,7 @@ public class TeleOpV1 extends LinearOpMode {
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
         Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        Servo light = hardwareMap.get(Servo.class, "light");
 
         // Configure odometry
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
@@ -127,8 +128,17 @@ public class TeleOpV1 extends LinearOpMode {
             //boolean wasRightTriggerPressed = false;
 
             if (gamepad2.right_trigger > 0) {
+                if (!(leftLatch.getPosition() == 0)){
+                    leftLatch.setPosition(0);
+                    rightLatch.setPosition(1);
+
+                }
                 leftShooter.setVelocity(shooterPower);
                 rightShooter.setVelocity(shooterPower);
+
+
+
+
 
                 /**if (!isAligned) {
                  // Trigger just pressed - start shooting once
@@ -181,6 +191,10 @@ public class TeleOpV1 extends LinearOpMode {
             if (gamepad2.right_bumper) {
                 intake.setPower(1);
             } else if (gamepad2.left_bumper) {
+                if (leftLatch.getPosition() == 0){
+                    leftLatch.setPosition(0.7);
+                    rightLatch.setPosition(0.3);
+                }
                 intake.setPower(-1);
             } else {
                 intake.setPower(0);
@@ -210,6 +224,15 @@ public class TeleOpV1 extends LinearOpMode {
             } else if (gamepad2.y) {
                 leftLatch.setPosition(0);
                 rightLatch.setPosition(1);
+            }
+
+            //light for shooter status
+            double avgShooterVel = (leftShooter.getVelocity() + rightShooter.getVelocity())/2;
+
+            if (avgShooterVel > (shooterPower - 50) && avgShooterVel < (shooterPower + 50)) {
+                light.setPosition(0.5);
+            } else {
+                light.setPosition(0.28);
             }
 
 
