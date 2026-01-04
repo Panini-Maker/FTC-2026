@@ -6,6 +6,7 @@ import static java.lang.Thread.sleep;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -18,10 +19,13 @@ public class CameraMovement {
     //declares hardware and variables
     public Telemetry telemetry;
     public DcMotor frontRightMotor, frontLeftMotor, backRightMotor, backLeftMotor;
-    public DcMotorEx shooterMotor;
+    public DcMotorEx leftShooter, rightShooter;
     public GoBildaPinpointDriver odo;
     public DcMotor intake;
-    public DcMotor transfer;
+    public DcMotor turret;
+    public Servo hoodServo;
+    public Servo leftLatch;
+    public Servo rightLatch;
     public VoltageSensor voltageSensor;
     public double forward;
     public double right;
@@ -33,23 +37,25 @@ public class CameraMovement {
     public SimpleDriveActions drive;
 
     public CameraMovement(DcMotor frontLeftMotor, DcMotor frontRightMotor, DcMotor backRightMotor, DcMotor backLeftMotor,
-                          DcMotorEx shooterMotor, GoBildaPinpointDriver odo, DcMotor intake, DcMotor transfer,
-                          VoltageSensor voltageSensor, Telemetry telemetry, AprilTagProcessor tagProcessor) {
+                          DcMotorEx leftShooter, DcMotorEx rightShooter, Servo hoodServo, Servo leftLatch, Servo rightLatch,
+                          DcMotor turret, GoBildaPinpointDriver odo, DcMotor intake, VoltageSensor voltageSensor,
+                          Telemetry telemetry, AprilTagProcessor tagProcessor) {
         this.tagProcessor = tagProcessor;
         this.frontRightMotor = frontRightMotor;
         this.frontLeftMotor = frontLeftMotor;
         this.backRightMotor = backRightMotor;
         this.backLeftMotor = backLeftMotor;
-        this.shooterMotor = shooterMotor;
+        this.leftShooter = leftShooter;
+        this.rightShooter = rightShooter;
+        this.hoodServo = hoodServo;
+        this.leftLatch = leftLatch;
+        this.rightLatch = rightLatch;
+        this.turret = turret;
         this.odo = odo;
         this.intake = intake;
-        this.transfer = transfer;
         this.voltageSensor = voltageSensor;
         this.telemetry = telemetry;
         this.runTime = new ElapsedTime();
-
-        drive = new SimpleDriveActions(frontLeftMotor, frontRightMotor, backRightMotor, backLeftMotor,
-                telemetry, odo, shooterMotor, intake, transfer, voltageSensor, runTime);
     }
 
     private double getVoltageCompensatedPower(double power) {
