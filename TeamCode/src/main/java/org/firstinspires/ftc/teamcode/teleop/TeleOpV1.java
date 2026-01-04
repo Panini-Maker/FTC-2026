@@ -48,13 +48,14 @@ public class TeleOpV1 extends LinearOpMode {
         DcMotor intake = hardwareMap.dcMotor.get("intake");
 
         DcMotorEx leftShooter = hardwareMap.get(DcMotorEx.class, "leftShooter");
-        leftShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+
         leftShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         DcMotorEx rightShooter = hardwareMap.get(DcMotorEx.class, "rightShooter");
         rightShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightShooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
         DcMotor turret = hardwareMap.get(DcMotor.class, "turret");
         turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -76,15 +77,16 @@ public class TeleOpV1 extends LinearOpMode {
         double shooterPower;
         int target = redTagID;
         boolean isAligned = false;
+        ;
 
         // Recalibrate Odometry
         odo.resetPosAndIMU();
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
-        AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
-        tagProcessor.setDecimation(0.5f); // Adjust for lighting conditions
-        CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, rightShooter, hoodServo, leftLatch, rightLatch, turret , odo, intake, voltageSensor, telemetry, tagProcessor);
+        //AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
+        //tagProcessor.setDecimation(0.5f); // Adjust for lighting conditions
+        //CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, rightShooter, hoodServo, leftLatch, rightLatch, turret , odo, intake, voltageSensor, telemetry, tagProcessor);
 
 
 
@@ -126,21 +128,25 @@ public class TeleOpV1 extends LinearOpMode {
 
             if (gamepad2.right_trigger > 0) {
                 leftShooter.setVelocity(shooterPower);
+                rightShooter.setVelocity(shooterPower);
 
-                if (!isAligned) {
-                    // Trigger just pressed - start shooting once
-                    isAligned = camera.turnToAprilTagNoOdo(target);
-                }
+                /**if (!isAligned) {
+                 // Trigger just pressed - start shooting once
+                 isAligned = camera.turnToAprilTagNoOdo(target);
+                 }**/
 
                 // Keep aligning while trigger is held
 
 
             } else if (gamepad2.left_trigger > 0) {
-                leftShooter.setPower(-0.3); //for intaking from human players
+                leftShooter.setPower(-0.3);
+                rightShooter.setPower(-0.3);
+                //for intaking from human players
                 //wasRightTriggerPressed = false;
 
             } else {
                 leftShooter.setPower(0);
+                rightShooter.setPower(0);
                 isAligned = false;
                 //wasRightTriggerPressed = false;
             }
@@ -179,6 +185,34 @@ public class TeleOpV1 extends LinearOpMode {
             } else {
                 intake.setPower(0);
             }
+
+            if (gamepad2.dpad_up) {
+                if (hoodServo.getPosition() > 0) {
+                    hoodServo.setPosition(hoodServo.getPosition()-0.01);
+                }
+            } else if (gamepad2.dpad_down) {
+                if (hoodServo.getPosition() < 1) {
+                    hoodServo.setPosition(hoodServo.getPosition() + 0.01);
+                }
+            }
+            if (gamepad2.x) {
+                turret.setPower(0.3);
+            }
+            else if (gamepad2.b){
+                turret.setPower(-0.3);
+            }else{
+                turret.setPower(0);
+            }
+
+            if(gamepad2.a){
+                leftLatch.setPosition(0.7);
+                rightLatch.setPosition(0.3);
+            } else if (gamepad2.y) {
+                leftLatch.setPosition(0);
+                rightLatch.setPosition(1);
+            }
+
+
 
 
             Pose2D pos = odo.getPosition();
