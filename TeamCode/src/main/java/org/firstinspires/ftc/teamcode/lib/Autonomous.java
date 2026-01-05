@@ -105,26 +105,26 @@ public class Autonomous {
 
     public void AutoLong9Artifacts(String color,
                                    MecanumDrive drive,
-                                   DcMotorEx shooterMotor,
+                                   DcMotorEx leftShooter,
+                                   DcMotorEx rightShooter,
                                    DcMotor intake,
-                                   DcMotor transfer,
                                    ShootingAction shooter,
                                    Pose2d beginPose) throws InterruptedException {
         int headingMultiplier = 1;
         int artifactOrientation = artifactHeadingRed;
 
-        if(color.equalsIgnoreCase(blue)) {
+        if (color.equalsIgnoreCase(blue)) {
             headingMultiplier = mirrorHeading;
             artifactOrientation = artifactHeadingBlue;
         }
         //Create starting pose
         //Long Autonomous
         //Shoot first 3 artifacts
-        shooterMotor.setVelocity(sniper);
+        leftShooter.setVelocity(sniper);
+        rightShooter.setVelocity(sniper);
         //Creating autonomous path
         Action moveToShoot_1 = drive.actionBuilder(beginPose)
                 .strafeTo(mirrorCoordinates(shootingPositionLong, color))
-                .turnTo(Math.toRadians(headingMultiplier * -25))
                 .build();
 
         //Follow the path
@@ -142,18 +142,15 @@ public class Autonomous {
                 .build();
 
         intake.setPower(0.8);
-        transfer.setPower(0.3);
         Actions.runBlocking(new SequentialAction(collectArtifacts_2));
-        //intake.setPower(0);
-        transfer.setPower(0);
 
 
         Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeTo(mirrorCoordinates(shootingPositionLong, color))
-                .turnTo(Math.toRadians(headingMultiplier * -25))
                 .build();
 
-        shooterMotor.setVelocity(sniper);
+        leftShooter.setVelocity(sniper);
+        rightShooter.setVelocity(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_2));
         shooter.shoot(sniper, shootDurationMs, 0, false);
 
@@ -166,16 +163,14 @@ public class Autonomous {
                 .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts2, color))
                 .build();
         intake.setPower(0.8);
-        transfer.setPower(0.3);
         Actions.runBlocking(new SequentialAction(collectArtifacts_4));
-        //intake.setPower(0);
-        transfer.setPower(0);
 
         //Also hit the lever
         Action moveToShoot_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToLinearHeading(mirrorCoordinates(shootingPositionLong, color), Math.toRadians(headingMultiplier * -25))
+                .strafeToConstantHeading(mirrorCoordinates(shootingPositionLong, color))
                 .build();
-        shooterMotor.setVelocity(sniper);
+        leftShooter.setVelocity(sniper);
+        rightShooter.setVelocity(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_3));
 
         shooter.shoot(sniper, shootDurationMs, 0, false);
@@ -189,9 +184,9 @@ public class Autonomous {
 
     public void AutoShort9Artifacts(String color,
                                     MecanumDrive drive,
-                                    DcMotorEx shooterMotor,
+                                    DcMotorEx leftShooter,
+                                    DcMotorEx rightShooter,
                                     DcMotor intake,
-                                    DcMotor transfer,
                                     ShootingAction shooter,
                                     Pose2d beginPose) throws InterruptedException {
         int headingMultiplier = 1;
@@ -205,9 +200,10 @@ public class Autonomous {
         //Short Autonomous
         //Shoot first 3 artifacts
 
-        shooterMotor.setVelocity(shotgun);
+        leftShooter.setVelocity(shotgun);
+        rightShooter.setVelocity(shotgun);
         Action moveToShoot_1 = drive.actionBuilder(beginPose)
-                .strafeToLinearHeading(mirrorCoordinates(shootingPositionShort, color), Math.toRadians(headingMultiplier * -48))
+                .strafeToConstantHeading(mirrorCoordinates(shootingPositionShort, color))
                 .build();
         Actions.runBlocking(moveToShoot_1);
         shooter.shoot(shotgun, shootDurationMs, 0, false);
@@ -217,14 +213,13 @@ public class Autonomous {
                 .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts3, color))
                 .build();
         intake.setPower(0.8);
-        transfer.setPower(0.3);
         Actions.runBlocking(moveToCollect_1);
         //intake.setPower(0);
-        transfer.setPower(0);
         //Move to shoot again
-        shooterMotor.setVelocity(shotgun);
+        leftShooter.setVelocity(shotgun);
+        rightShooter.setVelocity(shotgun);
         Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToLinearHeading(mirrorCoordinates(shootingPositionShort, color), Math.toRadians(headingMultiplier * -48))
+                .strafeToConstantHeading(mirrorCoordinates(shootingPositionShort, color))
                 .build();
         Actions.runBlocking(moveToShoot_2);
         shooter.shoot(shotgun, shootDurationMs, 0, false);
@@ -238,15 +233,14 @@ public class Autonomous {
                 .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts2, color))
                 .build();
         intake.setPower(0.8);
-        transfer.setPower(0.3);
         Actions.runBlocking(moveToCollect_3);
         //intake.setPower(0);
-        transfer.setPower(0);
         //Move to shoot last time
-        shooterMotor.setVelocity(shotgun);
+        leftShooter.setVelocity(shotgun);
+        rightShooter.setVelocity(shotgun);
         Action moveToShoot_3 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToConstantHeading(intermediateStoppingPoint)
-                .strafeToLinearHeading(mirrorCoordinates(shootingPositionShort, color), Math.toRadians(headingMultiplier * -48))
+                .strafeToConstantHeading(mirrorCoordinates(shootingPositionShort, color))
                 .build();
         Actions.runBlocking(moveToShoot_3);
         shooter.shoot(shotgun, shootDurationMs, 0, false);

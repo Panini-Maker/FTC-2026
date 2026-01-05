@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.lib.AprilTag;
@@ -35,20 +37,37 @@ public class AutoRedShort9Artifacts extends LinearOpMode {
         AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
         tagProcessor.setDecimation(0.5f); // Lower decimation for lighting conditions
 
-        DcMotorEx shooterMotor = hardwareMap.get(com.qualcomm.robotcore.hardware.DcMotorEx.class, "leftShooter");
-        shooterMotor.setDirection(DcMotorEx.Direction.REVERSE);
+        DcMotor intake = hardwareMap.dcMotor.get("intake");
 
-        DcMotor intake = hardwareMap.get(DcMotor.class, "intakeTransfer");
-        DcMotor transfer = hardwareMap.get(DcMotor.class, "loading");
+        DcMotorEx leftShooter = hardwareMap.get(DcMotorEx.class, "leftShooter");
+        leftShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        DcMotorEx rightShooter = hardwareMap.get(DcMotorEx.class, "rightShooter");
+        rightShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        DcMotor turret = hardwareMap.get(DcMotor.class, "turret");
+        turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        Servo hoodServo = hardwareMap.get(Servo.class, "hood");
+        Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
+        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+
 
         ShootingAction shooter = new ShootingAction(
-                shooterMotor,
-                transfer,
-                intake
+                leftShooter,
+                rightShooter,
+                intake,
+                turret,
+                hoodServo,
+                leftLatch,
+                rightLatch
         );
 
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
-        auto.AutoShort9Artifacts(red, drive, shooterMotor, intake, transfer, shooter, beginPose);
+        auto.AutoShort9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, beginPose);
     }
 }

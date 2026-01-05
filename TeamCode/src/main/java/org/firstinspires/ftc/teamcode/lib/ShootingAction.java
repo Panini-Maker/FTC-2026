@@ -4,37 +4,48 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingSlowDownSpee
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.Servo;
 
 public class ShootingAction {
-    public DcMotorEx shooterMotor;
-    public DcMotor transfer;
+    public DcMotorEx leftShooter, rightShooter;
     public DcMotor intake;
-    public ShootingAction(DcMotorEx shooterMotor, DcMotor transfer, DcMotor intake) {
-        this.shooterMotor = shooterMotor;
-        this.transfer = transfer;
+    public DcMotor turret;
+    public Servo hoodServo, leftLatch, rightLatch;
+
+    public ShootingAction(DcMotorEx leftShooter, DcMotorEx rightShooter, DcMotor intake, DcMotor turret,
+                          Servo hoodServo, Servo leftLatch, Servo rightLatch) {
+        this.leftShooter = leftShooter;
+        this.rightShooter = rightShooter;
         this.intake = intake;
+        this.turret = turret;
+        this.hoodServo = hoodServo;
+        this.leftLatch = leftLatch;
+        this.rightLatch = rightLatch;
     }
 
     public void shoot(int shooterVelocity, int shootDurationMs, int rampUpTimeMs, boolean slowDown) throws InterruptedException {
-        shooterMotor.setVelocity(shooterVelocity);
+        leftShooter.setVelocity(shooterVelocity);
+        rightShooter.setVelocity(shooterVelocity);
         Thread.sleep(rampUpTimeMs);
-        transfer.setPower(0.7);
+        leftLatch.setPosition(1); // Open latches
+        rightLatch.setPosition(0);
         intake.setPower(0.7);
         if (slowDown) {
             Thread.sleep(shootDurationMs / 3);
-            shooterMotor.setVelocity(shooterVelocity - shootingSlowDownSpeed); //NOTE: set intake-transfer to 0 for slowdown
-            transfer.setPower(0);
+            leftShooter.setVelocity(shooterVelocity - shootingSlowDownSpeed); //NOTE: set intake-transfer to 0 for slowdown
+            rightShooter.setVelocity(shooterVelocity - shootingSlowDownSpeed);
             intake.setPower(0);
             Thread.sleep(500);
-            transfer.setPower(0.7);
             intake.setPower(0.7);
             Thread.sleep((shootDurationMs * 2L) / 3);
         } else {
             Thread.sleep(shootDurationMs);
         }
 
-        transfer.setPower(0);
         intake.setPower(0);
-        shooterMotor.setPower(0);
+        leftShooter.setPower(0);
+        rightShooter.setPower(0);
+        leftLatch.setPosition(0); // Close latches
+        rightLatch.setPosition(1);
     }
 }
