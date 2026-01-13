@@ -66,3 +66,24 @@ Software Records:
 - Autonomous code tested and working well.
 - NOTE: Since there is time left after autonomous program ends, code can collect 3 more artifacts.
 - EDIT: The above note can be implemented during December break.
+
+1/04/2026:
+- New robot completed assembly.
+- Aluminum ordered yesterday, will arrive in a few days.
+- Things to tune:
+    - Roadrunner tuning for new robot.
+    - PID tuning for new robot.
+        - Shooter PID.
+        - Turret PID.
+    - New autonomous code for new robot.
+- New teleop code for new robot.
+- Some wood parts broke during testing however.
+- Replaced broken wood parts with 3D printed parts temporarily.
+- Drivers arrived to practice so most of the time was spent on making teleop code functional.
+- TODO: Tune roadrunner and PID. Create auto aim code and potentially auto shoot code.
+    - Requests from drivers:
+        - Auto aim.
+        - Auto shoot.
+        - Right trigger --> chainsaw mode (moves robot forward as a much faster speed, 0.8 --> 1).
+        - Left trigger --> de-war horn mode (moves robot forward at a much slower speed, 0.8 --> 0.6).
+        - Make it so telemetry displays what mode the robot is in (chainsaw, de-war horn, reloading, sniper, shotgun, etc.).

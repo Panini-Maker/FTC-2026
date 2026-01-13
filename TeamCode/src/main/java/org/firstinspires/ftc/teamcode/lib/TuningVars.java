@@ -6,11 +6,17 @@ public class TuningVars {
     public static int odoXOffset = 75; // in mm
     public static int odoYOffset = -146; // in mm
     public static int shootingSlowDownSpeed = 200;
-    public static int shotgun = 1900; //Was 2000
-    public static int sniper = 2250;
+    public static int shotgun = 1600; //Was 2000
+    public static int sniper = 1950; //Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
     public static int shootDurationMs = 2400; // in milliseconds
     public static int rampUpTime = 3000; // in milliseconds
     public static int idealVoltage = 12; // in volts
+    public static double turretMotorTPR = 537.7; // ticks per revolution
+    public static double turretMotorGearTeeth = 57; //Number of teeth in turret motor gear
+    public static double turretGearTeeth = 186; //Number of teeth in turret gear
+    public static double turretTicksPerDegree = (turretMotorTPR * turretGearTeeth) / (turretMotorGearTeeth * 360.0);
+    public static double turretLimitCCW = 90; // in degrees
+    public static double turretLimitCW = -90; // in degrees
 
     //Camera Tuning Vars
     public static int cameraResolutionWidth = 1280;

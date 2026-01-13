@@ -7,6 +7,8 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -21,10 +23,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
+import org.firstinspires.ftc.teamcode.lib.AprilTag;
 import org.firstinspires.ftc.teamcode.lib.CameraMovement;
+import org.firstinspires.ftc.teamcode.lib.ShooterController;
+import org.firstinspires.ftc.teamcode.lib.Turret;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-import org.firstinspires.ftc.teamcode.lib.AprilTag;
 
 import java.util.Locale;
 
@@ -48,7 +52,6 @@ public class TeleOpV1 extends LinearOpMode {
         DcMotor intake = hardwareMap.dcMotor.get("intake");
 
         DcMotorEx leftShooter = hardwareMap.get(DcMotorEx.class, "leftShooter");
-
         leftShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
@@ -57,8 +60,13 @@ public class TeleOpV1 extends LinearOpMode {
         rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightShooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        DcMotor turret = hardwareMap.get(DcMotor.class, "turret");
+        ShooterController shooter = new ShooterController(leftShooter, rightShooter, 0.0025, 0.00099, 0, telemetry);
+
+        DcMotorEx turret = hardwareMap.get(DcMotorEx.class, "turret");
         turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+
+        Turret turretController = new Turret(turret);
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
@@ -73,44 +81,54 @@ public class TeleOpV1 extends LinearOpMode {
 
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
+        double turretPower = 10.0;
         boolean mode = true;
         boolean targetIsRed = true;
         double shooterPower;
         int target = redTagID;
         boolean isAligned = false;
-        ;
+        double currentHeading = 0.0;
+
+        //Auto Aim and Auto Shoot variables
+        boolean autoAim = false;
+        boolean toggleAutoAim = true;
+        boolean autoShoot = false;
+        boolean toggleAutoShoot = true;
+        boolean safeShooting = true;
+
+        //May be useful later
+        double currentXOdo;
+        double currentYOdo;
+        double currentHeadingOdo;
 
         // Recalibrate Odometry
         odo.resetPosAndIMU();
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
-        //AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
-        //tagProcessor.setDecimation(0.5f); // Adjust for lighting conditions
+        AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
+        tagProcessor.setDecimation(0.5f); // Adjust for lighting conditions
         //CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, rightShooter, hoodServo, leftLatch, rightLatch, turret , odo, intake, voltageSensor, telemetry, tagProcessor);
-
 
 
         waitForStart();
         resetRuntime();
 
-        ElapsedTime timer = new ElapsedTime();
+        ElapsedTime autoAimCoolDown = new ElapsedTime();
         while (opModeIsActive()) {
-
-            // Get postition
+            // Get position
 
             odo.update();
 
             if (gamepad2.yWasPressed()) {
                 mode = !mode;
-
             }
 
             if (gamepad2.aWasPressed()) {
                 targetIsRed = !targetIsRed;
             }
 
-            if(targetIsRed) {
+            if (targetIsRed) {
                 target = redTagID;
                 telemetry.addData("Target Color:", "Red");
             } else {
@@ -121,47 +139,96 @@ public class TeleOpV1 extends LinearOpMode {
             if (mode) {
                 shooterPower = shotgun;
                 telemetry.addData("Shooter Mode:", "Shotgun");
+                //shooter.setPIDConstants(0.0025,0.00099,0);
+                hoodServo.setPosition(1);
             } else {
                 shooterPower = sniper;
                 telemetry.addData("Shooter Mode", "Sniper");
+                //shooter.setPIDConstants(0.0025,0.00099,0);
+                hoodServo.setPosition(0.2);
             }
-            //boolean wasRightTriggerPressed = false;
+
+            //Consider using toggle with right bumper/trigger instead of holding right trigger
+            if (gamepad1.right_bumper && toggleAutoAim) {
+                autoAim = !autoAim;
+                //Turn off autoShoot when autoAim is off
+                if (!autoAim) {
+                    autoShoot = false;
+                }
+                toggleAutoAim = false;
+            } else {
+                toggleAutoAim = true;
+            }
+
+            if (gamepad1.left_bumper && toggleAutoShoot) {
+                autoShoot = !autoShoot;
+                //Turn autoAim on when autoShoot is on
+                if (autoShoot) {
+                    autoAim = true;
+                }
+
+                toggleAutoShoot = false;
+            } else {
+                toggleAutoShoot = true;
+            }
+
+            if (autoAim && (autoAimCoolDown.milliseconds() > 100)) {
+                sleep (100);
+                if (!tagProcessor.getFreshDetections().isEmpty()) {
+                    sleep(100);
+                    for (AprilTagDetection tag : tagProcessor.getDetections()) {
+                        if (tag.id == target) {
+                            double adjustment = currentHeading + tag.ftcPose.bearing;
+                            telemetry.addData("Bearing to Target", tag.ftcPose.bearing);
+                            if (adjustment > turretLimitCCW) {
+                                adjustment = turretLimitCCW;
+                            } else if (adjustment < turretLimitCW) {
+                                adjustment = turretLimitCW;
+                            }
+                            currentHeading = turretController.spinToHeading(adjustment, turretPower);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            /* Alternate version
+            if (autoAim) {
+                sleep(100);
+                if ((!tagProcessor.getDetections().isEmpty())) {
+                    for (AprilTagDetection tag : tagProcessor.getDetections()) {
+                        if (tag.id == target) {
+                            double adjustment = currentHeading + tag.ftcPose.bearing;
+                            telemetry.addData("Bearing to Target", tag.ftcPose.bearing);
+                            if (tag.ftcPose.bearing > 1) {
+                                adjustment = currentHeading + 1;
+                            } else if (tag.ftcPose.bearing < -1) {
+                                adjustment = currentHeading - 1;
+                            }
+                            currentHeading = turretController.spinToHeading(adjustment, turretPower);
+                            break;
+                        }
+                    }
+                }
+            }
+
+             */
 
             if (gamepad2.right_trigger > 0) {
-                if (!(leftLatch.getPosition() == 0)){
+                if (!(leftLatch.getPosition() == 0)) {
                     leftLatch.setPosition(0);
                     rightLatch.setPosition(1);
-
                 }
-                leftShooter.setVelocity(shooterPower);
-                rightShooter.setVelocity(shooterPower);
-
-
-
-
-
-                /**if (!isAligned) {
-                 // Trigger just pressed - start shooting once
-                 isAligned = camera.turnToAprilTagNoOdo(target);
-                 }**/
-
-                // Keep aligning while trigger is held
-
-
+                shooter.runShooter(shooterPower);
             } else if (gamepad2.left_trigger > 0) {
+                shooter.resetPID();
                 leftShooter.setPower(-0.3);
                 rightShooter.setPower(-0.3);
                 //for intaking from human players
-                //wasRightTriggerPressed = false;
-
             } else {
-                leftShooter.setPower(0);
-                rightShooter.setPower(0);
-                isAligned = false;
-                //wasRightTriggerPressed = false;
+                shooter.resetPID();
+                shooter.stopShooter();
             }
-
-            timer.reset();
 
             double power = 0.8; //Used teo limit speed for testing/safety
             double y = -gamepad1.left_stick_y; // Forward/Backward
@@ -182,70 +249,88 @@ public class TeleOpV1 extends LinearOpMode {
             backLeft.setPower(backLeftPower);
             backRight.setPower(backRightPower);
 
+
+
+            if ((y > 0.1) || (y < -0.1) || (x > 0.1) || (x < -0.1) || (rx > 0.1) || (rx < -0.1)) {
+                //Resets auto-aim cooldown if driver is moving the robot
+                //Auto aim relies on robot being stationary for accuracy
+                autoAimCoolDown.reset();
+            }
+
             // Intake and Transfer Controls
             // right trigger to shooting balls
             //left trigger for intaking and transferring balls
             // if both triggers are pressed, the robot will do both actions simultaneously
-            // right button is the outake in case we intake too many artifacts
+            // right button is the outtake in case we intake too many artifacts
 
             if (gamepad2.right_bumper) {
-                if (!(leftLatch.getPosition() == 1)){
+                if (!(leftLatch.getPosition() == 1) && (leftShooter.getPower() == 0) && (rightShooter.getPower() == 0)) {
                     leftLatch.setPosition(1);
                     rightLatch.setPosition(0);
                 }
                 intake.setPower(1);
-
             } else if (gamepad2.left_bumper) {
-
                 intake.setPower(-1);
             } else {
                 intake.setPower(0);
             }
 
-            if (gamepad2.dpad_up) {
-                if (hoodServo.getPosition() > 0) {
-                    hoodServo.setPosition(hoodServo.getPosition()-0.01);
-                }
-            } else if (gamepad2.dpad_down) {
-                if (hoodServo.getPosition() < 1) {
-                    hoodServo.setPosition(hoodServo.getPosition() + 0.01);
-                }
-            }
-            if (gamepad2.x) {
-                turret.setPower(0.3);
-            }
-            else if (gamepad2.b){
-                turret.setPower(-0.3);
-            }else{
-                turret.setPower(0);
+            if (gamepad2.x && (currentHeading <= 80)) {
+                currentHeading = turretController.spinToHeading(currentHeading + 10, turretPower);
+            } else if (gamepad2.b && (currentHeading >= -80)) {
+                currentHeading = turretController.spinToHeading(currentHeading - 10, turretPower);
+            } else {
+                turretController.stopTurret();
             }
 
-            if(gamepad2.a){
+            if (gamepad2.dpad_down) {
                 leftLatch.setPosition(1);
                 rightLatch.setPosition(0);
-            } else if (gamepad2.y) {
+            } else if (gamepad2.dpad_up) {
                 leftLatch.setPosition(0);
                 rightLatch.setPosition(1);
             }
 
             //light for shooter status
-            double avgShooterVel = (leftShooter.getVelocity() + rightShooter.getVelocity())/2;
+            double avgShooterVel = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2;
 
             if (avgShooterVel > (shooterPower - 50) && avgShooterVel < (shooterPower + 50)) {
                 light.setPosition(0.5);
+                if ((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) || autoShoot) {
+                    if ((shooterPower == sniper) && safeShooting) {
+                        //Running intake takes power from shooter, so run at half power for sniper
+                        intake.setPower(0.5);
+                        leftLatch.setPosition(0);
+                        rightLatch.setPosition(1);
+                    } else {
+                        intake.setPower(1);
+                        leftLatch.setPosition(0);
+                        rightLatch.setPosition(1);
+                    }
+                }
             } else {
                 light.setPosition(0.28);
+                leftLatch.setPosition(1);
+                rightLatch.setPosition(0);
+                if ((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) || autoShoot) {
+                    intake.setPower(0);
+                }
             }
 
-
-
-
-            Pose2D pos = odo.getPosition();
-            String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
-            telemetry.addData("Position", data);
+            //Pose2D pos = odo.getPosition();
+            //String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
+            //telemetry.addData("Position", data);
+            telemetry.addData("Auto Aim", autoAim);
+            telemetry.addData("Auto Shoot", autoShoot);
+            telemetry.addData("Safe Shooting", safeShooting);
+            telemetry.addData("Turret Target Heading", currentHeading);
+            telemetry.addData("Turret Heading", currentHeading);
+            telemetry.addData("Turret Power", turret.getPower());
+            telemetry.addData("Left Shooter Velocity", leftShooter.getVelocity());
+            telemetry.addData("Left Shooter Power", leftShooter.getPower());
+            telemetry.addData("Right Shooter Velocity", rightShooter.getVelocity());
+            telemetry.addData("Right Shooter Power", rightShooter.getPower());
             telemetry.update();
-
-
         }
     }
 }
