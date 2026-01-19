@@ -72,6 +72,11 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
 
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
-        auto.AutoLong9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller,tagProcessor, beginPose);
+        try {
+            auto.AutoLong9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller, tagProcessor, beginPose);
+        } finally {
+            // Ensure PID thread stops when OpMode ends
+            controller.stopVelocityPID();
+        }
     }
 }

@@ -8,6 +8,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingTolerance;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
@@ -309,7 +310,7 @@ public class TeleOpV1 extends LinearOpMode {
             //light for shooter status
             double avgShooterVel = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2;
 
-            if (avgShooterVel > (shooterPower - 50) && avgShooterVel < (shooterPower + 50)) {
+            if (avgShooterVel > (shooterPower - shootingTolerance) && avgShooterVel < (shooterPower + shootingTolerance)) {
                 light.setPosition(0.5);
                 if ((gamepad2.right_bumper || autoShoot) && (gamepad2.right_trigger > 0.1) && safeShooting) {
                     intake.setPower(1);

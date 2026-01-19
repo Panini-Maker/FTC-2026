@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.lib;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.idle;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingTolerance;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -43,7 +44,7 @@ public class ShootingAction {
         long maxRampUpTime = rampUpTimeMs > 0 ? rampUpTimeMs : 3500; // Default 3 seconds max
         while (System.currentTimeMillis() - startTime < maxRampUpTime) {
             double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
-            if (Math.abs(shooterVelocity - avgVelocity) <= 50) {
+            if (Math.abs(shooterVelocity - avgVelocity) <= shootingTolerance) {
                 break; // Shooter is within 50 RPM of target
             }
             Thread.sleep(10);

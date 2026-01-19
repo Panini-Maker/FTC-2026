@@ -196,9 +196,9 @@ public class Autonomous {
         double angleToTarget;
 
         if (color.equalsIgnoreCase(red)) {
-            angleToTarget = -107;
+            angleToTarget = -115;
         } else {
-            angleToTarget = 107;
+            angleToTarget = 110;
         }
 
         // Point turret at target

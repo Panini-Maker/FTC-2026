@@ -77,7 +77,11 @@ public class ShooterController {
                     break;
                 }
             }
+            // Ensure motors are stopped when thread exits
+            leftShooter.setPower(0);
+            rightShooter.setPower(0);
         });
+        pidThread.setDaemon(true); // Thread will stop when main program ends
         pidThread.start();
     }
 
