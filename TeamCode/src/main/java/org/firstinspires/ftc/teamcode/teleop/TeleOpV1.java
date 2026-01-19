@@ -8,7 +8,8 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingTolerance;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceAuto;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceTeleOp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
@@ -23,9 +24,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.lib.AprilTag;
 import org.firstinspires.ftc.teamcode.lib.CameraMovement;
@@ -33,8 +32,6 @@ import org.firstinspires.ftc.teamcode.lib.ShooterController;
 import org.firstinspires.ftc.teamcode.lib.Turret;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-
-import java.util.Locale;
 
 
 @TeleOp
@@ -167,7 +164,7 @@ public class TeleOpV1 extends LinearOpMode {
 
              */
 
-            autoAim = gamepad1.right_bumper;
+            autoAim = gamepad2.dpad_right;
 
             if (!autoAim) {
                 autoShoot = false;
@@ -188,7 +185,7 @@ public class TeleOpV1 extends LinearOpMode {
 
              */
 
-            autoShoot = gamepad1.left_bumper;
+            autoShoot = gamepad2.dpad_left;
 
             if (autoShoot) {
                 autoAim = true;
@@ -310,16 +307,16 @@ public class TeleOpV1 extends LinearOpMode {
             //light for shooter status
             double avgShooterVel = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2;
 
-            if (avgShooterVel > (shooterPower - shootingTolerance) && avgShooterVel < (shooterPower + shootingTolerance)) {
+            if (avgShooterVel > (shooterPower - shootingToleranceTeleOp) && avgShooterVel < (shooterPower + shootingToleranceTeleOp)) {
                 light.setPosition(0.5);
-                if ((gamepad2.right_bumper || autoShoot) && (gamepad2.right_trigger > 0.1) && safeShooting) {
+                if (((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) && safeShooting) || autoShoot) {
                     intake.setPower(1);
                     leftLatch.setPosition(0);
                     rightLatch.setPosition(1);
                 }
             } else {
                 light.setPosition(0.28);
-                if ((gamepad2.right_bumper || autoShoot) && (gamepad2.right_trigger > 0.1) && safeShooting) {
+                if (((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) && safeShooting) || autoShoot) {
                     intake.setPower(0);
                 }
             }

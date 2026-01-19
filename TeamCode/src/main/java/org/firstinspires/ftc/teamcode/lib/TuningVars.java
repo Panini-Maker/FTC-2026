@@ -9,11 +9,13 @@ public class TuningVars {
     public static double shooterKi = 0.0011; //0.0009
     public static double shooterKd = 0; //0.0003
     public static int shootingSlowDownSpeed = 200;
-    public static int shotgun = 1600; //Was 2000
-    public static int sniper = 1860; //Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
+    public static int shotgun = 1550; //Was 1600
+    public static int sniper = 1950; //Was 1550
+    public static int sniperAuto = 1860; //Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
     // Was 1950, but not enough for autonomous shots
     public static int idle = 1200;
-    public static int shootingTolerance = 5; // in RPM
+    public static int shootingToleranceAuto = 5; // in RPM
+    public static int shootingToleranceTeleOp = 50; // in RPM
     public static int shootDurationMs = 2500; // in milliseconds
     public static int rampUpTime = 3000; // in milliseconds
     public static int idealVoltage = 12; // in volts

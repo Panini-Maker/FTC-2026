@@ -24,6 +24,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingPositionShor
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingPositionLong;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniperAuto;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
 
@@ -184,7 +185,7 @@ public class Autonomous {
         //Create starting pose
         //Long Autonomous
         //Shoot first 3 artifacts
-        shooterController.setVelocityPID(sniper);
+        shooterController.setVelocityPID(sniperAuto);
         //Creating autonomous path
         Action moveToShoot_1 = drive.actionBuilder(beginPose)
                 .strafeTo(mirrorCoordinates(shootingPositionLong, color))
@@ -198,7 +199,7 @@ public class Autonomous {
         if (color.equalsIgnoreCase(red)) {
             angleToTarget = -115;
         } else {
-            angleToTarget = 110;
+            angleToTarget = 109;
         }
 
         // Point turret at target
@@ -217,7 +218,7 @@ public class Autonomous {
 
          */
 
-        shooter.shoot(sniper, shootDurationMs, 3500);
+        shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
         Action collectArtifacts_1 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts1, color), Math.toRadians(artifactOrientation))
@@ -239,7 +240,7 @@ public class Autonomous {
         //shooterController.setVelocityPID(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_2));
 
-        shooter.shoot(sniper, shootDurationMs, 3500);
+        shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
         Action collectArtifacts_3 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts2, color), Math.toRadians(artifactOrientation))
@@ -260,7 +261,7 @@ public class Autonomous {
         Actions.runBlocking(new SequentialAction(moveToShoot_3));
 
 
-        shooter.shoot(sniper, shootDurationMs, 3500);
+        shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
         turretControl.spinToHeadingBlocking(0, 0.3, 3000);
 

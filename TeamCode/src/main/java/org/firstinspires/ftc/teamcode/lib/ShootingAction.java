@@ -1,8 +1,9 @@
 package org.firstinspires.ftc.teamcode.lib;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.idle;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingTolerance;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceAuto;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniperAuto;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -28,7 +29,7 @@ public class ShootingAction {
     }
 
     public void shoot(int shooterVelocity, int shootDurationMs, int rampUpTimeMs) throws InterruptedException {
-        if (shooterVelocity == (sniper)) {
+        if (shooterVelocity == (sniperAuto)) {
             hoodServo.setPosition(0.2); // Set hood for sniper
         } else {
             hoodServo.setPosition(1); // Set hood for shotgun
@@ -44,7 +45,7 @@ public class ShootingAction {
         long maxRampUpTime = rampUpTimeMs > 0 ? rampUpTimeMs : 3500; // Default 3 seconds max
         while (System.currentTimeMillis() - startTime < maxRampUpTime) {
             double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
-            if (Math.abs(shooterVelocity - avgVelocity) <= shootingTolerance) {
+            if (Math.abs(shooterVelocity - avgVelocity) <= shootingToleranceAuto) {
                 break; // Shooter is within 50 RPM of target
             }
             Thread.sleep(10);
