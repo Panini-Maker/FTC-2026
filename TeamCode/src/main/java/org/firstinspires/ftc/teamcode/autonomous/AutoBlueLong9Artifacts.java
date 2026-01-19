@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.autonomous;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.beginCollectingArtifacts1;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.beginCollectingArtifacts2;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.blue;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.cameraResolutionHeight;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.endCollectingArtifacts1;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.endCollectingArtifacts2;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.intermediatePressingLever;
@@ -10,6 +11,9 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.parkPositionLong;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.pressLever;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.red;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootDurationMs;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingPositionLong;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
@@ -28,7 +32,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.lib.AprilTag;
+import org.firstinspires.ftc.teamcode.lib.ShooterController;
 import org.firstinspires.ftc.teamcode.lib.ShootingAction;
+import org.firstinspires.ftc.teamcode.lib.Turret;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 @Autonomous
@@ -39,7 +45,7 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
         double drivePowerMag = 3.0; // the bigger the slower
 
         //Create starting pose
-        Pose2d beginPose = new Pose2d(new Vector2d(-17, -64.5), Math.toRadians(180)); //Was (-17, -64.5)
+        Pose2d beginPose = new Pose2d(new Vector2d(-7, -64.75), Math.toRadians(180)); //Was (-17, -64.5)
 
         //Create RR drive object
         MecanumDrive drive = new MecanumDrive(hardwareMap, beginPose, drivePowerMag);
@@ -57,8 +63,11 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
         rightShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        DcMotor turret = hardwareMap.get(DcMotor.class, "turret");
-        turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        ShooterController shooterController = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, telemetry);
+
+        DcMotorEx turret = hardwareMap.get(DcMotorEx.class, "turret");
+        turret.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        Turret turretControl = new Turret(turret);
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
@@ -72,11 +81,12 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
                 turret,
                 hoodServo,
                 leftLatch,
-                rightLatch
+                rightLatch,
+                shooterController
         );
 
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
-        auto.AutoLong9Artifacts(blue, drive, leftShooter, rightShooter, intake, shooter, beginPose);
+        auto.AutoLong9Artifacts(blue, drive, leftShooter, rightShooter, intake, shooter, turretControl, shooterController, tagProcessor, beginPose);
     }
 }

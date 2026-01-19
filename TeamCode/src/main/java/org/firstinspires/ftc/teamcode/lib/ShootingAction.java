@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.lib;
 
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingSlowDownSpeed;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.idle;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -11,9 +12,10 @@ public class ShootingAction {
     public DcMotor intake;
     public DcMotor turret;
     public Servo hoodServo, leftLatch, rightLatch;
+    public ShooterController controller;
 
     public ShootingAction(DcMotorEx leftShooter, DcMotorEx rightShooter, DcMotor intake, DcMotor turret,
-                          Servo hoodServo, Servo leftLatch, Servo rightLatch) {
+                          Servo hoodServo, Servo leftLatch, Servo rightLatch, ShooterController controller) {
         this.leftShooter = leftShooter;
         this.rightShooter = rightShooter;
         this.intake = intake;
@@ -21,31 +23,54 @@ public class ShootingAction {
         this.hoodServo = hoodServo;
         this.leftLatch = leftLatch;
         this.rightLatch = rightLatch;
+        this.controller = controller;
     }
 
-    public void shoot(int shooterVelocity, int shootDurationMs, int rampUpTimeMs, boolean slowDown) throws InterruptedException {
-        leftShooter.setVelocity(shooterVelocity);
-        rightShooter.setVelocity(shooterVelocity);
-        Thread.sleep(rampUpTimeMs);
-        leftLatch.setPosition(1); // Open latches
-        rightLatch.setPosition(0);
-        intake.setPower(0.7);
-        if (slowDown) {
-            Thread.sleep(shootDurationMs / 3);
-            leftShooter.setVelocity(shooterVelocity - shootingSlowDownSpeed); //NOTE: set intake-transfer to 0 for slowdown
-            rightShooter.setVelocity(shooterVelocity - shootingSlowDownSpeed);
-            intake.setPower(0);
-            Thread.sleep(500);
-            intake.setPower(0.7);
-            Thread.sleep((shootDurationMs * 2L) / 3);
+    public void shoot(int shooterVelocity, int shootDurationMs, int rampUpTimeMs) throws InterruptedException {
+        if (shooterVelocity == (sniper)) {
+            hoodServo.setPosition(0.2); // Set hood for sniper
         } else {
-            Thread.sleep(shootDurationMs);
+            hoodServo.setPosition(1); // Set hood for shotgun
         }
 
-        intake.setPower(0);
-        leftShooter.setPower(0);
-        rightShooter.setPower(0);
-        leftLatch.setPosition(0); // Close latches
+        intake.setPower(0); // Ensure intake is off
+
+        // Start shooter PID
+        controller.setVelocityPID(shooterVelocity);
+
+        // Wait for shooter to reach target velocity (within 50 RPM) or timeout
+        long startTime = System.currentTimeMillis();
+        long maxRampUpTime = rampUpTimeMs > 0 ? rampUpTimeMs : 3500; // Default 3 seconds max
+        while (System.currentTimeMillis() - startTime < maxRampUpTime) {
+            double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
+            if (Math.abs(shooterVelocity - avgVelocity) <= 50) {
+                break; // Shooter is within 50 RPM of target
+            }
+            Thread.sleep(10);
+        }
+
+        // Open latches after shooter is up to speed
+        leftLatch.setPosition(0);
         rightLatch.setPosition(1);
+        Thread.sleep(2000); // Wait for latches to fully open
+
+        // Run intake for shoot duration, but only feed when shooter is at speed
+        long shootStartTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - shootStartTime < shootDurationMs) {
+            double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
+            if (Math.abs(shooterVelocity - avgVelocity) <= 50) {
+                intake.setPower(1); // Safe to feed
+            } else {
+                intake.setPower(0); // Wait for shooter to recover
+            }
+            Thread.sleep(10);
+        }
+
+        // Stop everything
+        intake.setPower(0);
+        controller.setVelocityPID(idle);
+        //controller.stopVelocityPID();
+        leftLatch.setPosition(1); // Close latches
+        rightLatch.setPosition(0);
     }
 }

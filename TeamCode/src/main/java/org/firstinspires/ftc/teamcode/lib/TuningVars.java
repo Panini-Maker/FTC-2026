@@ -5,18 +5,23 @@ import com.acmerobotics.roadrunner.Vector2d;
 public class TuningVars {
     public static int odoXOffset = 75; // in mm
     public static int odoYOffset = -146; // in mm
+    public static double shooterKp = 0.005; //0.0075
+    public static double shooterKi = 0.0011; //0.0009
+    public static double shooterKd = 0; //0.0003
     public static int shootingSlowDownSpeed = 200;
     public static int shotgun = 1600; //Was 2000
     public static int sniper = 1950; //Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
-    public static int shootDurationMs = 2400; // in milliseconds
+    // Was 1950, but not enough for autonomous shots
+    public static int idle = 1200;
+    public static int shootDurationMs = 2500; // in milliseconds
     public static int rampUpTime = 3000; // in milliseconds
     public static int idealVoltage = 12; // in volts
     public static double turretMotorTPR = 537.7; // ticks per revolution
     public static double turretMotorGearTeeth = 57; //Number of teeth in turret motor gear
     public static double turretGearTeeth = 186; //Number of teeth in turret gear
     public static double turretTicksPerDegree = (turretMotorTPR * turretGearTeeth) / (turretMotorGearTeeth * 360.0);
-    public static double turretLimitCCW = 90; // in degrees
-    public static double turretLimitCW = -90; // in degrees
+    public static double turretLimitCCW = 360; // in degrees (No more limits)
+    public static double turretLimitCW = -360; // in degrees (No more limits)
 
     //Camera Tuning Vars
     public static int cameraResolutionWidth = 1280;
@@ -34,15 +39,14 @@ public class TuningVars {
     public static Vector2d parkPositionLong = new Vector2d(36, -36);
     public static Vector2d shootingPositionLong = new Vector2d(12, -60);
     public static Vector2d beginCollectingArtifacts1 = new Vector2d(30, -36);
-    public static Vector2d endCollectingArtifacts1 = new Vector2d(59, -36);
+    public static Vector2d endCollectingArtifacts1 = new Vector2d(56, -36);
     public static Vector2d beginCollectingArtifacts2 = new Vector2d(33, -12);
-    public static Vector2d endCollectingArtifacts2 = new Vector2d(59, -12);
+    public static Vector2d endCollectingArtifacts2 = new Vector2d(56, -12);
     public static Vector2d intermediateStoppingPoint = new Vector2d(33, -12);
     public static Vector2d beginCollectingArtifacts3 = new Vector2d(33, 12);
-    public static Vector2d endCollectingArtifacts3 = new Vector2d(54, 12);
-    public static Vector2d shootingPositionShort = new Vector2d(24, 24);
-    public static Vector2d parkPositionShort = new Vector2d(55, 0);
+    public static Vector2d endCollectingArtifacts3 = new Vector2d(51, 12);
+    public static Vector2d shootingPositionShort = new Vector2d(18, 18);
+    public static Vector2d parkPositionShort = new Vector2d(50, 0);
     public static Vector2d intermediatePressingLever = new Vector2d(48, -12);
     public static Vector2d pressLever = parkPositionShort;
-
 }

@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.R;
 import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
@@ -53,8 +54,8 @@ public class AprilTag {
                 .setCamera(hardwareMap.get(WebcamName.class, CAMERA_NAME))
                 .setCameraResolution(new Size(cameraResolutionWidth, cameraResolutionHeight))
                 .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
-                .enableLiveView(true)
-                //.setAutoStopLiveView(true)
+                .setLiveViewContainerId(hardwareMap.appContext.getResources().getIdentifier(
+                        "cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName()))
                 .build();
 
         return tagProcessor;

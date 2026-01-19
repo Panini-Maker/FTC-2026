@@ -21,17 +21,97 @@ public class Turret {
     }
 
     public double spinToHeading (double headingDegrees, double power) {
+        int targetPosition = (int)(headingDegrees * ticksPerDegree);
         int currentPosition = turret.getCurrentPosition();
-        int targetPosition = (int)(headingDegrees * ticksPerDegree);// - currentPosition; // Calculate relative target position
-        spinToPosition(targetPosition, power);
-        currentPosition = turret.getCurrentPosition();
+        int error = targetPosition - currentPosition;
+
+        double kP = 0.005; // Proportional constant, tune as needed
+        double minPower = 0.15; // Minimum power to overcome friction
+        int tolerance = (int)(ticksPerDegree); // 1 degree tolerance
+
+        if (Math.abs(error) > tolerance) {
+            turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            double calculatedPower = kP * error;
+            // Ensure minimum power to overcome friction, preserve direction
+            calculatedPower = Math.copySign(Math.max(Math.abs(calculatedPower), minPower), calculatedPower);
+            // Clamp to max power
+            calculatedPower = Math.copySign(Math.min(Math.abs(calculatedPower), power), calculatedPower);
+            turret.setPower(calculatedPower);
+        } else {
+            stopTurret();
+        }
 
         // Debugging telemetry
         System.out.println("Target Position (ticks): " + targetPosition);
         System.out.println("Current Position (ticks): " + currentPosition);
+        System.out.println("Error (ticks): " + error);
         System.out.println("Ticks per Degree: " + ticksPerDegree);
 
         return (currentPosition / ticksPerDegree);
+    }
+
+    /**
+     * Blocking version of spinToHeading for autonomous.
+     * Waits until the turret reaches the target position before returning.
+     */
+    public double spinToHeadingBlocking(double headingDegrees, double power, long timeoutMs) {
+        int targetPosition = (int)(headingDegrees * ticksPerDegree);
+        int tolerance = (int)(2 * ticksPerDegree); // 2 degree tolerance
+        int slowDownZone = (int)(10 * ticksPerDegree); // 10 degrees from target
+        double kP = 0.01;
+        double minPower = 0.15;
+
+        long startTime = System.currentTimeMillis();
+
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            int currentPosition = turret.getCurrentPosition();
+            int error = targetPosition - currentPosition;
+
+            // Check if within tolerance
+            if (Math.abs(error) <= tolerance) {
+                stopTurret();
+                return currentPosition / ticksPerDegree;
+            }
+
+            turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
+            double calculatedPower = kP * error;
+
+            // Only apply minimum power if far from target
+            if (Math.abs(error) > slowDownZone) {
+                calculatedPower = Math.copySign(Math.max(Math.abs(calculatedPower), minPower), calculatedPower);
+            }
+
+            // Clamp to max power
+            calculatedPower = Math.copySign(Math.min(Math.abs(calculatedPower), power), calculatedPower);
+            turret.setPower(calculatedPower);
+
+            // Small delay to prevent busy waiting
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+        }
+
+        // Timeout reached, stop turret
+        stopTurret();
+        return turret.getCurrentPosition() / ticksPerDegree;
+    }
+
+    public boolean isWithinTolerance(double headingDegrees) {
+        int targetPosition = (int)(headingDegrees * ticksPerDegree);
+        int currentPosition = turret.getCurrentPosition();
+        int error = targetPosition - currentPosition;
+        int tolerance = (int)(ticksPerDegree); // 1 degree tolerance
+        return Math.abs(error) <= tolerance;
+    }
+
+    public double getErrorDegrees(double headingDegrees) {
+        int targetPosition = (int)(headingDegrees * ticksPerDegree);
+        int currentPosition = turret.getCurrentPosition();
+        int error = targetPosition - currentPosition;
+        return error / ticksPerDegree;
     }
 
     public void stopTurret() {

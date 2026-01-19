@@ -5,6 +5,9 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.idealVoltage;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
@@ -60,7 +63,7 @@ public class TeleOpV1 extends LinearOpMode {
         rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightShooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        ShooterController shooter = new ShooterController(leftShooter, rightShooter, 0.0025, 0.00099, 0, telemetry);
+        ShooterController shooter = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, telemetry);
 
         DcMotorEx turret = hardwareMap.get(DcMotorEx.class, "turret");
         turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -81,8 +84,8 @@ public class TeleOpV1 extends LinearOpMode {
 
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        double turretPower = 10.0;
-        boolean mode = true;
+        double turretPower = 1.0;
+        boolean shooterMode = true;
         boolean targetIsRed = true;
         double shooterPower;
         int target = redTagID;
@@ -121,7 +124,7 @@ public class TeleOpV1 extends LinearOpMode {
             odo.update();
 
             if (gamepad2.yWasPressed()) {
-                mode = !mode;
+                shooterMode = !shooterMode;
             }
 
             if (gamepad2.aWasPressed()) {
@@ -136,7 +139,7 @@ public class TeleOpV1 extends LinearOpMode {
                 telemetry.addData("Target Color:", "Blue");
             }
 
-            if (mode) {
+            if (shooterMode) {
                 shooterPower = shotgun;
                 telemetry.addData("Shooter Mode:", "Shotgun");
                 //shooter.setPIDConstants(0.0025,0.00099,0);
@@ -149,6 +152,7 @@ public class TeleOpV1 extends LinearOpMode {
             }
 
             //Consider using toggle with right bumper/trigger instead of holding right trigger
+            /*
             if (gamepad1.right_bumper && toggleAutoAim) {
                 autoAim = !autoAim;
                 //Turn off autoShoot when autoAim is off
@@ -160,6 +164,15 @@ public class TeleOpV1 extends LinearOpMode {
                 toggleAutoAim = true;
             }
 
+             */
+
+            autoAim = gamepad1.right_bumper;
+
+            if (!autoAim) {
+                autoShoot = false;
+            }
+
+            /*
             if (gamepad1.left_bumper && toggleAutoShoot) {
                 autoShoot = !autoShoot;
                 //Turn autoAim on when autoShoot is on
@@ -172,12 +185,32 @@ public class TeleOpV1 extends LinearOpMode {
                 toggleAutoShoot = true;
             }
 
-            if (autoAim && (autoAimCoolDown.milliseconds() > 100)) {
+             */
+
+            autoShoot = gamepad1.left_bumper;
+
+            if (autoShoot) {
+                autoAim = true;
+            }
+
+            if (gamepad1.yWasPressed()) {
+                safeShooting = !safeShooting;
+            }
+
+            if (autoAim && (autoAimCoolDown.milliseconds() > 100) && !isAligned) {
                 sleep (100);
-                if (!tagProcessor.getFreshDetections().isEmpty()) {
+                if ((tagProcessor.getFreshDetections() != null) && !tagProcessor.getDetections().isEmpty()) {
                     sleep(100);
                     for (AprilTagDetection tag : tagProcessor.getDetections()) {
                         if (tag.id == target) {
+                            // Skip adjustment if bearing is within 1 degree tolerance
+                            if (Math.abs(tag.ftcPose.bearing) <= 1.0) {
+                                telemetry.addData("Bearing to Target", tag.ftcPose.bearing);
+                                telemetry.addData("Auto Aim Status", "Within tolerance, skipping");
+                                isAligned = true;
+                                break;
+                            }
+                            isAligned = false;
                             double adjustment = currentHeading + tag.ftcPose.bearing;
                             telemetry.addData("Bearing to Target", tag.ftcPose.bearing);
                             if (adjustment > turretLimitCCW) {
@@ -192,29 +225,12 @@ public class TeleOpV1 extends LinearOpMode {
                 }
             }
 
-            /* Alternate version
-            if (autoAim) {
-                sleep(100);
-                if ((!tagProcessor.getDetections().isEmpty())) {
-                    for (AprilTagDetection tag : tagProcessor.getDetections()) {
-                        if (tag.id == target) {
-                            double adjustment = currentHeading + tag.ftcPose.bearing;
-                            telemetry.addData("Bearing to Target", tag.ftcPose.bearing);
-                            if (tag.ftcPose.bearing > 1) {
-                                adjustment = currentHeading + 1;
-                            } else if (tag.ftcPose.bearing < -1) {
-                                adjustment = currentHeading - 1;
-                            }
-                            currentHeading = turretController.spinToHeading(adjustment, turretPower);
-                            break;
-                        }
-                    }
-                }
+            // Reset alignment status when robot moves or auto-aim is toggled off
+            if (!autoAim) {
+                isAligned = false;
             }
 
-             */
-
-            if (gamepad2.right_trigger > 0) {
+            if ((gamepad2.right_trigger > 0) || (isAligned && autoShoot)) {
                 if (!(leftLatch.getPosition() == 0)) {
                     leftLatch.setPosition(0);
                     rightLatch.setPosition(1);
@@ -249,12 +265,11 @@ public class TeleOpV1 extends LinearOpMode {
             backLeft.setPower(backLeftPower);
             backRight.setPower(backRightPower);
 
-
-
             if ((y > 0.1) || (y < -0.1) || (x > 0.1) || (x < -0.1) || (rx > 0.1) || (rx < -0.1)) {
                 //Resets auto-aim cooldown if driver is moving the robot
                 //Auto aim relies on robot being stationary for accuracy
                 autoAimCoolDown.reset();
+                isAligned = false; // Reset alignment when robot moves
             }
 
             // Intake and Transfer Controls
@@ -275,9 +290,9 @@ public class TeleOpV1 extends LinearOpMode {
                 intake.setPower(0);
             }
 
-            if (gamepad2.x && (currentHeading <= 80)) {
+            if (gamepad2.x && (currentHeading <= turretLimitCCW)) {
                 currentHeading = turretController.spinToHeading(currentHeading + 10, turretPower);
-            } else if (gamepad2.b && (currentHeading >= -80)) {
+            } else if (gamepad2.b && (currentHeading >= turretLimitCW)) {
                 currentHeading = turretController.spinToHeading(currentHeading - 10, turretPower);
             } else {
                 turretController.stopTurret();
@@ -296,23 +311,14 @@ public class TeleOpV1 extends LinearOpMode {
 
             if (avgShooterVel > (shooterPower - 50) && avgShooterVel < (shooterPower + 50)) {
                 light.setPosition(0.5);
-                if ((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) || autoShoot) {
-                    if ((shooterPower == sniper) && safeShooting) {
-                        //Running intake takes power from shooter, so run at half power for sniper
-                        intake.setPower(0.5);
-                        leftLatch.setPosition(0);
-                        rightLatch.setPosition(1);
-                    } else {
-                        intake.setPower(1);
-                        leftLatch.setPosition(0);
-                        rightLatch.setPosition(1);
-                    }
+                if ((gamepad2.right_bumper || autoShoot) && (gamepad2.right_trigger > 0.1) && safeShooting) {
+                    intake.setPower(1);
+                    leftLatch.setPosition(0);
+                    rightLatch.setPosition(1);
                 }
             } else {
                 light.setPosition(0.28);
-                leftLatch.setPosition(1);
-                rightLatch.setPosition(0);
-                if ((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) || autoShoot) {
+                if ((gamepad2.right_bumper || autoShoot) && (gamepad2.right_trigger > 0.1) && safeShooting) {
                     intake.setPower(0);
                 }
             }

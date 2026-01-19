@@ -1,6 +1,9 @@
 package org.firstinspires.ftc.teamcode.autonomous;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.red;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
@@ -13,7 +16,9 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.lib.AprilTag;
+import org.firstinspires.ftc.teamcode.lib.ShooterController;
 import org.firstinspires.ftc.teamcode.lib.ShootingAction;
+import org.firstinspires.ftc.teamcode.lib.Turret;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 @Autonomous
@@ -24,7 +29,7 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
         double drivePowerMag = 3.0; // the bigger the slower
 
         //Create starting pose
-        Pose2d beginPose = new Pose2d(new Vector2d(7, -64.5), Math.toRadians(0));
+        Pose2d beginPose = new Pose2d(new Vector2d(7, -64.75), Math.toRadians(0));
 
         //Create RR drive object
         MecanumDrive drive = new MecanumDrive(hardwareMap, beginPose, drivePowerMag);
@@ -42,8 +47,12 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
         rightShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        DcMotor turret = hardwareMap.get(DcMotor.class, "turret");
-        turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        ShooterController controller = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, telemetry);
+
+        DcMotorEx turret = hardwareMap.get(DcMotorEx.class, "turret");
+        turret.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+
+        Turret turretControl = new Turret(turret);
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
@@ -57,11 +66,12 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
                 turret,
                 hoodServo,
                 leftLatch,
-                rightLatch
+                rightLatch,
+                controller
         );
 
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
-        auto.AutoLong9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, beginPose);
+        auto.AutoLong9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller,tagProcessor, beginPose);
     }
 }
