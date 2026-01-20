@@ -82,6 +82,10 @@ public class TeleOpV1 extends LinearOpMode {
 
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
+        int latchState = 0;
+
+        double power = 0.8; //Used teo limit speed for testing/safety
+
         double turretPower = 1.0;
         boolean shooterMode = true;
         boolean targetIsRed = true;
@@ -230,8 +234,7 @@ public class TeleOpV1 extends LinearOpMode {
 
             if ((gamepad2.right_trigger > 0) || (isAligned && autoShoot)) {
                 if (!(leftLatch.getPosition() == 0)) {
-                    leftLatch.setPosition(0);
-                    rightLatch.setPosition(1);
+                    latchState = 1;
                 }
                 shooter.runShooter(shooterPower);
             } else if (gamepad2.left_trigger > 0) {
@@ -244,7 +247,14 @@ public class TeleOpV1 extends LinearOpMode {
                 shooter.stopShooter();
             }
 
-            double power = 0.8; //Used teo limit speed for testing/safety
+            if (gamepad1.left_trigger > 0) {
+                power = 0.6;
+            } else if (gamepad1.right_trigger > 0) {
+                power = 1;
+            } else {
+                power = 0.8;
+            }
+
             double y = -gamepad1.left_stick_y; // Forward/Backward
             double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
             double rx = gamepad1.right_stick_x; // Turning
@@ -278,8 +288,7 @@ public class TeleOpV1 extends LinearOpMode {
 
             if (gamepad2.right_bumper) {
                 if (!(leftLatch.getPosition() == 1) && (leftShooter.getPower() == 0) && (rightShooter.getPower() == 0)) {
-                    leftLatch.setPosition(1);
-                    rightLatch.setPosition(0);
+                    latchState = 0;
                 }
                 intake.setPower(1);
             } else if (gamepad2.left_bumper) {
@@ -297,11 +306,9 @@ public class TeleOpV1 extends LinearOpMode {
             }
 
             if (gamepad2.dpad_down) {
-                leftLatch.setPosition(1);
-                rightLatch.setPosition(0);
+                latchState = 0;
             } else if (gamepad2.dpad_up) {
-                leftLatch.setPosition(0);
-                rightLatch.setPosition(1);
+                latchState = 1;
             }
 
             //light for shooter status
@@ -311,8 +318,7 @@ public class TeleOpV1 extends LinearOpMode {
                 light.setPosition(0.5);
                 if (((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) && safeShooting) || autoShoot) {
                     intake.setPower(1);
-                    leftLatch.setPosition(0);
-                    rightLatch.setPosition(1);
+                    latchState = 1;
                 }
             } else {
                 light.setPosition(0.28);
@@ -320,6 +326,9 @@ public class TeleOpV1 extends LinearOpMode {
                     intake.setPower(0);
                 }
             }
+
+            rightLatch.setPosition(latchState);
+            leftLatch.setPosition(1 - latchState);
 
             //Pose2D pos = odo.getPosition();
             //String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
