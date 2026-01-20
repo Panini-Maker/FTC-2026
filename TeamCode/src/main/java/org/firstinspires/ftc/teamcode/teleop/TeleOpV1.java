@@ -232,6 +232,17 @@ public class TeleOpV1 extends LinearOpMode {
                 isAligned = false;
             }
 
+            if (gamepad2.right_bumper) {
+                if (!(leftLatch.getPosition() == 1) && (leftShooter.getPower() == 0) && (rightShooter.getPower() == 0)) {
+                    latchState = 0;
+                }
+                intake.setPower(1);
+            } else if (gamepad2.left_bumper) {
+                intake.setPower(-1);
+            } else {
+                intake.setPower(0);
+            }
+
             if ((gamepad2.right_trigger > 0) || (isAligned && autoShoot)) {
                 if (!(leftLatch.getPosition() == 0)) {
                     latchState = 1;
@@ -285,17 +296,6 @@ public class TeleOpV1 extends LinearOpMode {
             //left trigger for intaking and transferring balls
             // if both triggers are pressed, the robot will do both actions simultaneously
             // right button is the outtake in case we intake too many artifacts
-
-            if (gamepad2.right_bumper) {
-                if (!(leftLatch.getPosition() == 1) && (leftShooter.getPower() == 0) && (rightShooter.getPower() == 0)) {
-                    latchState = 0;
-                }
-                intake.setPower(1);
-            } else if (gamepad2.left_bumper) {
-                intake.setPower(-1);
-            } else {
-                intake.setPower(0);
-            }
 
             if (gamepad2.x && (currentHeading <= turretLimitCCW)) {
                 currentHeading = turretController.spinToHeading(currentHeading + 10, turretPower);
