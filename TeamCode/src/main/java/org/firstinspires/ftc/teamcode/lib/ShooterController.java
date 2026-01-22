@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 public class ShooterController {
 
@@ -141,4 +142,17 @@ public class ShooterController {
         pidController.setKi(Ki);
         pidController.setKd(Kd);
     }
+
+    /*
+    public double getDistanceFromGoal(Pose2D pos, boolean isTargetRed?) {
+
+        double x =
+
+        double distance
+
+        return distance;
+    }
+
+     */
+
 }

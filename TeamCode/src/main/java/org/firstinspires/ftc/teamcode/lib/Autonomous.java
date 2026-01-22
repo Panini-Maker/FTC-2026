@@ -7,6 +7,9 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.beginCollectingArtif
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.beginCollectingArtifacts3;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.blue;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.blueTagID;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.collectHumanArtifact1;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.collectHumanArtifact2;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.collectHumanArtifactIdle;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.endCollectingArtifacts1;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.endCollectingArtifacts2;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.endCollectingArtifacts3;
@@ -203,7 +206,7 @@ public class Autonomous {
         }
 
         // Point turret at target
-        double currentHeading = turretControl.spinToHeadingBlocking(angleToTarget, 0.3, 3000);
+        turretControl.spinToHeadingLoop(angleToTarget, 0.67);
 
 
         // Auto aim using camera (only for first shot)
@@ -221,49 +224,46 @@ public class Autonomous {
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
         Action collectArtifacts_1 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts1, color), Math.toRadians(artifactOrientation))
+                .strafeToLinearHeading(mirrorCoordinates(collectHumanArtifact1, color), Math.toRadians(artifactOrientation))
+                .strafeToConstantHeading(mirrorCoordinates(collectHumanArtifactIdle, color))
+                .strafeToConstantHeading(mirrorCoordinates(collectHumanArtifact2, color))
                 .build();
+        intake.setPower(1.0);
         Actions.runBlocking(new SequentialAction(collectArtifacts_1));
 
+        //Also hit the lever
+        Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
+                .strafeToConstantHeading(mirrorCoordinates(shootingPositionLong, color))
+                .build();
+        //shooterController.setVelocityPID(sniper);
+        Actions.runBlocking(new SequentialAction(moveToShoot_2));
+
+
+        shooter.shoot(sniperAuto, shootDurationMs, 3500);
+
         Action collectArtifacts_2 = drive.actionBuilder(drive.localizer.getPose())
+                .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts1, color), Math.toRadians(artifactOrientation))
+                .build();
+        Actions.runBlocking(new SequentialAction(collectArtifacts_2));
+
+        Action collectArtifacts_3 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts1, color))
                 .build();
 
         intake.setPower(1);
-        Actions.runBlocking(new SequentialAction(collectArtifacts_2));
+        Actions.runBlocking(new SequentialAction(collectArtifacts_3));
 
 
-        Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
+        Action moveToShoot_3 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeTo(mirrorCoordinates(shootingPositionLong, color))
                 .build();
 
-        //shooterController.setVelocityPID(sniper);
-        Actions.runBlocking(new SequentialAction(moveToShoot_2));
-
-        shooter.shoot(sniperAuto, shootDurationMs, 3500);
-
-        Action collectArtifacts_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts2, color), Math.toRadians(artifactOrientation))
-                .build();
-        Actions.runBlocking(new SequentialAction(collectArtifacts_3));
-
-        Action collectArtifacts_4 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts2, color))
-                .build();
-        intake.setPower(1);
-        Actions.runBlocking(new SequentialAction(collectArtifacts_4));
-
-        //Also hit the lever
-        Action moveToShoot_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToConstantHeading(mirrorCoordinates(shootingPositionLong, color))
-                .build();
-        //shooterController.setVelocityPID(sniper);
+        //shooterC ontroller.setVelocityPID(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_3));
 
-
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
-        turretControl.spinToHeadingBlocking(0, 0.3, 3000);
+        turretControl.spinToHeadingLoop(0, 0.67);
 
         //Move out of zone
         Action moveOutOfZone = drive.actionBuilder(drive.localizer.getPose())
@@ -310,7 +310,7 @@ public class Autonomous {
         }
 
         // Point turret at target
-        double currentHeading = turretControl.spinToHeadingBlocking(angleToTarget, 0.3, 3000);
+        turretControl.spinToHeadingLoop(angleToTarget, 0.67);
 
         // Auto aim using camera (only for first shot)
         //currentHeading = autoAim(tagProcessor, turretControl, currentHeading, targetTagID, 0.3, 3);
@@ -356,7 +356,7 @@ public class Autonomous {
 
         shooter.shoot(shotgun, shootDurationMs, 2000);
 
-        turretControl.spinToHeadingBlocking(0, 0.3, 3000);
+        turretControl.spinToHeadingLoop(0, 0.67);
 
         //Also hit the lever
         Action hitLever = drive.actionBuilder(drive.localizer.getPose())

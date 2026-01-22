@@ -150,7 +150,7 @@ public class TeleOpV1 extends LinearOpMode {
                 shooterPower = sniper;
                 telemetry.addData("Shooter Mode", "Sniper");
                 //shooter.setPIDConstants(0.0025,0.00099,0);
-                hoodServo.setPosition(0.2);
+                hoodServo.setPosition(0.4);
             }
 
             //Consider using toggle with right bumper/trigger instead of holding right trigger

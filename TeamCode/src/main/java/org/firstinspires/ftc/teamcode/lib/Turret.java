@@ -7,6 +7,11 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 public class Turret {
     private DcMotorEx turret;
+    // Parallel thread variables
+    private volatile boolean pidRunning = false;
+    private volatile double targetVelocity = 0;
+    private Thread pidThread;
+
     private final double ticksPerDegree = turretTicksPerDegree;
     public Turret(DcMotorEx turret) {
         this.turret = turret;
@@ -48,6 +53,32 @@ public class Turret {
         System.out.println("Ticks per Degree: " + ticksPerDegree);
 
         return (currentPosition / ticksPerDegree);
+    }
+
+    public void spinToHeadingLoop (double desiredHeading, double power) {
+        // If already running, just update target velocity
+        if (pidRunning) {
+            return;
+        }
+
+        pidRunning = true;
+
+        pidThread = new Thread(() -> {
+            while (pidRunning && !Thread.currentThread().isInterrupted()) {
+                spinToHeading(desiredHeading, power);
+
+                try {
+                    Thread.sleep(12); // ~80Hz update rate
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            // Ensure motors are stopped when thread exits
+            turret.setPower(0);
+        });
+        pidThread.setDaemon(true); // Thread will stop when main program ends
+        pidThread.start();
     }
 
     /**
