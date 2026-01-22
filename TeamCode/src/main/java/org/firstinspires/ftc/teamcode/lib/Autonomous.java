@@ -310,7 +310,7 @@ public class Autonomous {
         }
 
         // Point turret at target
-        turretControl.spinToHeadingLoop(angleToTarget, 0.67);
+        turretControl.spinToHeadingLoop(angleToTarget, 0.7);
 
         // Auto aim using camera (only for first shot)
         //currentHeading = autoAim(tagProcessor, turretControl, currentHeading, targetTagID, 0.3, 3);
@@ -356,7 +356,7 @@ public class Autonomous {
 
         shooter.shoot(shotgun, shootDurationMs, 2000);
 
-        turretControl.spinToHeadingLoop(0, 0.67);
+        turretControl.spinToHeadingLoop(0, 0.7);
 
         //Also hit the lever
         Action hitLever = drive.actionBuilder(drive.localizer.getPose())
