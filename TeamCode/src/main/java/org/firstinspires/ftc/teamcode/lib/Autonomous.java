@@ -263,7 +263,7 @@ public class Autonomous {
 
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
-        turretControl.spinToHeadingLoop(0, 0.67);
+        turretControl.spinToHeadingLoop(0, 0.7);
 
         //Move out of zone
         Action moveOutOfZone = drive.actionBuilder(drive.localizer.getPose())
