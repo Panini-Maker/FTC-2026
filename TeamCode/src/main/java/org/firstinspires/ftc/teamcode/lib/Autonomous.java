@@ -30,6 +30,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingPositionLong
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniperAuto;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretSpeedAuto;
 
 import static java.lang.Thread.sleep;
 
@@ -206,7 +207,7 @@ public class Autonomous {
         }
 
         // Point turret at target
-        turretControl.spinToHeadingLoop(angleToTarget, 0.67);
+        turretControl.spinToHeadingLoop(angleToTarget, turretSpeedAuto);
 
 
         // Auto aim using camera (only for first shot)
@@ -263,11 +264,11 @@ public class Autonomous {
 
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
-        turretControl.spinToHeadingLoop(0, 0.7);
+        turretControl.spinToHeadingLoop(0, turretSpeedAuto);
 
         //Move out of zone
         Action moveOutOfZone = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToLinearHeading(mirrorCoordinates(pressLever, color), Math.toRadians(90))
+                .strafeToLinearHeading(mirrorCoordinates(parkPositionLong, color), Math.toRadians(90))
                 .build();
         Actions.runBlocking(new SequentialAction(moveOutOfZone));
     }
@@ -310,7 +311,7 @@ public class Autonomous {
         }
 
         // Point turret at target
-        turretControl.spinToHeadingLoop(angleToTarget, 0.7);
+        turretControl.spinToHeadingLoop(angleToTarget, turretSpeedAuto);
 
         // Auto aim using camera (only for first shot)
         //currentHeading = autoAim(tagProcessor, turretControl, currentHeading, targetTagID, 0.3, 3);
@@ -356,7 +357,7 @@ public class Autonomous {
 
         shooter.shoot(shotgun, shootDurationMs, 2000);
 
-        turretControl.spinToHeadingLoop(0, 0.7);
+        turretControl.spinToHeadingLoop(0, turretSpeedAuto);
 
         //Also hit the lever
         Action hitLever = drive.actionBuilder(drive.localizer.getPose())

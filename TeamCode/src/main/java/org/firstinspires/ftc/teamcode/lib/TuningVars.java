@@ -11,7 +11,7 @@ public class TuningVars {
     public static int shootingSlowDownSpeed = 200;
     public static int shotgun = 1550; //Was 1600
     public static int sniper = 2000; //Was 1550
-    public static int sniperAuto = 1950; //Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
+    public static int sniperAuto = 1976; //Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
     // Was 1950, but not enough for autonomous shots
     public static int idle = 1200;
     public static int shootingToleranceAuto = 5; // in RPM
@@ -25,6 +25,7 @@ public class TuningVars {
     public static double turretTicksPerDegree = (turretMotorTPR * turretGearTeeth) / (turretMotorGearTeeth * 360.0);
     public static double turretLimitCCW = 360; // in degrees (No more limits)
     public static double turretLimitCW = -360; // in degrees (No more limits)
+    public static double turretSpeedAuto = 0.67; // 0 to 1
 
     //Camera Tuning Vars
     public static int cameraResolutionWidth = 1280;
@@ -39,7 +40,7 @@ public class TuningVars {
     public static int artifactHeadingBlue = 180; // in degrees
     public static String red = "red";
     public static String blue = "blue";
-    public static Vector2d parkPositionLong = new Vector2d(36, -36);
+    public static Vector2d parkPositionLong = new Vector2d(36, -60);
     public static Vector2d shootingPositionLong = new Vector2d(10, -48.75);
     public static Vector2d collectHumanArtifact1 = new Vector2d(60,-60);
     public static Vector2d collectHumanArtifactIdle = new Vector2d(56,-60);

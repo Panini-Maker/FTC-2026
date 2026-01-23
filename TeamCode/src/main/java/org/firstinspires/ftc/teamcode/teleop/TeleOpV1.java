@@ -93,6 +93,7 @@ public class TeleOpV1 extends LinearOpMode {
         int target = redTagID;
         boolean isAligned = false;
         double currentHeading = 0.0;
+        double distanceToGoal = 0.0;
 
         //Auto Aim and Auto Shoot variables
         boolean autoAim = false;
@@ -210,6 +211,7 @@ public class TeleOpV1 extends LinearOpMode {
                                 telemetry.addData("Bearing to Target", tag.ftcPose.bearing);
                                 telemetry.addData("Auto Aim Status", "Within tolerance, skipping");
                                 isAligned = true;
+                                distanceToGoal = tag.ftcPose.range + 18; //Estimate distance to goal from tag range
                                 break;
                             }
                             isAligned = false;
