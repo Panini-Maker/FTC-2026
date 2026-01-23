@@ -11,6 +11,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceAuto;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceTeleOp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgunteleop;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
@@ -73,6 +74,8 @@ public class TeleOpV1 extends LinearOpMode {
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
         Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
         Servo light = hardwareMap.get(Servo.class, "light");
+
+        hoodServo.setDirection(Servo.Direction.REVERSE);
 
         // Configure odometry
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
@@ -143,15 +146,15 @@ public class TeleOpV1 extends LinearOpMode {
             }
 
             if (shooterMode) {
-                shooterPower = shotgun;
+                shooterPower = shotgunteleop;
                 telemetry.addData("Shooter Mode:", "Shotgun");
                 //shooter.setPIDConstants(0.0025,0.00099,0);
-                hoodServo.setPosition(1);
+                hoodServo.setPosition(0.4);
             } else {
                 shooterPower = sniper;
                 telemetry.addData("Shooter Mode", "Sniper");
                 //shooter.setPIDConstants(0.0025,0.00099,0);
-                hoodServo.setPosition(0.4);
+                hoodServo.setPosition(0.6);
             }
 
             //Consider using toggle with right bumper/trigger instead of holding right trigger
@@ -240,7 +243,7 @@ public class TeleOpV1 extends LinearOpMode {
                 }
                 intake.setPower(1);
             } else if (gamepad2.left_bumper) {
-                intake.setPower(-1);
+                intake.setPower(-0.8);
             } else {
                 intake.setPower(0);
             }

@@ -10,6 +10,7 @@ public class TuningVars {
     public static double shooterKd = 0; //0.0003
     public static int shootingSlowDownSpeed = 200;
     public static int shotgun = 1550; //Was 1600
+    public static int shotgunteleop = 1470;
     public static int sniper = 2000; //Was 1550
     public static int sniperAuto = 1976; //Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
     // Was 1950, but not enough for autonomous shots
