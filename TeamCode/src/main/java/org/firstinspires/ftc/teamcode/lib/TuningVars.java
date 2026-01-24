@@ -12,9 +12,9 @@ public class TuningVars {
     public static int shotgun = 1550; //Was 1600
     public static int shotgunTeleOp = 1470;
     public static int sniper = 2000; //Was 1550
-    public static int sniperAuto = 1925; // Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
+    public static int sniperAuto = 1900; // Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
     // Was 1950, but not enough for autonomous shots
-    // Shots too high at 1976 rpm
+    // Shots too high at 1976 rpm, 1925 causes problem where it hits backboard sometimes
     public static int idle = 800; // Was 1200
     public static int shootingToleranceAuto = 5; // in RPM
     public static int shootingToleranceTeleOp = 50; // in RPM
@@ -48,11 +48,11 @@ public class TuningVars {
     public static Vector2d collectHumanArtifactIdle = new Vector2d(56,-60);
     public static Vector2d collectHumanArtifact2 = new Vector2d(60,-64.75);
     public static Vector2d beginCollectingArtifacts1 = new Vector2d(30, -36);
-    public static Vector2d endCollectingArtifacts1 = new Vector2d(58, -36);
-    public static Vector2d beginCollectingArtifacts2 = new Vector2d(33, -12);
-    public static Vector2d endCollectingArtifacts2 = new Vector2d(58, -12);
-    public static Vector2d intermediateStoppingPoint = new Vector2d(33, -12);
-    public static Vector2d beginCollectingArtifacts3 = new Vector2d(33, 12);
+    public static Vector2d endCollectingArtifacts1 = new Vector2d(59, -36);
+    public static Vector2d beginCollectingArtifacts2 = new Vector2d(30, -12);
+    public static Vector2d endCollectingArtifacts2 = new Vector2d(59, -12);
+    public static Vector2d intermediateStoppingPoint = new Vector2d(48, -12);
+    public static Vector2d beginCollectingArtifacts3 = new Vector2d(30, 12);
     public static Vector2d endCollectingArtifacts3 = new Vector2d(51, 12);
     public static Vector2d shootingPositionShort = new Vector2d(18, 18);
     public static Vector2d parkPositionShort = new Vector2d(50, 0);

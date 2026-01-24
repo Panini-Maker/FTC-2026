@@ -30,9 +30,9 @@ public class ShootingAction {
 
     public void shoot(int shooterVelocity, int shootDurationMs, int rampUpTimeMs) throws InterruptedException {
         if (shooterVelocity == (sniperAuto)) {
-            hoodServo.setPosition(0.42); // Set hood for sniper
+            hoodServo.setPosition(0.5); // Set hood for sniper
         } else {
-            hoodServo.setPosition(0.5); // Set hood for shotgun
+            hoodServo.setPosition(0.42); // Set hood for shotgun
         }
 
         intake.setPower(0); // Ensure intake is off

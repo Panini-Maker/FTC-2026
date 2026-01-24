@@ -75,6 +75,7 @@ public class AutoBlueShort9Artifacts extends LinearOpMode {
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
         Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        hoodServo.setDirection(Servo.Direction.REVERSE);
 
 
         ShootingAction shooter = new ShootingAction(
@@ -91,7 +92,7 @@ public class AutoBlueShort9Artifacts extends LinearOpMode {
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
         try {
-            auto.AutoShort9Artifacts(blue, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller, tagProcessor, beginPose);
+            auto.AutoShort9Artifacts(blue, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller, tagProcessor, telemetry, beginPose);
         } finally {
             // Ensure PID thread stops when OpMode ends
             controller.stopVelocityPID();

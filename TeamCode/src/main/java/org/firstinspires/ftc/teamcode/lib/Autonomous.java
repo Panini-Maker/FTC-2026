@@ -229,14 +229,14 @@ public class Autonomous {
         if (color.equalsIgnoreCase(red)) {
             angleToTarget = -115;
         } else {
-            angleToTarget = 114;
+            angleToTarget = 115;
         }
 
         // Point turret at target
         turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
 
         telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
-
+        telemetry.update();
         // Auto aim using camera (only for first shot)
         //currentHeading = autoAim(tagProcessor, turretControl, currentHeading, targetTagID, 0.3, 3000);
 
@@ -248,9 +248,6 @@ public class Autonomous {
         }
 
          */
-        headingError = Math.toDegrees(drive.localizer.getPose().heading.toDouble() - Math.toRadians(artifactOrientation));
-        telemetry.addData("Heading Error", headingError);
-        telemetry.update();
 
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
@@ -269,11 +266,9 @@ public class Autonomous {
         //shooterController.setVelocityPID(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_2));
 
-        headingError = Math.toDegrees(drive.localizer.getPose().heading.toDouble() - Math.toRadians(artifactOrientation));
-        telemetry.addData("Heading Error", headingError);
-        telemetry.update();
-
         turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
+        telemetry.update();
 
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
@@ -297,11 +292,9 @@ public class Autonomous {
         //shooterC ontroller.setVelocityPID(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_3));
 
-        headingError = Math.toDegrees(drive.localizer.getPose().heading.toDouble() - Math.toRadians(artifactOrientation));
-        telemetry.addData("Heading Error", headingError);
-        telemetry.update();
-
         turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
+        telemetry.update();
 
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
@@ -323,6 +316,7 @@ public class Autonomous {
                                     Turret turretControl,
                                     ShooterController shooterController,
                                     AprilTagProcessor tagProcessor,
+                                    Telemetry telemetry,
                                     Pose2d beginPose) throws InterruptedException {
         int headingMultiplier = 1;
         int artifactOrientation = artifactHeadingRed;
@@ -355,6 +349,8 @@ public class Autonomous {
         //turretControl.spinToHeadingLoop(angleToTarget, turretSpeedAuto);
 
         turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
+        telemetry.update();
 
         // Auto aim using camera (only for first shot)
         //currentHeading = autoAim(tagProcessor, turretControl, currentHeading, targetTagID, 0.3, 3);
@@ -376,6 +372,8 @@ public class Autonomous {
         Actions.runBlocking(moveToShoot_2);
 
         turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
+        telemetry.update();
 
         shooter.shoot(shotgun, shootDurationMs, 2000);
         //Move to collect more artifacts
@@ -400,6 +398,8 @@ public class Autonomous {
         Actions.runBlocking(moveToShoot_3);
 
         turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
+        telemetry.update();
 
         shooter.shoot(shotgun, shootDurationMs, 2000);
 

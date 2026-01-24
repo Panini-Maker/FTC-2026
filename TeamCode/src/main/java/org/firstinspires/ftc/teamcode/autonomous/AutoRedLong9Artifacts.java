@@ -57,6 +57,7 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
         Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        hoodServo.setDirection(Servo.Direction.REVERSE);
 
 
         ShootingAction shooter = new ShootingAction(
