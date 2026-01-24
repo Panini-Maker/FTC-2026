@@ -10,11 +10,12 @@ public class TuningVars {
     public static double shooterKd = 0; //0.0003
     public static int shootingSlowDownSpeed = 200;
     public static int shotgun = 1550; //Was 1600
-    public static int shotgunteleop = 1470;
+    public static int shotgunTeleOp = 1470;
     public static int sniper = 2000; //Was 1550
-    public static int sniperAuto = 1976; //Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
+    public static int sniperAuto = 1925; // Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
     // Was 1950, but not enough for autonomous shots
-    public static int idle = 1200;
+    // Shots too high at 1976 rpm
+    public static int idle = 800; // Was 1200
     public static int shootingToleranceAuto = 5; // in RPM
     public static int shootingToleranceTeleOp = 50; // in RPM
     public static int shootDurationMs = 2500; // in milliseconds
@@ -41,7 +42,7 @@ public class TuningVars {
     public static int artifactHeadingBlue = 180; // in degrees
     public static String red = "red";
     public static String blue = "blue";
-    public static Vector2d parkPositionLong = new Vector2d(36, -60);
+    public static Vector2d parkPositionLong = new Vector2d(36, -48);
     public static Vector2d shootingPositionLong = new Vector2d(10, -48.75);
     public static Vector2d collectHumanArtifact1 = new Vector2d(60,-60);
     public static Vector2d collectHumanArtifactIdle = new Vector2d(56,-60);

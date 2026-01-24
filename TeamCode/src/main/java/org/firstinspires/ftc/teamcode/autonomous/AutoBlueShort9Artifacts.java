@@ -70,7 +70,7 @@ public class AutoBlueShort9Artifacts extends LinearOpMode {
 
         DcMotorEx turret = hardwareMap.get(DcMotorEx.class, "turret");
         turret.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
-        Turret turretControl = new Turret(turret);
+        Turret turretControl = new Turret(turret, telemetry);
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
@@ -95,6 +95,7 @@ public class AutoBlueShort9Artifacts extends LinearOpMode {
         } finally {
             // Ensure PID thread stops when OpMode ends
             controller.stopVelocityPID();
+            turretControl.stopVelocityPID();
         }
     }
 }

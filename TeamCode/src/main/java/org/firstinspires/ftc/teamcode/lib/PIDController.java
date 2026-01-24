@@ -41,6 +41,7 @@ public class PIDController {
         double derivative = (error - previousError) / deltaTime;
         previousError = error;
 
+        /*
         telemetry.addData("Current Velocity", currentVelocity);
         telemetry.addData("Desired Velocity", desiredVelocity);
         telemetry.addData("Error", error);
@@ -51,6 +52,8 @@ public class PIDController {
         telemetry.addData("Ki", Ki);
         telemetry.addData("Kd", Kd);
         telemetry.update();
+
+         */
 
         return (Kp * error) + (Ki * integral) + (Kd * derivative);
     }

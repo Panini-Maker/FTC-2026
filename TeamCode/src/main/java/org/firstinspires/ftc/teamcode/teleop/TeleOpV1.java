@@ -8,10 +8,8 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceAuto;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceTeleOp;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgun;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgunteleop;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgunTeleOp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
@@ -68,7 +66,7 @@ public class TeleOpV1 extends LinearOpMode {
         turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
-        Turret turretController = new Turret(turret);
+        Turret turretController = new Turret(turret, telemetry);
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
@@ -146,7 +144,7 @@ public class TeleOpV1 extends LinearOpMode {
             }
 
             if (shooterMode) {
-                shooterPower = shotgunteleop;
+                shooterPower = shotgunTeleOp;
                 telemetry.addData("Shooter Mode:", "Shotgun");
                 //shooter.setPIDConstants(0.0025,0.00099,0);
                 hoodServo.setPosition(0.4);

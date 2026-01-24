@@ -42,6 +42,7 @@ import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
@@ -106,6 +107,26 @@ public class Autonomous {
         }
 
         return new Vector2d(xMultiplier * position.x, position.y);
+    }
+
+    public double findCompensationAngle(double angleToGoal, double currentRobotHeading, double desiredRobotHeading) {
+        double error = desiredRobotHeading - currentRobotHeading;
+
+        while (error > 180 || error < -180) {
+            if (error > 180) {
+                error -= 360;
+            } else {
+                error += 360;
+            }
+        }
+
+        if (error > 10) {
+            error = 0;
+        } else if (error < -10) {
+            error = -0;
+        }
+
+        return angleToGoal + error;
     }
     public void AutoLong6Artifacts(String color,
                                    MecanumDrive drive,
@@ -176,14 +197,19 @@ public class Autonomous {
                                    Turret turretControl,
                                    ShooterController shooterController,
                                    AprilTagProcessor tagProcessor,
+                                   Telemetry telemetry,
                                    Pose2d beginPose) throws InterruptedException {
         int headingMultiplier = 1;
         int artifactOrientation = artifactHeadingRed;
         int targetTagID = redTagID;
+        int humanArtifactAngle = artifactOrientation - 5;
+        int parkingAngle = 90;
+        double headingError = 0.0;
 
         if (color.equalsIgnoreCase(blue)) {
             headingMultiplier = mirrorHeading;
             artifactOrientation = artifactHeadingBlue;
+            humanArtifactAngle = artifactOrientation + 5;
             targetTagID = blueTagID;
         }
         //Create starting pose
@@ -192,7 +218,7 @@ public class Autonomous {
         shooterController.setVelocityPID(sniperAuto);
         //Creating autonomous path
         Action moveToShoot_1 = drive.actionBuilder(beginPose)
-                .strafeTo(mirrorCoordinates(shootingPositionLong, color))
+                .strafeToLinearHeading(mirrorCoordinates(shootingPositionLong, color), Math.toRadians(artifactOrientation))
                 .build();
 
         //Follow the path
@@ -203,12 +229,13 @@ public class Autonomous {
         if (color.equalsIgnoreCase(red)) {
             angleToTarget = -115;
         } else {
-            angleToTarget = 109;
+            angleToTarget = 114;
         }
 
         // Point turret at target
-        turretControl.spinToHeadingLoop(angleToTarget, turretSpeedAuto);
+        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
 
+        telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
 
         // Auto aim using camera (only for first shot)
         //currentHeading = autoAim(tagProcessor, turretControl, currentHeading, targetTagID, 0.3, 3000);
@@ -221,24 +248,32 @@ public class Autonomous {
         }
 
          */
+        headingError = Math.toDegrees(drive.localizer.getPose().heading.toDouble() - Math.toRadians(artifactOrientation));
+        telemetry.addData("Heading Error", headingError);
+        telemetry.update();
 
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
         Action collectArtifacts_1 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(mirrorCoordinates(collectHumanArtifact1, color), Math.toRadians(artifactOrientation))
-                .strafeToConstantHeading(mirrorCoordinates(collectHumanArtifactIdle, color))
-                .strafeToConstantHeading(mirrorCoordinates(collectHumanArtifact2, color))
+                .strafeToLinearHeading(mirrorCoordinates(collectHumanArtifactIdle, color), Math.toRadians(artifactOrientation))
+                .strafeToLinearHeading(mirrorCoordinates(collectHumanArtifact2, color), Math.toRadians(humanArtifactAngle))
                 .build();
         intake.setPower(1.0);
         Actions.runBlocking(new SequentialAction(collectArtifacts_1));
 
         //Also hit the lever
         Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToConstantHeading(mirrorCoordinates(shootingPositionLong, color))
+                .strafeToLinearHeading(mirrorCoordinates(shootingPositionLong, color), Math.toRadians(artifactOrientation))
                 .build();
         //shooterController.setVelocityPID(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_2));
 
+        headingError = Math.toDegrees(drive.localizer.getPose().heading.toDouble() - Math.toRadians(artifactOrientation));
+        telemetry.addData("Heading Error", headingError);
+        telemetry.update();
+
+        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
 
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
@@ -248,7 +283,7 @@ public class Autonomous {
         Actions.runBlocking(new SequentialAction(collectArtifacts_2));
 
         Action collectArtifacts_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts1, color))
+                .strafeToLinearHeading(mirrorCoordinates(endCollectingArtifacts1, color), Math.toRadians(artifactOrientation))
                 .build();
 
         intake.setPower(1);
@@ -256,11 +291,17 @@ public class Autonomous {
 
 
         Action moveToShoot_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeTo(mirrorCoordinates(shootingPositionLong, color))
+                .strafeToLinearHeading(mirrorCoordinates(shootingPositionLong, color), Math.toRadians(artifactOrientation))
                 .build();
 
         //shooterC ontroller.setVelocityPID(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_3));
+
+        headingError = Math.toDegrees(drive.localizer.getPose().heading.toDouble() - Math.toRadians(artifactOrientation));
+        telemetry.addData("Heading Error", headingError);
+        telemetry.update();
+
+        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
 
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
@@ -268,7 +309,7 @@ public class Autonomous {
 
         //Move out of zone
         Action moveOutOfZone = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToLinearHeading(mirrorCoordinates(parkPositionLong, color), Math.toRadians(90))
+                .strafeToLinearHeading(mirrorCoordinates(parkPositionLong, color), Math.toRadians(parkingAngle))
                 .build();
         Actions.runBlocking(new SequentialAction(moveOutOfZone));
     }
@@ -311,7 +352,9 @@ public class Autonomous {
         }
 
         // Point turret at target
-        turretControl.spinToHeadingLoop(angleToTarget, turretSpeedAuto);
+        //turretControl.spinToHeadingLoop(angleToTarget, turretSpeedAuto);
+
+        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
 
         // Auto aim using camera (only for first shot)
         //currentHeading = autoAim(tagProcessor, turretControl, currentHeading, targetTagID, 0.3, 3);
@@ -320,7 +363,7 @@ public class Autonomous {
         //Move to collect more artifacts
         Action moveToCollect_1 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts3, color), Math.toRadians(artifactOrientation))
-                .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts3, color))
+                .strafeToLinearHeading(mirrorCoordinates(endCollectingArtifacts3, color), Math.toRadians(artifactOrientation))
                 .build();
         intake.setPower(1);
         Actions.runBlocking(moveToCollect_1);
@@ -328,9 +371,11 @@ public class Autonomous {
         //Move to shoot again
         //shooterController.setVelocityPID(shotgun);
         Action moveToShoot_2 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToConstantHeading(mirrorCoordinates(shootingPositionShort, color))
+                    .strafeToLinearHeading(mirrorCoordinates(shootingPositionShort, color), Math.toRadians(artifactOrientation))
                 .build();
         Actions.runBlocking(moveToShoot_2);
+
+        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
 
         shooter.shoot(shotgun, shootDurationMs, 2000);
         //Move to collect more artifacts
@@ -341,7 +386,7 @@ public class Autonomous {
         Actions.runBlocking(moveToCollect_2);
 
         Action moveToCollect_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToConstantHeading(mirrorCoordinates(endCollectingArtifacts2, color))
+                .strafeToLinearHeading(mirrorCoordinates(endCollectingArtifacts2, color), Math.toRadians(artifactOrientation))
                 .build();
         intake.setPower(1);
         Actions.runBlocking(moveToCollect_3);
@@ -349,11 +394,12 @@ public class Autonomous {
         //Move to shoot last time
         //shooterController.setVelocityPID(shotgun);
         Action moveToShoot_3 = drive.actionBuilder(drive.localizer.getPose())
-                .strafeToConstantHeading(mirrorCoordinates(intermediateStoppingPoint, color))
-                .strafeToConstantHeading(mirrorCoordinates(shootingPositionShort, color))
+                .strafeToLinearHeading(mirrorCoordinates(intermediateStoppingPoint, color), Math.toRadians(artifactOrientation))
+                .strafeToLinearHeading(mirrorCoordinates(shootingPositionShort, color), Math.toRadians(artifactOrientation))
                 .build();
         Actions.runBlocking(moveToShoot_3);
 
+        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
 
         shooter.shoot(shotgun, shootDurationMs, 2000);
 

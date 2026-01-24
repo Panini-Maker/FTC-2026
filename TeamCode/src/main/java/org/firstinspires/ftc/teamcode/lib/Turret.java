@@ -5,16 +5,20 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretTicksPerDegree
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
+
 public class Turret {
     private DcMotorEx turret;
     // Parallel thread variables
     private volatile boolean pidRunning = false;
-    private volatile double targetVelocity = 0;
+    private volatile double targetPosition = 0;
     private Thread pidThread;
+    private Telemetry telemetry;
 
     private final double ticksPerDegree = turretTicksPerDegree;
-    public Turret(DcMotorEx turret) {
+    public Turret(DcMotorEx turret, Telemetry telemetry) {
         this.turret = turret;
+        this.telemetry = telemetry;
         turret.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER); // Reset encoder at initialization
         turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER); // Set to use encoder
     }
@@ -47,10 +51,13 @@ public class Turret {
         }
 
         // Debugging telemetry
-        System.out.println("Target Position (ticks): " + targetPosition);
-        System.out.println("Current Position (ticks): " + currentPosition);
-        System.out.println("Error (ticks): " + error);
-        System.out.println("Ticks per Degree: " + ticksPerDegree);
+        /*
+        telemetry.addLine("Target Position (ticks): " + targetPosition);
+        telemetry.addLine("Current Position (ticks): " + currentPosition);
+        telemetry.addLine("Error (ticks): " + error);
+        telemetry.addLine("Ticks per Degree: " + ticksPerDegree);
+
+         */
 
         return (currentPosition / ticksPerDegree);
     }
@@ -58,14 +65,16 @@ public class Turret {
     public void spinToHeadingLoop (double desiredHeading, double power) {
         // If already running, just update target velocity
         if (pidRunning) {
+            targetPosition = desiredHeading;
             return;
         }
 
+        targetPosition = desiredHeading;
         pidRunning = true;
 
         pidThread = new Thread(() -> {
             while (pidRunning && !Thread.currentThread().isInterrupted()) {
-                spinToHeading(desiredHeading, power);
+                spinToHeading(targetPosition, power);
 
                 try {
                     Thread.sleep(12); // ~80Hz update rate
@@ -79,6 +88,22 @@ public class Turret {
         });
         pidThread.setDaemon(true); // Thread will stop when main program ends
         pidThread.start();
+    }
+
+    /**
+     * Stops the parallel PID loop and the shooter motors.
+     */
+    public void stopVelocityPID() {
+        pidRunning = false;
+        if (pidThread != null) {
+            pidThread.interrupt();
+            try {
+                pidThread.join(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        stopTurret();
     }
 
     /**

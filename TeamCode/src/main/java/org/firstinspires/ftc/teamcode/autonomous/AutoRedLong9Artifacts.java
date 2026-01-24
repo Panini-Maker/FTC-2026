@@ -52,7 +52,7 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
         DcMotorEx turret = hardwareMap.get(DcMotorEx.class, "turret");
         turret.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
-        Turret turretControl = new Turret(turret);
+        Turret turretControl = new Turret(turret, telemetry);
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
@@ -73,10 +73,11 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
         try {
-            auto.AutoLong9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller, tagProcessor, beginPose);
+            auto.AutoLong9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller, tagProcessor, telemetry, beginPose);
         } finally {
             // Ensure PID thread stops when OpMode ends
             controller.stopVelocityPID();
+            turretControl.stopVelocityPID();
         }
     }
 }
