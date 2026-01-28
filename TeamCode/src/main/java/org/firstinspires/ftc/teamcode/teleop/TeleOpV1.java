@@ -301,9 +301,9 @@ public class TeleOpV1 extends LinearOpMode {
             // right button is the outtake in case we intake too many artifacts
 
             if (gamepad2.x && (currentHeading <= turretLimitCCW)) {
-                currentHeading = turretController.spinToHeading(currentHeading + 10, turretPower);
+                currentHeading = turretController.spinToHeading(currentHeading + 30, turretPower);
             } else if (gamepad2.b && (currentHeading >= turretLimitCW)) {
-                currentHeading = turretController.spinToHeading(currentHeading - 10, turretPower);
+                currentHeading = turretController.spinToHeading(currentHeading - 30, turretPower);
             } else {
                 turretController.stopTurret();
             }

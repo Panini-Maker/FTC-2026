@@ -2,10 +2,13 @@ package org.firstinspires.ftc.teamcode.lib;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretTicksPerDegree;
 
-import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 public class Turret {
     private DcMotorEx turret;
@@ -174,4 +177,38 @@ public class Turret {
         turret.setPower(0);
         turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
     }
+
+    public double turnToGoal(Pose2D pos, double turretCurrentAngle, boolean targetIsRed) {
+
+
+
+        // Get robot x, y, heading
+        double x = pos.getX(DistanceUnit.INCH);
+        double y = pos.getY(DistanceUnit.INCH);
+        double heading = pos.getHeading(AngleUnit.DEGREES);
+
+        // find goal coordinates
+        double goal_x;
+        double goal_y;
+
+        if (targetIsRed) {
+            goal_x = 144;
+            goal_y = 144;
+        } else {
+            goal_x = 0;
+            goal_y = 144;
+        }
+
+        double dist_x = x - goal_x;
+        double dist_y = y - goal_y;
+
+
+        double fieldAngle = Math.toDegrees(Math.atan(dist_x/dist_y));
+        double robotAngle = fieldAngle - heading;
+        double turretAngle = robotAngle - turretCurrentAngle;
+
+
+        return turretAngle;
+    }
+
 }
