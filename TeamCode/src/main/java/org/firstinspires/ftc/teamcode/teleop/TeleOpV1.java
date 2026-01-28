@@ -21,23 +21,19 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
-import org.firstinspires.ftc.teamcode.lib.AprilTag;
 import org.firstinspires.ftc.teamcode.lib.CameraMovement;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
 import org.firstinspires.ftc.teamcode.lib.Turret;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 
 @TeleOp
 public class TeleOpV1 extends LinearOpMode {
 
     GoBildaPinpointDriver odo;
-    CameraMovement camera;
 
     @Override
 
@@ -110,22 +106,27 @@ public class TeleOpV1 extends LinearOpMode {
 
         // Recalibrate Odometry
         odo.resetPosAndIMU();
+        // Get position
+        odo.update();
 
+        //odo.setOffsets();
+        currentXOdo = odo.getPosX(DistanceUnit.INCH);
+        currentYOdo = odo.getPosY(DistanceUnit.INCH);
+        currentHeadingOdo = odo.getHeading(AngleUnit.DEGREES);
         telemetry.addData("Status", "Initialized");
         telemetry.update();
-        AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
-        tagProcessor.setDecimation(0.5f); // Adjust for lighting conditions
-        //CameraMovement camera = new CameraMovement(frontLeft, frontRight, backRight, backLeft, leftShooter, rightShooter, hoodServo, leftLatch, rightLatch, turret , odo, intake, voltageSensor, telemetry, tagProcessor);
-
 
         waitForStart();
         resetRuntime();
 
-        ElapsedTime autoAimCoolDown = new ElapsedTime();
         while (opModeIsActive()) {
             // Get position
-
             odo.update();
+
+            //odo.setOffsets();
+            currentXOdo = odo.getPosX(DistanceUnit.INCH);
+            currentYOdo = odo.getPosY(DistanceUnit.INCH);
+            currentHeadingOdo = odo.getHeading(AngleUnit.DEGREES);
 
             if (gamepad2.yWasPressed()) {
                 shooterMode = !shooterMode;
@@ -155,52 +156,12 @@ public class TeleOpV1 extends LinearOpMode {
                 hoodServo.setPosition(0.6);
             }
 
-            //Consider using toggle with right bumper/trigger instead of holding right trigger
-            /*
-            if (gamepad1.right_bumper && toggleAutoAim) {
-                autoAim = !autoAim;
-                //Turn off autoShoot when autoAim is off
-                if (!autoAim) {
-                    autoShoot = false;
-                }
-                toggleAutoAim = false;
-            } else {
-                toggleAutoAim = true;
-            }
-
-             */
-
-            autoAim = gamepad2.dpad_right;
-
-            if (!autoAim) {
-                autoShoot = false;
-            }
-
-            /*
-            if (gamepad1.left_bumper && toggleAutoShoot) {
-                autoShoot = !autoShoot;
-                //Turn autoAim on when autoShoot is on
-                if (autoShoot) {
-                    autoAim = true;
-                }
-
-                toggleAutoShoot = false;
-            } else {
-                toggleAutoShoot = true;
-            }
-
-             */
-
-            autoShoot = gamepad2.dpad_left;
-
-            if (autoShoot) {
-                autoAim = true;
-            }
+            //Auto Aim no longer toggled by drivers
 
             if (gamepad1.yWasPressed()) {
                 safeShooting = !safeShooting;
             }
-
+            /*
             if (autoAim && (autoAimCoolDown.milliseconds() > 100) && !isAligned) {
                 sleep (100);
                 if ((tagProcessor.getFreshDetections() != null) && !tagProcessor.getDetections().isEmpty()) {
@@ -230,35 +191,47 @@ public class TeleOpV1 extends LinearOpMode {
                 }
             }
 
+             */
+
             // Reset alignment status when robot moves or auto-aim is toggled off
             if (!autoAim) {
                 isAligned = false;
             }
 
-            if (gamepad2.right_bumper) {
-                if (!(leftLatch.getPosition() == 1) && (leftShooter.getPower() == 0) && (rightShooter.getPower() == 0)) {
-                    latchState = 0;
+            // Intake controls with error handling
+            try {
+                if (gamepad2.right_bumper) {
+                    if (!(leftLatch.getPosition() == 1) && (leftShooter.getPower() == 0) && (rightShooter.getPower() == 0)) {
+                        latchState = 0;
+                    }
+                    intake.setPower(1);
+                } else if (gamepad2.left_bumper) {
+                    intake.setPower(-0.8);
+                } else {
+                    intake.setPower(0);
                 }
-                intake.setPower(1);
-            } else if (gamepad2.left_bumper) {
-                intake.setPower(-0.8);
-            } else {
-                intake.setPower(0);
+            } catch (Exception e) {
+                telemetry.addData("Intake Error", e.getMessage());
             }
 
-            if ((gamepad2.right_trigger > 0) || (isAligned && autoShoot)) {
-                if (!(leftLatch.getPosition() == 0)) {
-                    latchState = 1;
+            // Shooter controls with error handling
+            try {
+                if ((gamepad2.right_trigger > 0) || (isAligned && autoShoot)) {
+                    if (!(leftLatch.getPosition() == 0)) {
+                        latchState = 1;
+                    }
+                    shooter.runShooter(shooterPower);
+                } else if (gamepad2.left_trigger > 0) {
+                    shooter.resetPID();
+                    leftShooter.setPower(-0.3);
+                    rightShooter.setPower(-0.3);
+                    //for intaking from human players
+                } else {
+                    shooter.resetPID();
+                    shooter.stopShooter();
                 }
-                shooter.runShooter(shooterPower);
-            } else if (gamepad2.left_trigger > 0) {
-                shooter.resetPID();
-                leftShooter.setPower(-0.3);
-                rightShooter.setPower(-0.3);
-                //for intaking from human players
-            } else {
-                shooter.resetPID();
-                shooter.stopShooter();
+            } catch (Exception e) {
+                telemetry.addData("Shooter Error", e.getMessage());
             }
 
             if (gamepad1.left_trigger > 0) {
@@ -269,29 +242,27 @@ public class TeleOpV1 extends LinearOpMode {
                 power = 0.8;
             }
 
-            double y = -gamepad1.left_stick_y; // Forward/Backward
-            double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
-            double rx = gamepad1.right_stick_x; // Turning
+            // Drivetrain controls with error handling
+            try {
+                double y = -gamepad1.left_stick_y; // Forward/Backward
+                double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
+                double rx = gamepad1.right_stick_x; // Turning
 
-            // Denominator is the largest motor power (absolute value) or 1
-            // This ensures all the powers maintain the same ratio,
-            // but only if at least one is out of the range [-1, 1]
+                // Denominator is the largest motor power (absolute value) or 1
+                // This ensures all the powers maintain the same ratio,
+                // but only if at least one is out of the range [-1, 1]
 
-            double frontLeftPower = (y + x + rx) / Math.max(Math.abs(y + x + rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
-            double frontRightPower = (y - x - rx) / Math.max(Math.abs(y - x - rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
-            double backLeftPower = (y - x + rx) / Math.max(Math.abs(y - x + rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
-            double backRightPower = (y + x - rx) / Math.max(Math.abs(y + x - rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
+                double frontLeftPower = (y + x + rx) / Math.max(Math.abs(y + x + rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
+                double frontRightPower = (y - x - rx) / Math.max(Math.abs(y - x - rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
+                double backLeftPower = (y - x + rx) / Math.max(Math.abs(y - x + rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
+                double backRightPower = (y + x - rx) / Math.max(Math.abs(y + x - rx), 1) * power * (idealVoltage / voltageSensor.getVoltage());
 
-            frontLeft.setPower(frontLeftPower);
-            frontRight.setPower(frontRightPower);
-            backLeft.setPower(backLeftPower);
-            backRight.setPower(backRightPower);
-
-            if ((y > 0.1) || (y < -0.1) || (x > 0.1) || (x < -0.1) || (rx > 0.1) || (rx < -0.1)) {
-                //Resets auto-aim cooldown if driver is moving the robot
-                //Auto aim relies on robot being stationary for accuracy
-                autoAimCoolDown.reset();
-                isAligned = false; // Reset alignment when robot moves
+                frontLeft.setPower(frontLeftPower);
+                frontRight.setPower(frontRightPower);
+                backLeft.setPower(backLeftPower);
+                backRight.setPower(backRightPower);
+            } catch (Exception e) {
+                telemetry.addData("Drivetrain Error", e.getMessage());
             }
 
             // Intake and Transfer Controls
@@ -300,12 +271,17 @@ public class TeleOpV1 extends LinearOpMode {
             // if both triggers are pressed, the robot will do both actions simultaneously
             // right button is the outtake in case we intake too many artifacts
 
-            if (gamepad2.x && (currentHeading <= turretLimitCCW)) {
-                currentHeading = turretController.spinToHeading(currentHeading + 30, turretPower);
-            } else if (gamepad2.b && (currentHeading >= turretLimitCW)) {
-                currentHeading = turretController.spinToHeading(currentHeading - 30, turretPower);
-            } else {
-                turretController.stopTurret();
+            // Turret controls with error handling
+            try {
+                if (gamepad2.x && (currentHeading <= turretLimitCCW)) {
+                    currentHeading = turretController.spinToHeading(currentHeading + 30, turretPower);
+                } else if (gamepad2.b && (currentHeading >= turretLimitCW)) {
+                    currentHeading = turretController.spinToHeading(currentHeading - 30, turretPower);
+                } else {
+                    turretController.stopTurret();
+                }
+            } catch (Exception e) {
+                telemetry.addData("Turret Error", e.getMessage());
             }
 
             if (gamepad2.dpad_down) {
@@ -315,23 +291,48 @@ public class TeleOpV1 extends LinearOpMode {
             }
 
             //light for shooter status
-            double avgShooterVel = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2;
+            try {
+                double avgShooterVel = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2;
 
-            if (avgShooterVel > (shooterPower - shootingToleranceTeleOp) && avgShooterVel < (shooterPower + shootingToleranceTeleOp)) {
-                light.setPosition(0.5);
-                if (((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) && safeShooting) || autoShoot) {
-                    intake.setPower(1);
-                    latchState = 1;
+                if (avgShooterVel > (shooterPower - shootingToleranceTeleOp) && avgShooterVel < (shooterPower + shootingToleranceTeleOp)) {
+                    try {
+                        light.setPosition(0.5);
+                    } catch (Exception e) {
+                        telemetry.addData("Light Error", e.getMessage());
+                    }
+                    if (((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) && safeShooting) || autoShoot) {
+                        try {
+                            intake.setPower(1);
+                        } catch (Exception e) {
+                            telemetry.addData("Intake Error", e.getMessage());
+                        }
+                        latchState = 1;
+                    }
+                } else {
+                    try {
+                        light.setPosition(0.28);
+                    } catch (Exception e) {
+                        telemetry.addData("Light Error", e.getMessage());
+                    }
+                    if (((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) && safeShooting) || autoShoot) {
+                        try {
+                            intake.setPower(0);
+                        } catch (Exception e) {
+                            telemetry.addData("Intake Error", e.getMessage());
+                        }
+                    }
                 }
-            } else {
-                light.setPosition(0.28);
-                if (((gamepad2.right_bumper && (gamepad2.right_trigger > 0.1)) && safeShooting) || autoShoot) {
-                    intake.setPower(0);
-                }
+            } catch (Exception e) {
+                telemetry.addData("Shooter Velocity Error", e.getMessage());
             }
 
-            rightLatch.setPosition(latchState);
-            leftLatch.setPosition(1 - latchState);
+            // Latch controls with error handling
+            try {
+                rightLatch.setPosition(latchState);
+                leftLatch.setPosition(1 - latchState);
+            } catch (Exception e) {
+                telemetry.addData("Latch Error", e.getMessage());
+            }
 
             //Pose2D pos = odo.getPosition();
             //String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));

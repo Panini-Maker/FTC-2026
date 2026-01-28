@@ -48,57 +48,6 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 public class Autonomous {
-
-    /**
-     * Auto aim using AprilTag detection to fine-tune turret alignment.
-     * Loops until alignment is within tolerance or timeout is reached.
-     * @param tagProcessor The AprilTag processor
-     * @param turretControl The turret controller
-     * @param currentHeading Current turret heading in degrees
-     * @param targetTagID The AprilTag ID to aim at
-     * @param turretPower Power for turret movement
-     * @param timeoutMs Maximum time in milliseconds to attempt alignment
-     * @return Updated turret heading
-     */
-    public double autoAim(AprilTagProcessor tagProcessor, Turret turretControl,
-                          double currentHeading, int targetTagID, double turretPower, long timeoutMs) throws InterruptedException {
-        double heading = currentHeading;
-        long startTime = System.currentTimeMillis();
-
-        while ((System.currentTimeMillis() - startTime) < timeoutMs) {
-            // Wait for fresh detections
-            sleep(200);
-
-            if (tagProcessor.getFreshDetections() != null && !tagProcessor.getDetections().isEmpty()) {
-                sleep(100); // Allow time for processing
-                for (AprilTagDetection tag : tagProcessor.getDetections()) {
-                    if (tag.id == targetTagID) {
-                        // Check if within 1 degree tolerance - exit loop if aligned
-                        if (Math.abs(tag.ftcPose.bearing) <= 1.0) {
-                            return heading; // Aligned, break out of loop
-                        }
-
-                        // Calculate adjustment
-                        double adjustment = heading + tag.ftcPose.bearing;
-
-                        // Clamp to turret limits
-                        if (adjustment > turretLimitCCW) {
-                            adjustment = turretLimitCCW;
-                        } else if (adjustment < turretLimitCW) {
-                            adjustment = turretLimitCW;
-                        }
-
-                        // Move turret and update heading
-                        heading = turretControl.spinToHeadingBlocking(adjustment, turretPower, 1000);
-                        break;
-                    }
-                }
-            }
-        }
-
-        return heading;
-    }
-
     public Vector2d mirrorCoordinates(Vector2d position, String color) {
         int xMultiplier = 1;
 
@@ -196,7 +145,6 @@ public class Autonomous {
                                    ShootingAction shooter,
                                    Turret turretControl,
                                    ShooterController shooterController,
-                                   AprilTagProcessor tagProcessor,
                                    Telemetry telemetry,
                                    Pose2d beginPose) throws InterruptedException {
         int headingMultiplier = 1;
@@ -237,17 +185,6 @@ public class Autonomous {
 
         telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
         telemetry.update();
-        // Auto aim using camera (only for first shot)
-        //currentHeading = autoAim(tagProcessor, turretControl, currentHeading, targetTagID, 0.3, 3000);
-
-        /*
-        if (color.equalsIgnoreCase(red)) {
-            currentHeading = turretControl.spinToHeadingBlocking(currentHeading - 4, 0.2, 2000); // Compensate for consistent error
-        } else {
-            currentHeading = turretControl.spinToHeadingBlocking(currentHeading + 4, 0.2, 2000); // Compensate for consistent error
-        }
-
-         */
 
         shooter.shoot(sniperAuto, shootDurationMs, 3500);
 
@@ -289,7 +226,7 @@ public class Autonomous {
                 .strafeToLinearHeading(mirrorCoordinates(shootingPositionLong, color), Math.toRadians(artifactOrientation))
                 .build();
 
-        //shooterC ontroller.setVelocityPID(sniper);
+        //shooterController.setVelocityPID(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_3));
 
         turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
@@ -305,6 +242,10 @@ public class Autonomous {
                 .strafeToLinearHeading(mirrorCoordinates(parkPositionLong, color), Math.toRadians(parkingAngle))
                 .build();
         Actions.runBlocking(new SequentialAction(moveOutOfZone));
+
+        // Save end position for TeleOp
+        Pose2d endPose = drive.localizer.getPose();
+        TuningVars.saveEndPosition(endPose.position.x, endPose.position.y, Math.toDegrees(endPose.heading.toDouble()), turretControl.getCurrentHeading());
     }
 
     public void AutoShort9Artifacts(String color,
@@ -315,7 +256,6 @@ public class Autonomous {
                                     ShootingAction shooter,
                                     Turret turretControl,
                                     ShooterController shooterController,
-                                    AprilTagProcessor tagProcessor,
                                     Telemetry telemetry,
                                     Pose2d beginPose) throws InterruptedException {
         int headingMultiplier = 1;
@@ -410,5 +350,9 @@ public class Autonomous {
                 .strafeToLinearHeading(mirrorCoordinates(parkPositionShort, color), Math.toRadians(90))
                 .build();
         Actions.runBlocking(new SequentialAction(hitLever));
+
+        // Save end position for TeleOp
+        Pose2d endPose = drive.localizer.getPose();
+        TuningVars.saveEndPosition(endPose.position.x, endPose.position.y, Math.toDegrees(endPose.heading.toDouble()), turretControl.getCurrentHeading());
     }
 }

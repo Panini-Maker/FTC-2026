@@ -178,6 +178,10 @@ public class Turret {
         turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
     }
 
+    public double getCurrentHeading() {
+        return turret.getCurrentPosition() / ticksPerDegree;
+    }
+
     public double turnToGoal(Pose2D pos, double turretCurrentAngle, boolean targetIsRed) {
 
 

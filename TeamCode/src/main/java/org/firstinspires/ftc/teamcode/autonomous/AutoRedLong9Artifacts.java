@@ -74,11 +74,19 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
         try {
-            auto.AutoLong9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller, tagProcessor, telemetry, beginPose);
+            auto.AutoLong9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller, telemetry, beginPose);
         } finally {
             // Ensure PID thread stops when OpMode ends
             controller.stopVelocityPID();
             turretControl.stopVelocityPID();
+            // Save final position even on manual termination
+            Pose2d endPose = drive.localizer.getPose();
+            org.firstinspires.ftc.teamcode.lib.TuningVars.saveEndPosition(
+                endPose.position.x,
+                endPose.position.y,
+                Math.toDegrees(endPose.heading.toDouble()),
+                turretControl.getCurrentHeading()
+            );
         }
     }
 }
