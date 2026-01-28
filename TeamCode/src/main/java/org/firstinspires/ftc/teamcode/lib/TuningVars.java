@@ -3,8 +3,23 @@ package org.firstinspires.ftc.teamcode.lib;
 import com.acmerobotics.roadrunner.Vector2d;
 
 public class TuningVars {
+    //Odometry Tuning Vars
     public static int odoXOffset = 75; // in mm
     public static int odoYOffset = -146; // in mm
+    //Auto End Position - Updated at end of autonomous, used by TeleOp
+    public static double autoEndX = 0; // in inches
+    public static double autoEndY = 0; // in inches
+    public static double autoEndHeading = 0; // in degrees
+    public static double autoEndTurretHeading = 0; // in degrees
+
+    // Method to save robot position at end of autonomous
+    public static void saveEndPosition(double x, double y, double heading, double turretHeading) {
+        autoEndX = x;
+        autoEndY = y;
+        autoEndHeading = heading;
+        autoEndTurretHeading = turretHeading;
+    }
+    //Shooter Tuning Vars
     public static double shooterKp = 0.005; //0.0075
     public static double shooterKi = 0.0011; //0.0009
     public static double shooterKd = 0; //0.0003

@@ -174,4 +174,8 @@ public class Turret {
         turret.setPower(0);
         turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
     }
+
+    public double getCurrentHeading() {
+        return turret.getCurrentPosition() / ticksPerDegree;
+    }
 }
