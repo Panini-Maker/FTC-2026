@@ -1,11 +1,12 @@
 package org.firstinspires.ftc.teamcode.lib;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.roadrunner.Vector2d;
-
+@Config
 public class TuningVars {
     //Odometry Tuning Vars
-    public static int odoXOffset = 75; // in mm
-    public static int odoYOffset = -146; // in mm
+    public static int odoXOffset = -75; // in mm
+    public static int odoYOffset = -125; // in mm
     //Auto End Position - Updated at end of autonomous, used by TeleOp
     public static double autoEndX = 0; // in inches
     public static double autoEndY = 0; // in inches
@@ -40,9 +41,28 @@ public class TuningVars {
     public static double turretMotorGearTeeth = 57; //Number of teeth in turret motor gear
     public static double turretGearTeeth = 186; //Number of teeth in turret gear
     public static double turretTicksPerDegree = (turretMotorTPR * turretGearTeeth) / (turretMotorGearTeeth * 360.0);
-    public static double turretLimitCCW = 360; // in degrees (No more limits)
-    public static double turretLimitCW = -360; // in degrees (No more limits)
+    public static double turretLimitCCW = 180; // in degrees (Limits added back in)
+    public static double turretLimitCW = -135; // in degrees (Limits added back in)
     public static double turretSpeedAuto = 0.67; // 0 to 1
+
+    // Turret PID Tuning Vars for Auto Aim
+    public static double turretKp = 0.04; // Proportional constant
+    public static double turretKi = 0.0; // Integral constant
+    public static double turretKd = 0.00125; // Derivative constant
+    public static double turretMinPower = 0.0; // Minimum power to overcome friction
+    public static double turretMaxPower = 0.8; // Maximum power for turret
+    public static double turretTolerance = 2.0; // Tolerance in degrees
+    public static double turretPhysicalOffset = 180.0; // Turret encoder 0 faces back of robot (180° from front)
+
+    // Auto Aim Target Positions (center of field is origin 0,0)
+    public static Vector2d redGoalPosition = new Vector2d(72, 72); // Red goal corner
+    public static Vector2d blueGoalPosition = new Vector2d(-72, 72); // Blue goal corner
+
+    // Odometry heading convention adjustment
+    // Set to -1 if odometry uses CW positive (opposite of atan2's CCW positive)
+    // Set to 1 if odometry uses CCW positive (same as atan2)
+    public static double odometryHeadingSign = 1; // GoBilda Pinpoint typically uses CW positive
+    //Nope, CCW is positive
 
     //Camera Tuning Vars
     public static int cameraResolutionWidth = 1280;
