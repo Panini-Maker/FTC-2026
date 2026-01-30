@@ -20,7 +20,7 @@ public class AutoAimTest {
     private static final double TURRET_LIMIT_CCW = 180.0;
     private static final double TURRET_LIMIT_CW = -135.0;
     private static final double TOLERANCE = 1.0; // degrees tolerance for floating point comparison
-    private static final double POWER_TOLERANCE = 1; // Check if it is from 1 to 0
+    private static final double POWER_TOLERANCE = 0.5; // Check if it is from 1 to 0
 
     @Before
     public void setUp() {
@@ -48,7 +48,8 @@ public class AutoAimTest {
         // Relative to robot front = 45 - 0 = 45
         // Turret target = 45 + 180 = 225, normalized to -135
         assertEquals(-135.0, targetAngle, TOLERANCE);
-        assertEquals(0, autoAim.calculatePID(targetAngle,currentTurretAngle), POWER_TOLERANCE);
+        assertEquals(-0.5, autoAim.calculatePID(targetAngle,currentTurretAngle), POWER_TOLERANCE);
+        System.out.println(autoAim.calculatePID(targetAngle,currentTurretAngle));
         assertNotEquals(0, autoAim.calculatePID(targetAngle,currentTurretAngle), 0.0001);
     }
 
@@ -69,7 +70,8 @@ public class AutoAimTest {
         // Relative to robot front = 45 - 45 = 0
         // Turret target = 0 + 180 = 180
         assertEquals(180.0, targetAngle, TOLERANCE);
-        assertEquals(0, autoAim.calculatePID(targetAngle,currentTurretAngle), POWER_TOLERANCE);
+        assertEquals(0.5, autoAim.calculatePID(targetAngle,currentTurretAngle), POWER_TOLERANCE);
+        System.out.println(autoAim.calculatePID(targetAngle, currentTurretAngle));
         assertNotEquals(0, autoAim.calculatePID(targetAngle,currentTurretAngle), 0.0001);
     }
 
@@ -89,7 +91,8 @@ public class AutoAimTest {
         // Relative to robot front = 45 - 180 = -135
         // Turret target = -135 + 180 = 45
         assertEquals(45.0, targetAngle, TOLERANCE);
-        assertEquals(0, autoAim.calculatePID(targetAngle,currentTurretAngle), POWER_TOLERANCE);
+        assertEquals(0.5, autoAim.calculatePID(targetAngle,currentTurretAngle), POWER_TOLERANCE);
+        System.out.println(autoAim.calculatePID(targetAngle, currentTurretAngle));
         assertNotEquals(0, autoAim.calculatePID(targetAngle,currentTurretAngle), 0.0001);
     }
 
@@ -111,7 +114,8 @@ public class AutoAimTest {
         // Relative = 45 - 0 = 45
         // Turret target = 45 + 180 = 225, normalized to -135
         assertEquals(-135.0, targetAngle, TOLERANCE);
-        assertEquals(0, autoAim.calculatePID(targetAngle,currentTurretAngle), POWER_TOLERANCE);
+        assertEquals(-0.8, autoAim.calculatePID(targetAngle,currentTurretAngle), POWER_TOLERANCE);
+        System.out.println(autoAim.calculatePID(targetAngle, currentTurretAngle));
         assertNotEquals(0, autoAim.calculatePID(targetAngle,currentTurretAngle), 0.0001);
     }
 
@@ -328,5 +332,15 @@ public class AutoAimTest {
         assertEquals(-126.86989, targetAngle, TOLERANCE);
         assertEquals(0, autoAim.calculatePID(targetAngle,currentTurretAngle), POWER_TOLERANCE);
         assertNotEquals(0, autoAim.calculatePID(targetAngle,currentTurretAngle),0.0001);
+    }
+
+    /**
+     * Test smaller error
+     */
+    @Test
+    public void testSmallerPIDError() {
+        double currentTurretAngle = -130; // Facing behind robot
+        assertEquals(-0.8, autoAim.calculatePID(-135,currentTurretAngle), POWER_TOLERANCE);
+        System.out.println(autoAim.calculatePID(-135, currentTurretAngle));
     }
 }
