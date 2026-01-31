@@ -163,7 +163,11 @@ public class Autonomous {
         //Create starting pose
         //Long Autonomous
         //Shoot first 3 artifacts
-        shooterController.setVelocityPID(sniperAuto);
+        try {
+            shooterController.setVelocityPID(sniperAuto);
+        } catch (Exception e) {
+            telemetry.addData("Shooter Error", e.getMessage());
+        }
         //Creating autonomous path
         Action moveToShoot_1 = drive.actionBuilder(beginPose)
                 .strafeToLinearHeading(mirrorCoordinates(shootingPositionLong, color), Math.toRadians(artifactOrientation))
@@ -181,19 +185,31 @@ public class Autonomous {
         }
 
         // Point turret at target
-        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        try {
+            turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        } catch (Exception e) {
+            telemetry.addData("Turret Error", e.getMessage());
+        }
 
         telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
         telemetry.update();
 
-        shooter.shoot(sniperAuto, shootDurationMs, 3500);
+        try {
+            shooter.shoot(sniperAuto, shootDurationMs, 3500);
+        } catch (Exception e) {
+            telemetry.addData("Shooter Error", e.getMessage());
+        }
 
         Action collectArtifacts_1 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(mirrorCoordinates(collectHumanArtifact1, color), Math.toRadians(artifactOrientation))
                 .strafeToLinearHeading(mirrorCoordinates(collectHumanArtifactIdle, color), Math.toRadians(artifactOrientation))
                 .strafeToLinearHeading(mirrorCoordinates(collectHumanArtifact2, color), Math.toRadians(humanArtifactAngle))
                 .build();
-        intake.setPower(1.0);
+        try {
+            intake.setPower(1.0);
+        } catch (Exception e) {
+            telemetry.addData("Intake Error", e.getMessage());
+        }
         Actions.runBlocking(new SequentialAction(collectArtifacts_1));
 
         //Also hit the lever
@@ -203,11 +219,19 @@ public class Autonomous {
         //shooterController.setVelocityPID(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_2));
 
-        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        try {
+            turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        } catch (Exception e) {
+            telemetry.addData("Turret Error", e.getMessage());
+        }
         telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
         telemetry.update();
 
-        shooter.shoot(sniperAuto, shootDurationMs, 3500);
+        try {
+            shooter.shoot(sniperAuto, shootDurationMs, 3500);
+        } catch (Exception e) {
+            telemetry.addData("Shooter Error", e.getMessage());
+        }
 
         Action collectArtifacts_2 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts1, color), Math.toRadians(artifactOrientation))
@@ -218,7 +242,11 @@ public class Autonomous {
                 .strafeToLinearHeading(mirrorCoordinates(endCollectingArtifacts1, color), Math.toRadians(artifactOrientation))
                 .build();
 
-        intake.setPower(1);
+        try {
+            intake.setPower(1);
+        } catch (Exception e) {
+            telemetry.addData("Intake Error", e.getMessage());
+        }
         Actions.runBlocking(new SequentialAction(collectArtifacts_3));
 
 
@@ -229,13 +257,25 @@ public class Autonomous {
         //shooterController.setVelocityPID(sniper);
         Actions.runBlocking(new SequentialAction(moveToShoot_3));
 
-        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        try {
+            turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        } catch (Exception e) {
+            telemetry.addData("Turret Error", e.getMessage());
+        }
         telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
         telemetry.update();
 
-        shooter.shoot(sniperAuto, shootDurationMs, 3500);
+        try {
+            shooter.shoot(sniperAuto, shootDurationMs, 3500);
+        } catch (Exception e) {
+            telemetry.addData("Shooter Error", e.getMessage());
+        }
 
-        turretControl.spinToHeadingLoop(0, turretSpeedAuto);
+        try {
+            turretControl.spinToHeadingLoop(0, turretSpeedAuto);
+        } catch (Exception e) {
+            telemetry.addData("Turret Error", e.getMessage());
+        }
 
         //Move out of zone
         Action moveOutOfZone = drive.actionBuilder(drive.localizer.getPose())
@@ -245,7 +285,13 @@ public class Autonomous {
 
         // Save end position for TeleOp
         Pose2d endPose = drive.localizer.getPose();
-        TuningVars.saveEndPosition(endPose.position.x, endPose.position.y, Math.toDegrees(endPose.heading.toDouble()), turretControl.getCurrentHeading());
+        try {
+            TuningVars.saveEndPosition(endPose.position.x, endPose.position.y, Math.toDegrees(endPose.heading.toDouble()), turretControl.getCurrentHeading());
+        } catch (Exception e) {
+            // If turret disconnected, save with 0 turret heading
+            TuningVars.saveEndPosition(endPose.position.x, endPose.position.y, Math.toDegrees(endPose.heading.toDouble()), 0);
+            telemetry.addData("Turret Error", "Could not get turret heading, defaulting to 0");
+        }
     }
 
     public void AutoShort9Artifacts(String color,
@@ -271,7 +317,11 @@ public class Autonomous {
         //Short Autonomous
         //Shoot first 3 artifacts
 
-        shooterController.setVelocityPID(shotgun);
+        try {
+            shooterController.setVelocityPID(shotgun);
+        } catch (Exception e) {
+            telemetry.addData("Shooter Error", e.getMessage());
+        }
         Action moveToShoot_1 = drive.actionBuilder(beginPose)
                 .strafeToConstantHeading(mirrorCoordinates(shootingPositionShort, color))
                 .build();
@@ -288,20 +338,32 @@ public class Autonomous {
         // Point turret at target
         //turretControl.spinToHeadingLoop(angleToTarget, turretSpeedAuto);
 
-        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        try {
+            turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        } catch (Exception e) {
+            telemetry.addData("Turret Error", e.getMessage());
+        }
         telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
         telemetry.update();
 
         // Auto aim using camera (only for first shot)
         //currentHeading = autoAim(tagProcessor, turretControl, currentHeading, targetTagID, 0.3, 3);
 
-        shooter.shoot(shotgun, shootDurationMs, 2000);
+        try {
+            shooter.shoot(shotgun, shootDurationMs, 2000);
+        } catch (Exception e) {
+            telemetry.addData("Shooter Error", e.getMessage());
+        }
         //Move to collect more artifacts
         Action moveToCollect_1 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts3, color), Math.toRadians(artifactOrientation))
                 .strafeToLinearHeading(mirrorCoordinates(endCollectingArtifacts3, color), Math.toRadians(artifactOrientation))
                 .build();
-        intake.setPower(1);
+        try {
+            intake.setPower(1);
+        } catch (Exception e) {
+            telemetry.addData("Intake Error", e.getMessage());
+        }
         Actions.runBlocking(moveToCollect_1);
         //intake.setPower(0);
         //Move to shoot again
@@ -311,13 +373,25 @@ public class Autonomous {
                 .build();
         Actions.runBlocking(moveToShoot_2);
 
-        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        try {
+            turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        } catch (Exception e) {
+            telemetry.addData("Turret Error", e.getMessage());
+        }
         telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
         telemetry.update();
 
-        shooter.shoot(shotgun, shootDurationMs, 2000);
+        try {
+            shooter.shoot(shotgun, shootDurationMs, 2000);
+        } catch (Exception e) {
+            telemetry.addData("Shooter Error", e.getMessage());
+        }
         //Move to collect more artifacts
-        intake.setPower(1);
+        try {
+            intake.setPower(1);
+        } catch (Exception e) {
+            telemetry.addData("Intake Error", e.getMessage());
+        }
         Action moveToCollect_2 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(mirrorCoordinates(beginCollectingArtifacts2, color), Math.toRadians(artifactOrientation))
                 .build();
@@ -326,7 +400,11 @@ public class Autonomous {
         Action moveToCollect_3 = drive.actionBuilder(drive.localizer.getPose())
                 .strafeToLinearHeading(mirrorCoordinates(endCollectingArtifacts2, color), Math.toRadians(artifactOrientation))
                 .build();
-        intake.setPower(1);
+        try {
+            intake.setPower(1);
+        } catch (Exception e) {
+            telemetry.addData("Intake Error", e.getMessage());
+        }
         Actions.runBlocking(moveToCollect_3);
         //intake.setPower(0);
         //Move to shoot last time
@@ -337,13 +415,25 @@ public class Autonomous {
                 .build();
         Actions.runBlocking(moveToShoot_3);
 
-        turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        try {
+            turretControl.spinToHeadingLoop(findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation), turretSpeedAuto);
+        } catch (Exception e) {
+            telemetry.addData("Turret Error", e.getMessage());
+        }
         telemetry.addData("Compensation", findCompensationAngle(angleToTarget, drive.localizer.getPose().heading.toDouble(), artifactOrientation));
         telemetry.update();
 
-        shooter.shoot(shotgun, shootDurationMs, 2000);
+        try {
+            shooter.shoot(shotgun, shootDurationMs, 2000);
+        } catch (Exception e) {
+            telemetry.addData("Shooter Error", e.getMessage());
+        }
 
-        turretControl.spinToHeadingLoop(0, turretSpeedAuto);
+        try {
+            turretControl.spinToHeadingLoop(0, turretSpeedAuto);
+        } catch (Exception e) {
+            telemetry.addData("Turret Error", e.getMessage());
+        }
 
         //Also hit the lever
         Action hitLever = drive.actionBuilder(drive.localizer.getPose())
@@ -353,6 +443,12 @@ public class Autonomous {
 
         // Save end position for TeleOp
         Pose2d endPose = drive.localizer.getPose();
-        TuningVars.saveEndPosition(endPose.position.x, endPose.position.y, Math.toDegrees(endPose.heading.toDouble()), turretControl.getCurrentHeading());
+        try {
+            TuningVars.saveEndPosition(endPose.position.x, endPose.position.y, Math.toDegrees(endPose.heading.toDouble()), turretControl.getCurrentHeading());
+        } catch (Exception e) {
+            // If turret disconnected, save with 0 turret heading
+            TuningVars.saveEndPosition(endPose.position.x, endPose.position.y, Math.toDegrees(endPose.heading.toDouble()), 0);
+            telemetry.addData("Turret Error", "Could not get turret heading, defaulting to 0");
+        }
     }
 }

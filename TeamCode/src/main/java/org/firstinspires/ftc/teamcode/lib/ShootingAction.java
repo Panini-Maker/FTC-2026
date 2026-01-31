@@ -29,50 +29,102 @@ public class ShootingAction {
     }
 
     public void shoot(int shooterVelocity, int shootDurationMs, int rampUpTimeMs) throws InterruptedException {
-        if (shooterVelocity == (sniperAuto)) {
-            hoodServo.setPosition(0.5); // Set hood for sniper
-        } else {
-            hoodServo.setPosition(0.42); // Set hood for shotgun
+        // Set hood position
+        try {
+            if (shooterVelocity == (sniperAuto)) {
+                hoodServo.setPosition(0.5); // Set hood for sniper
+            } else {
+                hoodServo.setPosition(0.42); // Set hood for shotgun
+            }
+        } catch (Exception e) {
+            // Hood servo disconnected, continue without it
         }
 
-        intake.setPower(0); // Ensure intake is off
+        try {
+            intake.setPower(0); // Ensure intake is off
+        } catch (Exception e) {
+            // Intake disconnected, continue
+        }
 
         // Start shooter PID
-        controller.setVelocityPID(shooterVelocity);
+        try {
+            controller.setVelocityPID(shooterVelocity);
+        } catch (Exception e) {
+            // Shooter disconnected, continue
+        }
 
-        // Wait for shooter to reach target velocity (within 50 RPM) or timeout
+        // Wait for shooter to reach target velocity (within tolerance) or timeout
         long startTime = System.currentTimeMillis();
         long maxRampUpTime = rampUpTimeMs > 0 ? rampUpTimeMs : 3500; // Default 3 seconds max
         while (System.currentTimeMillis() - startTime < maxRampUpTime) {
-            double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
-            if (Math.abs(shooterVelocity - avgVelocity) <= shootingToleranceAuto) {
-                break; // Shooter is within 50 RPM of target
+            try {
+                double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
+                if (Math.abs(shooterVelocity - avgVelocity) <= shootingToleranceAuto) {
+                    break; // Shooter is within tolerance of target
+                }
+            } catch (Exception e) {
+                // Shooter disconnected, break out of wait loop
+                break;
             }
             Thread.sleep(10);
         }
 
         // Open latches after shooter is up to speed
-        leftLatch.setPosition(0);
-        rightLatch.setPosition(1);
+        try {
+            leftLatch.setPosition(0);
+            rightLatch.setPosition(1);
+        } catch (Exception e) {
+            // Latch servos disconnected, continue
+        }
         Thread.sleep(2000); // Wait for latches to fully open
 
         // Run intake for shoot duration, but only feed when shooter is at speed
         long shootStartTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - shootStartTime < shootDurationMs) {
-            double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
-            if (Math.abs(shooterVelocity - avgVelocity) <= 50) {
-                intake.setPower(1); // Safe to feed
-            } else {
-                intake.setPower(0); // Wait for shooter to recover
+            try {
+                double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
+                if (Math.abs(shooterVelocity - avgVelocity) <= 50) {
+                    try {
+                        intake.setPower(1); // Safe to feed
+                    } catch (Exception e) {
+                        // Intake disconnected
+                    }
+                } else {
+                    try {
+                        intake.setPower(0); // Wait for shooter to recover
+                    } catch (Exception e) {
+                        // Intake disconnected
+                    }
+                }
+            } catch (Exception e) {
+                // Shooter disconnected, try to run intake anyway
+                try {
+                    intake.setPower(1);
+                } catch (Exception e2) {
+                    // Intake also disconnected
+                }
             }
             Thread.sleep(10);
         }
 
         // Stop everything
-        intake.setPower(0);
-        controller.setVelocityPID(idle);
-        //controller.stopVelocityPID();
-        leftLatch.setPosition(1); // Close latches
-        rightLatch.setPosition(0);
+        try {
+            intake.setPower(0);
+        } catch (Exception e) {
+            // Intake disconnected
+        }
+
+        try {
+            controller.setVelocityPID(idle);
+        } catch (Exception e) {
+            // Shooter disconnected
+        }
+
+        try {
+            leftLatch.setPosition(1); // Close latches
+            rightLatch.setPosition(0);
+        } catch (Exception e) {
+            // Latch servos disconnected
+        }
     }
 }

@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode.teleop;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndHeading;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndTurretHeading;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndX;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndY;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.blueTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.idealVoltage;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
@@ -13,6 +17,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgunTeleOp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretTolerance;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -25,7 +30,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
-import org.firstinspires.ftc.teamcode.lib.CameraMovement;
+import org.firstinspires.ftc.teamcode.lib.AutoAim;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
 import org.firstinspires.ftc.teamcode.lib.Turret;
 
@@ -63,6 +68,9 @@ public class TeleOpV1 extends LinearOpMode {
         turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
 
         Turret turretController = new Turret(turret, telemetry);
+
+        // Initialize AutoAim (default to red team, can be toggled)
+        AutoAim autoAimController = new AutoAim(turret, telemetry, true);
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
@@ -104,15 +112,26 @@ public class TeleOpV1 extends LinearOpMode {
         double currentYOdo;
         double currentHeadingOdo;
 
-        // Recalibrate Odometry
-        odo.resetPosAndIMU();
+        // Initialize odometry
+        // Only reset if we don't have saved position from autonomous
+        if (autoEndX == 0 && autoEndY == 0 && autoEndHeading == 0) {
+            // No saved position - reset odometry to origin
+            odo.resetPosAndIMU();
+            // Wait for IMU to calibrate
+            sleep(250);
+            telemetry.addData("Odometry", "Reset to origin, IMU calibrating...");
+        } else {
+            // Have saved position from autonomous - set it without full reset
+            odo.setPosition(new org.firstinspires.ftc.robotcore.external.navigation.Pose2D(
+                DistanceUnit.INCH, autoEndX, autoEndY, AngleUnit.DEGREES, autoEndHeading));
+            telemetry.addData("Odometry", "Loaded from Auto: X=%.1f, Y=%.1f, H=%.1f", autoEndX, autoEndY, autoEndHeading);
+        }
+
+        // Initialize turret heading from autonomous (if available)
+        currentHeading = autoEndTurretHeading;
+
         // Get position
         odo.update();
-
-        //odo.setOffsets();
-        currentXOdo = odo.getPosX(DistanceUnit.INCH);
-        currentYOdo = odo.getPosY(DistanceUnit.INCH);
-        currentHeadingOdo = odo.getHeading(AngleUnit.DEGREES);
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
@@ -134,6 +153,7 @@ public class TeleOpV1 extends LinearOpMode {
 
             if (gamepad2.aWasPressed()) {
                 targetIsRed = !targetIsRed;
+                autoAimController.setTeam(targetIsRed); // Update auto aim target
             }
 
             if (targetIsRed) {
@@ -161,37 +181,6 @@ public class TeleOpV1 extends LinearOpMode {
             if (gamepad1.yWasPressed()) {
                 safeShooting = !safeShooting;
             }
-            /*
-            if (autoAim && (autoAimCoolDown.milliseconds() > 100) && !isAligned) {
-                sleep (100);
-                if ((tagProcessor.getFreshDetections() != null) && !tagProcessor.getDetections().isEmpty()) {
-                    sleep(100);
-                    for (AprilTagDetection tag : tagProcessor.getDetections()) {
-                        if (tag.id == target) {
-                            // Skip adjustment if bearing is within 1 degree tolerance
-                            if (Math.abs(tag.ftcPose.bearing) <= 1.0) {
-                                telemetry.addData("Bearing to Target", tag.ftcPose.bearing);
-                                telemetry.addData("Auto Aim Status", "Within tolerance, skipping");
-                                isAligned = true;
-                                distanceToGoal = tag.ftcPose.range + 18; //Estimate distance to goal from tag range
-                                break;
-                            }
-                            isAligned = false;
-                            double adjustment = currentHeading + tag.ftcPose.bearing;
-                            telemetry.addData("Bearing to Target", tag.ftcPose.bearing);
-                            if (adjustment > turretLimitCCW) {
-                                adjustment = turretLimitCCW;
-                            } else if (adjustment < turretLimitCW) {
-                                adjustment = turretLimitCW;
-                            }
-                            currentHeading = turretController.spinToHeading(adjustment, turretPower);
-                            break;
-                        }
-                    }
-                }
-            }
-
-             */
 
             // Reset alignment status when robot moves or auto-aim is toggled off
             if (!autoAim) {
@@ -272,13 +261,73 @@ public class TeleOpV1 extends LinearOpMode {
             // right button is the outtake in case we intake too many artifacts
 
             // Turret controls with error handling
+            // Auto Aim activates when shooter is ramping up (right trigger pressed)
+            // Manual control (X/B buttons) overrides auto aim
             try {
-                if (gamepad2.x && (currentHeading <= turretLimitCCW)) {
-                    currentHeading = turretController.spinToHeading(currentHeading + 30, turretPower);
-                } else if (gamepad2.b && (currentHeading >= turretLimitCW)) {
-                    currentHeading = turretController.spinToHeading(currentHeading - 30, turretPower);
+                boolean shooterRampingUp = (gamepad2.right_trigger > 0);
+                boolean manualTurretControl = gamepad2.x || gamepad2.b;
+
+                // Update robot position for auto aim (thread uses these values)
+                autoAimController.updateRobotPosition(currentXOdo, currentYOdo, currentHeadingOdo,
+                    autoAimController.getCurrentTurretHeading());
+
+                if (manualTurretControl) {
+                    // Manual control takes priority - stop auto aim thread if running
+                    if (autoAimController.isRunning()) {
+                        autoAimController.stopAutoAim();
+                    }
+
+                    if (gamepad2.x && (currentHeading <= turretLimitCCW)) {
+                        currentHeading = turretController.spinToHeading(currentHeading + 30, turretPower);
+                    } else if (gamepad2.b && (currentHeading >= turretLimitCW)) {
+                        currentHeading = turretController.spinToHeading(currentHeading - 30, turretPower);
+                    }
+                    autoAim = false;
+                    isAligned = false;
+                } else if (shooterRampingUp) {
+                    // Auto aim when shooter is ramping up - use thread for continuous updates
+                    autoAim = true;
+
+                    // Start auto aim thread if not already running
+                    if (!autoAimController.isRunning()) {
+                        autoAimController.startAutoAim();
+                    }
+
+                    // Get values for telemetry
+                    double targetAngle = autoAimController.getTargetAngle();
+                    double currentTurretAngle = autoAimController.getCurrentTurretHeading();
+                    double aimError = autoAimController.getError();
+                    double[] debugVals = autoAimController.getDebugValues();
+
+                    // Check if aligned
+                    isAligned = autoAimController.isOnTarget();
+
+                    // Debug telemetry for auto aim
+                    telemetry.addLine("=== AUTO AIM DEBUG ===");
+                    telemetry.addData("Odo X", "%.2f", currentXOdo);
+                    telemetry.addData("Odo Y", "%.2f", currentYOdo);
+                    telemetry.addData("Odo Heading", "%.2f", currentHeadingOdo);
+                    telemetry.addLine("--- Calculation ---");
+                    telemetry.addData("AbsAngle (atan2)", "%.2f", debugVals[0]);
+                    telemetry.addData("AdjustedHeading", "%.2f", debugVals[1]);
+                    telemetry.addData("RelativeAngle", "%.2f", debugVals[2]);
+                    telemetry.addData("TurretTarget", "%.2f", debugVals[3]);
+                    telemetry.addLine("--- Result ---");
+                    telemetry.addData("Target Angle", "%.2f", targetAngle);
+                    telemetry.addData("Current Turret", "%.2f", currentTurretAngle);
+                    telemetry.addData("Error", "%.2f", aimError);
+                    telemetry.addData("Aligned", isAligned);
+
+                    // Update current heading for manual control reference
+                    currentHeading = currentTurretAngle;
                 } else {
+                    // No shooter input and no manual control - stop auto aim thread
+                    if (autoAimController.isRunning()) {
+                        autoAimController.stopAutoAim();
+                    }
                     turretController.stopTurret();
+                    autoAim = false;
+                    isAligned = false;
                 }
             } catch (Exception e) {
                 telemetry.addData("Turret Error", e.getMessage());
@@ -337,11 +386,15 @@ public class TeleOpV1 extends LinearOpMode {
             //Pose2D pos = odo.getPosition();
             //String data = String.format(Locale.US, "{X: %.3f, Y: %.3f, H: %.3f}", pos.getX(DistanceUnit.MM), pos.getY(DistanceUnit.MM), pos.getHeading(AngleUnit.DEGREES));
             //telemetry.addData("Position", data);
+            telemetry.addData("Robot X", currentXOdo);
+            telemetry.addData("Robot Y", currentYOdo);
+            telemetry.addData("Robot Heading", currentHeadingOdo);
             telemetry.addData("Auto Aim", autoAim);
+            telemetry.addData("Auto Aim Aligned", isAligned);
             telemetry.addData("Auto Shoot", autoShoot);
             telemetry.addData("Safe Shooting", safeShooting);
             telemetry.addData("Turret Target Heading", currentHeading);
-            telemetry.addData("Turret Heading", currentHeading);
+            telemetry.addData("Turret Actual Heading", autoAimController.getCurrentTurretHeading());
             telemetry.addData("Turret Power", turret.getPower());
             telemetry.addData("Left Shooter Velocity", leftShooter.getVelocity());
             telemetry.addData("Left Shooter Power", leftShooter.getPower());
@@ -349,5 +402,9 @@ public class TeleOpV1 extends LinearOpMode {
             telemetry.addData("Right Shooter Power", rightShooter.getPower());
             telemetry.update();
         }
+
+        // Cleanup - stop all threads when OpMode ends
+        autoAimController.stopAutoAim();
+        shooter.stopVelocityPID();
     }
 }
