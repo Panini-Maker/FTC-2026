@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.red;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.targetIsRed;
 
 import com.acmerobotics.roadrunner.Pose2d;
 import com.acmerobotics.roadrunner.Vector2d;
@@ -31,6 +32,10 @@ public class AutoRedShort9Artifacts extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+
+        // target color for teleop
+        targetIsRed = true;
+
         //Create starting pose
         Pose2d beginPose = new Pose2d(new Vector2d(38, 64.75), Math.toRadians(0));
 

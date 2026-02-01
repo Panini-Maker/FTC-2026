@@ -54,11 +54,9 @@ public class TeleOpV1 extends LinearOpMode {
         DcMotor intake = hardwareMap.dcMotor.get("intake");
 
         DcMotorEx leftShooter = hardwareMap.get(DcMotorEx.class, "leftShooter");
-        leftShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         DcMotorEx rightShooter = hardwareMap.get(DcMotorEx.class, "rightShooter");
-        rightShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightShooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -119,6 +117,7 @@ public class TeleOpV1 extends LinearOpMode {
         // Only reset if we don't have saved position from autonomous
         if (autoEndX == 0 && autoEndY == 0 && autoEndHeading == 0) {
             // Wait for IMU to calibrate
+            odo.resetPosAndIMU();
             sleep(250);
             telemetry.addData("Odometry", "Reset to origin, IMU calibrating...");
         } else {

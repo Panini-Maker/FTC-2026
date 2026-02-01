@@ -183,9 +183,6 @@ public class Turret {
     }
 
     public double turnToGoal(Pose2D pos, double turretCurrentAngle, boolean targetIsRed) {
-
-
-
         // Get robot x, y, heading
         double x = pos.getX(DistanceUnit.INCH);
         double y = pos.getY(DistanceUnit.INCH);
@@ -206,11 +203,9 @@ public class Turret {
         double dist_x = x - goal_x;
         double dist_y = y - goal_y;
 
-
         double fieldAngle = Math.toDegrees(Math.atan(dist_x/dist_y));
         double robotAngle = fieldAngle - heading;
         double turretAngle = robotAngle - turretCurrentAngle;
-
 
         return turretAngle;
     }

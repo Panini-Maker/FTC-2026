@@ -31,8 +31,9 @@ public class TuningVars {
     public static int sniperAuto = 1900; // Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
     // Was 1950, but not enough for autonomous shots
     // Shots too high at 1976 rpm, 1925 causes problem where it hits backboard sometimes
+    public static int shooterIdle = 500; // Run when not shooting during teleop
     public static int idle = 800; // Was 1200
-    public static int shootingToleranceAuto = 5; // in RPM
+    public static int shootingToleranceAuto = 30; // in RPM
     public static int shootingToleranceTeleOp = 50; // in RPM
     public static int shootDurationMs = 2500; // in milliseconds
     public static int rampUpTime = 3000; // in milliseconds
@@ -57,6 +58,7 @@ public class TuningVars {
     // Auto Aim Target Positions (center of field is origin 0,0)
     public static Vector2d redGoalPosition = new Vector2d(72, 72); // Red goal corner
     public static Vector2d blueGoalPosition = new Vector2d(-72, 72); // Blue goal corner
+    public static boolean targetIsRed;
 
     // Odometry heading convention adjustment
     // Set to -1 if odometry uses CW positive (opposite of atan2's CCW positive)
