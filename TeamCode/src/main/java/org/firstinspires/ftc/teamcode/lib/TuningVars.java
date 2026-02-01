@@ -31,7 +31,7 @@ public class TuningVars {
     public static int sniperAuto = 1900; // Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
     // Was 1950, but not enough for autonomous shots
     // Shots too high at 1976 rpm, 1925 causes problem where it hits backboard sometimes
-    public static int shooterIdle = 500; // Run when not shooting during teleop
+    public static int shooterIdle = 0; // Run when not shooting during teleop
     public static int idle = 800; // Was 1200
     public static int shootingToleranceAuto = 30; // in RPM
     public static int shootingToleranceTeleOp = 50; // in RPM

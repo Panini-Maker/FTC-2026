@@ -8,6 +8,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.blueTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.saveEndPosition;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterIdle;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
@@ -79,7 +80,7 @@ public class TeleOpV2 extends LinearOpMode {
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         odo.setOffsets(odoXOffset, odoYOffset, DistanceUnit.MM); // Set offsets
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
         Pose2D pos;
 
@@ -100,7 +101,7 @@ public class TeleOpV2 extends LinearOpMode {
         double turretPower = 1.0;
 
 //        boolean targetIsRed = true;
-        double shooterSpeed;
+        double shooterSpeed = 0;
         int target = redTagID;
         boolean isAligned = false;
         double currentHeading = 0.0;
@@ -127,7 +128,7 @@ public class TeleOpV2 extends LinearOpMode {
             telemetry.addData("Odometry", "Reset to origin, IMU calibrating...");
         } else {
             // Have saved position from autonomous - set it without full reset
-            odo.setPosition(new org.firstinspires.ftc.robotcore.external.navigation.Pose2D(
+            odo.setPosition(new Pose2D(
                     DistanceUnit.INCH, autoEndX, autoEndY, AngleUnit.DEGREES, autoEndHeading));
             telemetry.addData("Odometry", "Loaded from Auto: X=%.1f, Y=%.1f, H=%.1f", autoEndX, autoEndY, autoEndHeading);
         }
@@ -241,6 +242,7 @@ public class TeleOpV2 extends LinearOpMode {
 
             /// TELEMETRY ==================================================================================================================
 
+            telemetry.addData("Robot Speed", drivetrainPower);
             telemetry.addData("Robot X", currentXOdo);
             telemetry.addData("Robot Y", currentYOdo);
             telemetry.addData("Robot Heading", currentHeadingOdo);
@@ -260,5 +262,7 @@ public class TeleOpV2 extends LinearOpMode {
         // Cleanup - stop all threads when OpMode ends
         autoAimController.stopAutoAim();
         shooter.stopVelocityPID();
+        turretController.stopVelocityPID();
+        saveEndPosition(0, 0, 0, 0);
     }
 }

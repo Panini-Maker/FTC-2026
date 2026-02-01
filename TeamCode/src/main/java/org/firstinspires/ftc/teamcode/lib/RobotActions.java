@@ -105,7 +105,7 @@ public class RobotActions {
             goal_pos_y = 72;
         }
 
-        double distance = Math.sqrt(Math.pow((goal_pos_x-x), 2) + Math.pow((goal_pos_y-y), 2));
+        double distance = Math.sqrt((goal_pos_x-x)*(goal_pos_x-x) + (goal_pos_y-y)*(goal_pos_y-y));
 
         return distance;
     }
