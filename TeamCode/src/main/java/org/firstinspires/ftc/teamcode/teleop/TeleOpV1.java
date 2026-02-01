@@ -29,6 +29,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.lib.AutoAim;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
@@ -83,7 +84,7 @@ public class TeleOpV1 extends LinearOpMode {
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         odo.setOffsets(odoXOffset, odoYOffset, DistanceUnit.MM); // Set offsets
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
@@ -141,11 +142,12 @@ public class TeleOpV1 extends LinearOpMode {
         while (opModeIsActive()) {
             // Get position
             odo.update();
+            Pose2D pos = odo.getPosition();
 
             //odo.setOffsets();
-            currentXOdo = odo.getPosX(DistanceUnit.INCH);
-            currentYOdo = odo.getPosY(DistanceUnit.INCH);
-            currentHeadingOdo = odo.getHeading(AngleUnit.DEGREES);
+            currentXOdo = pos.getX(DistanceUnit.INCH);
+            currentYOdo = pos.getY(DistanceUnit.INCH);
+            currentHeadingOdo = pos.getHeading(AngleUnit.DEGREES);
 
             if (gamepad2.yWasPressed()) {
                 shooterMode = !shooterMode;

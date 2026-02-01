@@ -5,7 +5,6 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretTolerance;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -15,6 +14,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.lib.AutoAim;
 import org.firstinspires.ftc.teamcode.lib.Turret;
@@ -26,18 +26,15 @@ import org.firstinspires.ftc.teamcode.lib.Turret;
  * Auto aim calculates and executes when a button is pressed.
  * It does NOT update until that button is pressed again.
  *
- * Controls:
- * Gamepad 1 (Driver):
+ * Controls (all on Gamepad 1):
  * - Left stick: Drive (forward/backward, strafe)
  * - Right stick: Rotate
- * - Back: Reset odometry to origin
- *
- * Gamepad 2 (Operator):
  * - A: Calculate and aim at RED goal (press again to recalculate)
  * - B: Calculate and aim at BLUE goal (press again to recalculate)
  * - X: Manual turret CCW (stops auto aim)
  * - Y: Manual turret CW (stops auto aim)
  * - Left trigger: Stop turret and cancel auto aim
+ * - Back: Reset odometry to origin
  *
  * This allows you to:
  * 1. Drive the robot to a position
@@ -76,17 +73,22 @@ public class AutoAimTuner extends LinearOpMode {
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         odo.setOffsets(odoXOffset, odoYOffset, DistanceUnit.MM);
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.FORWARD, GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         // Variables
-        double power = 0.6;
-        double turretPower = 0.5;
+        double power = 0.8;
+        double turretPower = 1.0;
         boolean isRed = true;
         double calculatedTargetAngle = 0;
         boolean targetCalculated = false;
         double currentHeading = 0;
+
+        odo.resetPosAndIMU();
+        sleep(250);
+        telemetry.addLine("Odometry RESET!");
+        telemetry.update();
 
         // Don't reset odometry automatically - let driver choose
         telemetry.addLine("=== Auto Aim Tuner ===");
@@ -118,9 +120,10 @@ public class AutoAimTuner extends LinearOpMode {
         while (opModeIsActive()) {
             // Update odometry
             odo.update();
-            double currentXOdo = odo.getPosX(DistanceUnit.INCH);
-            double currentYOdo = odo.getPosY(DistanceUnit.INCH);
-            double currentHeadingOdo = odo.getHeading(AngleUnit.DEGREES);
+            Pose2D pos = odo.getPosition();
+            double currentXOdo = pos.getX(DistanceUnit.INCH);
+            double currentYOdo = pos.getY(DistanceUnit.INCH);
+            double currentHeadingOdo = pos.getHeading(AngleUnit.DEGREES);
 
             // Reset odometry during runtime
             if (gamepad1.back) {
@@ -147,25 +150,22 @@ public class AutoAimTuner extends LinearOpMode {
             backLeft.setPower(backLeftPower);
             backRight.setPower(backRightPower);
 
-            // === AUTO AIM CONTROL ===
-            // A = Start/restart auto aim for RED goal (uses thread for continuous updates)
-            if (gamepad2.aWasPressed()) {
-                // Stop existing auto aim if running
-                if (autoAimController.isRunning()) {
-                    autoAimController.stopAutoAim();
-                }
+            if (gamepad1.start) {
+                odo.resetPosAndIMU();
+                sleep(250);
+            }
 
+            // === AUTO AIM CONTROL ===
+            // A = Calculate target angle for RED goal and use Turret.spinToHeading
+            if (gamepad1.a) {
                 isRed = true;
                 autoAimController.setTeam(true);
                 targetCalculated = true;
 
-                // Start auto aim thread - it will continuously update
-                autoAimController.startAutoAim();
-
                 // Get debug values for display
                 double[] debugVals = autoAimController.getDebugValues();
                 double[] storedPos = autoAimController.getStoredPosition();
-                telemetry.addLine(">>> RED AUTO AIM STARTED <<<");
+                telemetry.addLine(">>> RED AUTO AIM CALCULATED <<<");
                 telemetry.addLine("-- Odo Values (this loop) --");
                 telemetry.addData("Odo X", "%.2f", currentXOdo);
                 telemetry.addData("Odo Y", "%.2f", currentYOdo);
@@ -181,24 +181,16 @@ public class AutoAimTuner extends LinearOpMode {
                 telemetry.addData("Target", "%.2f", debugVals[3]);
             }
 
-            // B = Start/restart auto aim for BLUE goal (uses thread for continuous updates)
-            if (gamepad2.bWasPressed()) {
-                // Stop existing auto aim if running
-                if (autoAimController.isRunning()) {
-                    autoAimController.stopAutoAim();
-                }
-
+            // B = Calculate target angle for BLUE goal and use Turret.spinToHeading
+            if (gamepad1.b) {
                 isRed = false;
                 autoAimController.setTeam(false);
                 targetCalculated = true;
 
-                // Start auto aim thread - it will continuously update
-                autoAimController.startAutoAim();
-
                 // Get debug values for display
                 double[] debugVals = autoAimController.getDebugValues();
                 double[] storedPos = autoAimController.getStoredPosition();
-                telemetry.addLine(">>> BLUE AUTO AIM STARTED <<<");
+                telemetry.addLine(">>> BLUE AUTO AIM CALCULATED <<<");
                 telemetry.addLine("-- Odo Values (this loop) --");
                 telemetry.addData("Odo X", "%.2f", currentXOdo);
                 telemetry.addData("Odo Y", "%.2f", currentYOdo);
@@ -215,41 +207,33 @@ public class AutoAimTuner extends LinearOpMode {
             }
 
             // === TURRET CONTROL ===
-            double currentTurretAngle = autoAimController.getCurrentTurretHeading();
+            calculatedTargetAngle = autoAimController.calculateTargetAngle(currentXOdo, currentYOdo, currentHeadingOdo);
+            double currentTurretAngle = turretController.getCurrentHeading();
 
-            // Get current target for display
-            if (autoAimController.isRunning()) {
-                calculatedTargetAngle = autoAimController.getTargetAngle();
-            }
-
-            // Left trigger = Stop auto aim thread and turret
-            if (gamepad2.left_trigger > 0.1) {
-                if (autoAimController.isRunning()) {
-                    autoAimController.stopAutoAim();
-                }
-                turret.setPower(0);
+            // Left trigger = Stop turret and cancel auto aim
+            if (gamepad1.left_trigger > 0.1) {
+                turretController.stopTurret();
                 targetCalculated = false;
             }
-            // X = Manual CCW (stops auto aim thread)
-            else if (gamepad2.x && currentHeading < turretLimitCCW) {
-                if (autoAimController.isRunning()) {
-                    autoAimController.stopAutoAim();
-                }
+            // X = Manual CCW
+            else if (gamepad1.x && currentHeading < turretLimitCCW) {
                 targetCalculated = false;
                 currentHeading = turretController.spinToHeading(currentHeading + 30, turretPower);
             }
-            // Y = Manual CW (stops auto aim thread)
-            else if (gamepad2.y && currentHeading > turretLimitCW) {
-                if (autoAimController.isRunning()) {
-                    autoAimController.stopAutoAim();
-                }
+            // Y = Manual CW
+            else if (gamepad1.y && currentHeading > turretLimitCW) {
                 targetCalculated = false;
                 currentHeading = turretController.spinToHeading(currentHeading - 30, turretPower);
             }
-            // Auto aim thread handles turret movement when running
-            else if (!autoAimController.isRunning() && !targetCalculated) {
+            // Use Turret.spinToHeading to move to calculated target angle
+            else if (targetCalculated) {
+                //turretController.spinToHeading(calculatedTargetAngle, turretPower);
+            }
+            else {
                 turretController.stopTurret();
             }
+
+            turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
 
             // Update current heading for manual control
             currentHeading = currentTurretAngle;
@@ -267,24 +251,25 @@ public class AutoAimTuner extends LinearOpMode {
             telemetry.addData("Turret Power", "%.2f", turret.getPower());
             telemetry.addLine("");
             telemetry.addLine("--- Auto Aim ---");
-            telemetry.addData("Thread Running", autoAimController.isRunning());
+            telemetry.addData("Target Calculated", targetCalculated);
             telemetry.addData("Target Team", isRed ? "RED (72,72)" : "BLUE (-72,72)");
-            if (autoAimController.isRunning() || targetCalculated) {
+            if (targetCalculated) {
                 telemetry.addData("Target Angle", "%.2f°", calculatedTargetAngle);
                 telemetry.addData("Error", "%.2f°", calculatedTargetAngle - currentTurretAngle);
-                telemetry.addData("On Target", autoAimController.isOnTarget());
+                telemetry.addData("On Target", turretController.isWithinTolerance(calculatedTargetAngle));
             }
             telemetry.addLine("");
             telemetry.addLine("--- Controls ---");
-            telemetry.addLine("A: Start RED | B: Start BLUE");
-            telemetry.addLine("(press again to restart)");
+            telemetry.addLine("A: RED target | B: BLUE target");
+            telemetry.addLine("(press again to recalculate)");
             telemetry.addLine("LT: Stop | X/Y: Manual");
             telemetry.addLine("BACK: Reset Odometry");
             telemetry.update();
         }
 
-        // Cleanup - stop auto aim thread when OpMode ends
-        autoAimController.stopAutoAim();
+        // Cleanup when OpMode ends
+        turretController.stopTurret();
+        turretController.stopVelocityPID();
     }
 }
 
