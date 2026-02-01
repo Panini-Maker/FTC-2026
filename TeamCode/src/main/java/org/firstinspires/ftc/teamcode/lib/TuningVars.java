@@ -5,7 +5,7 @@ import com.acmerobotics.roadrunner.Vector2d;
 @Config
 public class TuningVars {
     //Odometry Tuning Vars
-    public static int odoXOffset = -75; // in mm
+    public static int odoXOffset = 73; // in mm
     public static int odoYOffset = -125; // in mm
     //Auto End Position - Updated at end of autonomous, used by TeleOp
     public static double autoEndX = 0; // in inches

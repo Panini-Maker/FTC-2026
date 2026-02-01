@@ -5,6 +5,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 public class ShooterController {
@@ -142,17 +144,33 @@ public class ShooterController {
         pidController.setKi(Ki);
         pidController.setKd(Kd);
     }
+    public double getDistanceFromGoal(Pose2D pos, boolean isTargetRed) {
 
-    /*
-    public double getDistanceFromGoal(Pose2D pos, boolean isTargetRed?) {
+        double x = pos.getX(DistanceUnit.INCH);
+        double y = pos.getY(DistanceUnit.INCH);
+        double goal_pos_x;
+        double goal_pos_y;
 
-        double x =
+        if (isTargetRed) {
+            goal_pos_x = 144;
+            goal_pos_y = 144;
+        } else {
+            goal_pos_x = 0;
+            goal_pos_y = 144;
+        }
 
-        double distance
+        double distance;
+
+        distance = Math.sqrt(Math.pow((goal_pos_x-x), 2) + Math.pow((goal_pos_y-y), 2));
 
         return distance;
     }
 
-     */
+    public double getShooterRPM(double distance) {
+        return distance * 7.05 + 1019;
+    }
 
+    public double getShooterAngle(double distance) {
+        return 0.061 + 0.00602 * distance - 0.0000207 * distance * distance;
+    }
 }
