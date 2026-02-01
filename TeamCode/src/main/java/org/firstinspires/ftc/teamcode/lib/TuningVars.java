@@ -21,9 +21,9 @@ public class TuningVars {
         autoEndTurretHeading = turretHeading;
     }
     //Shooter Tuning Vars
-    public static double shooterKp = 0.005; //0.0075
-    public static double shooterKi = 0.0011; //0.0009
-    public static double shooterKd = 0; //0.0003
+    public static double shooterKp = 0.25;
+    public static double shooterKi = 0.0002;
+    public static double shooterKd = 0.002;
     public static int shootingSlowDownSpeed = 200;
     public static int shotgun = 1550; //Was 1600
     public static int shotgunTeleOp = 1470;

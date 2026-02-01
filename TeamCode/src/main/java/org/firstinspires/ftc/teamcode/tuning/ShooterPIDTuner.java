@@ -9,7 +9,9 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniperAuto;
 
 import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -44,6 +46,7 @@ import org.firstinspires.ftc.teamcode.lib.ShooterController;
  * 3. Increase Kd until oscillation stops
  * 4. If there's steady-state error, increase Ki slightly
  */
+@Config
 @TeleOp(name = "Shooter PID Tuner", group = "Tuning")
 public class ShooterPIDTuner extends LinearOpMode {
 
@@ -78,9 +81,16 @@ public class ShooterPIDTuner extends LinearOpMode {
         telemetry.addData("Status", "Ready");
         telemetry.update();
 
+        FtcDashboard dashboard = FtcDashboard.getInstance();
+
         waitForStart();
 
         while (opModeIsActive()) {
+            TelemetryPacket packet = new TelemetryPacket();
+            packet.put("targetVelocity", targetVelocity);
+            packet.put("currentVelocity", (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0);
+            dashboard.sendTelemetryPacket(packet);
+
             // Handle preset velocity buttons
             if (gamepad1.a) {
                 targetVelocity = shotgunTeleOp;
