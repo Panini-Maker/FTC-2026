@@ -58,7 +58,7 @@ public class TuningVars {
     // Auto Aim Target Positions (center of field is origin 0,0)
     public static Vector2d redGoalPosition = new Vector2d(72, 72); // Red goal corner
     public static Vector2d blueGoalPosition = new Vector2d(-72, 72); // Blue goal corner
-    public static boolean targetIsRed;
+    public static boolean targetIsRed = true;
 
     // Odometry heading convention adjustment
     // Set to -1 if odometry uses CW positive (opposite of atan2's CCW positive)
@@ -92,7 +92,7 @@ public class TuningVars {
     public static Vector2d beginCollectingArtifacts3 = new Vector2d(30, 12);
     public static Vector2d endCollectingArtifacts3 = new Vector2d(51, 12);
     public static Vector2d shootingPositionShort = new Vector2d(18, 18);
-    public static Vector2d parkPositionShort = new Vector2d(50, 0);
+    public static Vector2d parkPositionShort = new Vector2d(45, 0);
     public static Vector2d intermediatePressingLever = new Vector2d(48, -12);
     public static Vector2d pressLever = parkPositionShort;
 }

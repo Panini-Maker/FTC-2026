@@ -13,6 +13,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceTeleOp;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.targetIsRed;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -65,7 +66,7 @@ public class TeleOpV2 extends LinearOpMode {
         Turret turretController = new Turret(turret, telemetry);
 
         // Initialize AutoAim (default to red team, can be toggled)
-        AutoAim autoAimController = new AutoAim(turret, telemetry, true);
+        AutoAim autoAimController = new AutoAim(turret, telemetry, targetIsRed);
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
@@ -96,13 +97,16 @@ public class TeleOpV2 extends LinearOpMode {
         double hoodState;
         double intakePower;
         double lightState;
+        double turretPower = 1.0;
 
-        boolean targetIsRed = true;
+//        boolean targetIsRed = true;
         double shooterSpeed;
         int target = redTagID;
         boolean isAligned = false;
         double currentHeading = 0.0;
         double distanceToGoal;
+        double calculatedTargetAngle;
+        double currentTurretAngle;
 
         //Auto Aim and Auto Shoot variables
         boolean autoAim = false;
@@ -167,10 +171,10 @@ public class TeleOpV2 extends LinearOpMode {
                 telemetry.addData("Target Color:", "Blue");
             }
 
-            distanceToGoal = robot.getDistanceFromGoal(pos, targetIsRed);
-
             /// CALCULATE =================================================================================================================
 
+            autoAimController.updateRobotPosition(currentXOdo, currentYOdo, currentHeading, autoAimController.getCurrentTurretHeading());
+            distanceToGoal = robot.getDistanceFromGoal(pos, targetIsRed);
             hoodState = robot.getShooterAngle(distanceToGoal);
 
 
@@ -211,6 +215,10 @@ public class TeleOpV2 extends LinearOpMode {
                 shooterSpeed = shooterIdle;
             }
 
+            // Turret
+            calculatedTargetAngle = autoAimController.calculateTargetAngle(currentXOdo, currentYOdo, currentHeadingOdo);
+            currentTurretAngle = turretController.getCurrentHeading();
+
             // Light for shooter status
             double avgShooterVel = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2;
             if (Math.abs(avgShooterVel - shooterSpeed) < shootingToleranceTeleOp) {
@@ -221,14 +229,14 @@ public class TeleOpV2 extends LinearOpMode {
 
             /// SET POWER =================================================================================================================
 
-            robot.driveRobotCentric(y, x, rx, drivetrainPower);
-//            robot.driveFieldCentric(pos, y, x, rx, drivetrainPower);
+//            robot.driveRobotCentric(y, x, rx, drivetrainPower);
+            robot.driveFieldCentric(pos, y, x, rx, drivetrainPower);
 
             robot.setLatch(latchState);
             hoodServo.setPosition(hoodState);
             shooter.runShooter(shooterSpeed);
             intake.setPower(intakePower);
-
+            turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
             light.setPosition(lightState);
 
             /// TELEMETRY ==================================================================================================================
