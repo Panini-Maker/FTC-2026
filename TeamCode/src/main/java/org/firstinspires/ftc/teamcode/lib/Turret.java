@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.lib;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretKd;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretKi;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretKp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretTicksPerDegree;
 
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -37,13 +40,16 @@ public class Turret {
         int currentPosition = turret.getCurrentPosition();
         int error = targetPosition - currentPosition;
 
-        double kP = 0.005; // Proportional constant, tune as needed
-        double minPower = 0.15; // Minimum power to overcome friction
+        double kP = turretKp; // Proportional constant, tune as needed
+        double kI = turretKi; // Integral constant, tune as needed
+        double kD = turretKd; // Derivative constant, tune as needed
+        double minPower = 0; // Minimum power to overcome friction
         int tolerance = (int)(ticksPerDegree); // 1 degree tolerance
+        PIDController pid = new PIDController(kP, kI, kD, telemetry);
 
         if (Math.abs(error) > tolerance) {
             turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-            double calculatedPower = kP * error;
+            double calculatedPower = pid.calculate(headingDegrees, currentPosition / ticksPerDegree);
             // Ensure minimum power to overcome friction, preserve direction
             calculatedPower = Math.copySign(Math.max(Math.abs(calculatedPower), minPower), calculatedPower);
             // Clamp to max power

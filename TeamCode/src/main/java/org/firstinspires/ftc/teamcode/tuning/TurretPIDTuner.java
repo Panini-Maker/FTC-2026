@@ -13,6 +13,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
+import org.firstinspires.ftc.teamcode.lib.Turret;
+
 /**
  * TurretPIDTuner - Used to tune turret PID constants.
  *
@@ -51,6 +53,7 @@ public class TurretPIDTuner extends LinearOpMode {
     // Current target
     private double targetAngle = 0;
     private boolean pidActive = false;
+    private Turret turretController;
 
     @Override
     public void runOpMode() throws InterruptedException {
@@ -70,6 +73,8 @@ public class TurretPIDTuner extends LinearOpMode {
         telemetry.addLine("");
         telemetry.addData("Status", "Ready");
         telemetry.update();
+
+        turretController = new Turret(turret, telemetry);
 
         waitForStart();
 
@@ -100,8 +105,7 @@ public class TurretPIDTuner extends LinearOpMode {
 
             // Run PID if active
             if (pidActive) {
-                power = calculatePID(targetAngle, currentAngle);
-                turret.setPower(power);
+                turretController.spinToHeadingLoop(targetAngle, 1.0);
             }
 
             // Display telemetry
@@ -131,8 +135,10 @@ public class TurretPIDTuner extends LinearOpMode {
         }
 
         // Stop turret when OpMode ends
-        turret.setPower(0);
+        turretController.stopTurret();
+        turretController.stopVelocityPID();
     }
+
 
     /**
      * Calculates PID output to move turret to target angle.

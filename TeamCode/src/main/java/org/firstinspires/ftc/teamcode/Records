@@ -87,3 +87,9 @@ Software Records:
         - Right trigger --> chainsaw mode (moves robot forward as a much faster speed, 0.8 --> 1).
         - Left trigger --> de-war horn mode (moves robot forward at a much slower speed, 0.8 --> 0.6).
         - Make it so telemetry displays what mode the robot is in (chainsaw, de-war horn, reloading, sniper, shotgun, etc.).
+
+1/30/2026:
+- TODO:Tune Shooter PID for new robot.
+    - Make Road Runner go faster.
+    - Create new autonomous code for new robot once hardware makes "gate opener".
+    - Debug auto aim code.

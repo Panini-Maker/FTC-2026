@@ -28,12 +28,12 @@ public class PIDController {
     /**
      * Calculates the motor power adjustment based on the desired and current velocity.
      *
-     * @param desiredVelocity The target velocity for the motor.
-     * @param currentVelocity The current velocity of the motor.
+     * @param target The target velocity for the motor.
+     * @param current The current velocity of the motor.
      * @return The calculated adjustment for the motor power.
      */
-    public double calculate(double desiredVelocity, double currentVelocity) {
-        double error = desiredVelocity - currentVelocity;
+    public double calculate(double target, double current) {
+        double error = target - current;
         double deltaTime = timer.seconds();
         timer.reset();
 

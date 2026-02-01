@@ -42,14 +42,14 @@ public class TuningVars {
     public static double turretMotorGearTeeth = 57; //Number of teeth in turret motor gear
     public static double turretGearTeeth = 186; //Number of teeth in turret gear
     public static double turretTicksPerDegree = (turretMotorTPR * turretGearTeeth) / (turretMotorGearTeeth * 360.0);
-    public static double turretLimitCCW = 180; // in degrees (Limits added back in)
-    public static double turretLimitCW = -135; // in degrees (Limits added back in)
-    public static double turretSpeedAuto = 0.67; // 0 to 1
+    public static double turretLimitCCW = 175; // in degrees (Limits added back in)
+    public static double turretLimitCW = -130; // in degrees (Limits added back in)
+    public static double turretSpeedAuto = 0.8; // 0 to 1
 
     // Turret PID Tuning Vars for Auto Aim
     public static double turretKp = 0.04; // Proportional constant
     public static double turretKi = 0.0; // Integral constant
-    public static double turretKd = 0.00125; // Derivative constant
+    public static double turretKd = 0.0; // Derivative constant
     public static double turretMinPower = 0.0; // Minimum power to overcome friction
     public static double turretMaxPower = 0.8; // Maximum power for turret
     public static double turretTolerance = 2.0; // Tolerance in degrees
