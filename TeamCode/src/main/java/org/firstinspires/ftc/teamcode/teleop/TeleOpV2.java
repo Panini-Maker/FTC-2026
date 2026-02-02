@@ -5,6 +5,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndTurretHeading
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndX;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndY;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.blueTagID;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoResetPosRed;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
@@ -14,6 +15,8 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceTeleOp;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgunTeleOp;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.targetIsRed;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -101,18 +104,20 @@ public class TeleOpV2 extends LinearOpMode {
         double turretPower = 1.0;
 
 //        boolean targetIsRed = true;
-        double shooterSpeed = 0;
+        double shooterSpeed;
         int target = redTagID;
         boolean isAligned = false;
         double currentHeading = 0.0;
         double distanceToGoal;
         double calculatedTargetAngle;
         double currentTurretAngle;
+        double manualTurretHeading = 0.0;
 
         //Auto Aim and Auto Shoot variables
         boolean autoAim = false;
         boolean autoShoot = false;
         boolean safeShooting = false;
+        boolean manualMode = false;
 
         // Odometry
         double currentXOdo;
@@ -148,8 +153,14 @@ public class TeleOpV2 extends LinearOpMode {
             /// LOCALIZATION ==================================================================================================================
 
             // Reset odo midmatch if needed
-            if (gamepad1.optionsWasPressed()){
-                odo.resetPosAndIMU();
+            if (gamepad1.startWasPressed() && gamepad1.xWasPressed()) {
+//                odo.resetPosAndIMU();
+//                sleep(250);
+                if (targetIsRed) {
+                    odo.setPosition(new Pose2D(DistanceUnit.INCH, odoResetPosRed.x, odoResetPosRed.y, AngleUnit.DEGREES, 90.0));
+                } else {
+                    odo.setPosition(new Pose2D(DistanceUnit.INCH, -odoResetPosRed.x, odoResetPosRed.y, AngleUnit.DEGREES, 90.0));
+                }
             }
             // Get position
             odo.update();
@@ -160,7 +171,7 @@ public class TeleOpV2 extends LinearOpMode {
             currentHeadingOdo = pos.getHeading(AngleUnit.DEGREES);
 
             // Goal Color
-            if (gamepad1.backWasPressed()) {
+            if (gamepad1.startWasPressed() && gamepad1.yWasPressed()) {
                 targetIsRed = !targetIsRed;
                 autoAimController.setTeam(targetIsRed); // Update auto aim target
             }
@@ -213,7 +224,9 @@ public class TeleOpV2 extends LinearOpMode {
                 shooterSpeed = robot.getShooterRPM(distanceToGoal);
                 latchState = 1;
             } else {
-                shooterSpeed = shooterIdle;
+                shooter.stopVelocityPID();
+                shooter.stopShooter();
+                shooterSpeed = 0;
             }
 
             // Turret
@@ -228,6 +241,26 @@ public class TeleOpV2 extends LinearOpMode {
                 lightState = 0.28;
             }
 
+            // Manual turret control overrides auto aim
+            if (gamepad1.backWasPressed() && gamepad1.startWasPressed()) {
+                manualMode = !manualMode;
+            }
+
+            if (manualMode) {
+                calculatedTargetAngle = manualTurretHeading;
+                shooterSpeed = shotgunTeleOp;
+            }
+
+            if (gamepad1.yWasPressed()) {
+                if (shooterSpeed == shotgunTeleOp) {
+                    shooterSpeed = sniper;
+                    hoodState = 0.5;
+                } else if (shooterSpeed == sniper) {
+                    shooterSpeed = shotgunTeleOp;
+                    hoodState = 0.42;
+                }
+            }
+
             /// SET POWER =================================================================================================================
 
 //            robot.driveRobotCentric(y, x, rx, drivetrainPower);
@@ -235,7 +268,10 @@ public class TeleOpV2 extends LinearOpMode {
 
             robot.setLatch(latchState);
             hoodServo.setPosition(hoodState);
-            shooter.runShooter(shooterSpeed);
+            if (shooterSpeed != 0) {
+                //shooter.runShooter(shooterSpeed);
+                shooter.setVelocityPID(shooterSpeed);
+            }
             intake.setPower(intakePower);
             turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
             light.setPosition(lightState);

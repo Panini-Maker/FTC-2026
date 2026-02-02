@@ -21,9 +21,9 @@ public class TuningVars {
         autoEndTurretHeading = turretHeading;
     }
     //Shooter Tuning Vars
-    public static double shooterKp = 0.25;
-    public static double shooterKi = 0.0002;
-    public static double shooterKd = 0.002;
+    public static double shooterKp = 0.005;//0.25
+    public static double shooterKi = 0.0011;//0.0002
+    public static double shooterKd = 0;//0.002
     public static int shootingSlowDownSpeed = 200;
     public static int shotgun = 1550; //Was 1600
     public static int shotgunTeleOp = 1470;
@@ -33,7 +33,7 @@ public class TuningVars {
     // Shots too high at 1976 rpm, 1925 causes problem where it hits backboard sometimes
     public static int shooterIdle = 0; // Run when not shooting during teleop
     public static int idle = 800; // Was 1200
-    public static int shootingToleranceAuto = 30; // in RPM
+    public static int shootingToleranceAuto = 50; // in RPM
     public static int shootingToleranceTeleOp = 50; // in RPM
     public static int shootDurationMs = 2500; // in milliseconds
     public static int rampUpTime = 3000; // in milliseconds
@@ -95,4 +95,5 @@ public class TuningVars {
     public static Vector2d parkPositionShort = new Vector2d(45, 0);
     public static Vector2d intermediatePressingLever = new Vector2d(48, -12);
     public static Vector2d pressLever = parkPositionShort;
+    public static Vector2d odoResetPosRed = new Vector2d(-65.25, -65.25);
 }
