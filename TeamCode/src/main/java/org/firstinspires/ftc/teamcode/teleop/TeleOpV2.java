@@ -138,6 +138,15 @@ public class TeleOpV2 extends LinearOpMode {
             telemetry.addData("Odometry", "Loaded from Auto: X=%.1f, Y=%.1f, H=%.1f", autoEndX, autoEndY, autoEndHeading);
         }
 
+        // Find correct april tag
+        if (targetIsRed) {
+            target = redTagID;
+            telemetry.addData("Target Color:", "Red");
+        } else {
+            target = blueTagID;
+            telemetry.addData("Target Color:", "Blue");
+        }
+
         // Initialize turret heading from autonomous (if available)
         currentHeading = autoEndTurretHeading;
 
@@ -154,8 +163,6 @@ public class TeleOpV2 extends LinearOpMode {
 
             // Reset odo midmatch if needed
             if (gamepad1.startWasPressed() && gamepad1.xWasPressed()) {
-//                odo.resetPosAndIMU();
-//                sleep(250);
                 if (targetIsRed) {
                     odo.setPosition(new Pose2D(DistanceUnit.INCH, odoResetPosRed.x, odoResetPosRed.y, AngleUnit.DEGREES, 90.0));
                 } else {
@@ -170,17 +177,19 @@ public class TeleOpV2 extends LinearOpMode {
             currentYOdo = pos.getY(DistanceUnit.INCH);
             currentHeadingOdo = pos.getHeading(AngleUnit.DEGREES);
 
-            // Goal Color
+            // Change Goal Color Midmatch
             if (gamepad1.startWasPressed() && gamepad1.yWasPressed()) {
                 targetIsRed = !targetIsRed;
                 autoAimController.setTeam(targetIsRed); // Update auto aim target
-            }
-            if (targetIsRed) {
-                target = redTagID;
-                telemetry.addData("Target Color:", "Red");
-            } else {
-                target = blueTagID;
-                telemetry.addData("Target Color:", "Blue");
+
+                // reset april tag
+                if (targetIsRed) {
+                    target = redTagID;
+                    telemetry.addData("Target Color:", "Red");
+                } else {
+                    target = blueTagID;
+                    telemetry.addData("Target Color:", "Blue");
+                }
             }
 
             /// CALCULATE =================================================================================================================
