@@ -1,30 +1,47 @@
 package org.firstinspires.ftc.teamcode.autonomous;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.teamcode.lib.RobotActions;
+import org.firstinspires.ftc.teamcode.lib.ShooterController;
+import org.firstinspires.ftc.teamcode.lib.ShootingAction;
+import org.firstinspires.ftc.teamcode.lib.Turret;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous
 
-public class AutoRedShort15Artifacts extends OpMode {
+public class AutoBlueShort15Artifacts extends OpMode {
 
     public Follower follower;
+    public ShootingAction shooter;
+    public Turret turretControl;
+    public RobotActions robot;
     private Timer pathTimer, actionTimer, opmodeTimer;
-
     private int pathState;
-
     private final Pose startPose = new Pose(32, 135, Math.toRadians(90)); // Start Pose of our robot.
     private final Pose scoreClosePose = new Pose(56, 76, Math.toRadians(180)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
     private final Pose scoreFarPose = new Pose(61.5, 69.5, Math.toRadians(180));
+    public double shooterVelocity = 0;
+    public double turretAngle = 0;
+    public double distanceFromGoal = 0;
+    public Pose2D currentPose;
 
     public PathChain Shoot1;
     public PathChain Shoot2;
@@ -154,6 +171,7 @@ public class AutoRedShort15Artifacts extends OpMode {
         switch (pathState) {
             case 0:
                 follower.followPath(Shoot1, true);
+                //shooter.shoot();
                 setPathState(1);
                 break;
             case 1:
@@ -267,6 +285,10 @@ public class AutoRedShort15Artifacts extends OpMode {
     @Override
     public void loop() {
         // These loop the movements of the robot, these must be called continuously in order to work
+        //currentPose = new Pose2D(DistanceUnit.INCH)
+        //distanceFromGoal = robot.getDistanceFromGoal(, false);
+        //shooterVelocity = robot.getShooterRPM()
+
         follower.update();
         autonomousPathUpdate();
         // Feedback to Driver Hub for debugging
@@ -288,6 +310,52 @@ public class AutoRedShort15Artifacts extends OpMode {
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose);
+
+        DcMotor frontLeft = hardwareMap.dcMotor.get("frontLeft");
+        DcMotor frontRight = hardwareMap.dcMotor.get("frontRight");
+        DcMotor backLeft = hardwareMap.dcMotor.get("backLeft");
+        DcMotor backRight = hardwareMap.dcMotor.get("backRight");
+        frontRight.setDirection(DcMotor.Direction.REVERSE);
+        backRight.setDirection(DcMotor.Direction.REVERSE);
+
+        DcMotor intake = hardwareMap.dcMotor.get("intake");
+
+        DcMotorEx leftShooter = hardwareMap.get(DcMotorEx.class, "leftShooter");
+        leftShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        DcMotorEx rightShooter = hardwareMap.get(DcMotorEx.class, "rightShooter");
+        rightShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        ShooterController controller = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, telemetry);
+
+        DcMotorEx turret = hardwareMap.get(DcMotorEx.class, "turret");
+        turret.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
+        turretControl = new Turret(turret, telemetry);
+
+        Servo hoodServo = hardwareMap.get(Servo.class, "hood");
+        Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
+        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        hoodServo.setDirection(Servo.Direction.REVERSE);
+        Servo light = hardwareMap.get(Servo.class, "light");
+
+
+        shooter = new ShootingAction(
+                leftShooter,
+                rightShooter,
+                intake,
+                turret,
+                hoodServo,
+                leftLatch,
+                rightLatch,
+                controller
+        );
+
+        robot = new RobotActions(frontLeft, frontRight, backLeft, backRight,
+                rightShooter, leftShooter, turret, intake,
+                rightLatch, leftLatch, hoodServo, light);
     }
 
     /**

@@ -44,8 +44,6 @@ public class AutoRedShort9Artifacts extends LinearOpMode {
 
         //Create RR drive object
         MecanumDrive drive = new MecanumDrive(hardwareMap, beginPose, drivePowerMag);
-        AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
-        tagProcessor.setDecimation(0.5f); // Lower decimation for lighting conditions
 
         DcMotor intake = hardwareMap.dcMotor.get("intake");
 
@@ -83,6 +81,20 @@ public class AutoRedShort9Artifacts extends LinearOpMode {
 
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
+
+        auto.AutoShort9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller, telemetry, beginPose);
+        // Ensure PID thread stops when OpMode ends
+        controller.stopVelocityPID();
+        turretControl.stopVelocityPID();
+        // Save final position even on manual termination
+        Pose2d endPose = drive.localizer.getPose();
+        org.firstinspires.ftc.teamcode.lib.TuningVars.saveEndPosition(
+                endPose.position.x,
+                endPose.position.y,
+                Math.toDegrees(endPose.heading.toDouble()),
+                turretControl.getCurrentHeading()
+        );
+        /*
         try {
             auto.AutoShort9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller, telemetry, beginPose);
         } finally {
@@ -98,5 +110,7 @@ public class AutoRedShort9Artifacts extends LinearOpMode {
                 turretControl.getCurrentHeading()
             );
         }
+
+         */
     }
 }
