@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.pedroPathing;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
 
+import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
@@ -19,11 +20,12 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(10.5)
-            .forwardZeroPowerAcceleration(-45.66085013514614)
-            .lateralZeroPowerAcceleration(-67.45245902993103)
-            .useSecondaryTranslationalPIDF(true)
-            .useSecondaryHeadingPIDF(true)
-            .useSecondaryDrivePIDF(true)
+            .forwardZeroPowerAcceleration(-57.14666127618916)
+            .lateralZeroPowerAcceleration(-61.752154885664446)
+            .translationalPIDFCoefficients(new PIDFCoefficients(0.07, 0.0, 0.01, 0.04))
+            .headingPIDFCoefficients(new PIDFCoefficients(0.7, 0.0, 0.02, 0.03))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.032, 0.0, 0.00001, 0.55, 0.011))
+            .centripetalScaling(0.0004)
             ;
 
 
@@ -37,12 +39,12 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightRearMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .xVelocity(83.33389979084646)
-            .yVelocity(66.93273301011934)
+            .xVelocity(79.84556135042446)
+            .yVelocity(65.81585693359375)
             ;
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(-73)
+            .forwardPodY(73)
             .strafePodX(-125)
             .distanceUnit(DistanceUnit.MM)
             .hardwareMapName("pinpoint")

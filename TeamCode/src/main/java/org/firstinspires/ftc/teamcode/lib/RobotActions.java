@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.lib;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.timeToShoot;
+
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -160,5 +162,17 @@ public class RobotActions {
             }
         }
         return output;
+    }
+
+    public Pose2D shootWhileMoving(Pose2D pos, double x_velocity, double y_velocity) {
+        double x = pos.getX(DistanceUnit.INCH);
+        double y = pos.getY(DistanceUnit.INCH);
+        double heading = pos.getHeading(AngleUnit.RADIANS);
+
+        x = x + x_velocity * timeToShoot;
+        y = y + y_velocity * timeToShoot;
+
+        Pose2D pos_out = new Pose2D(DistanceUnit.INCH, x, y, AngleUnit.RADIANS, heading);
+        return pos_out;
     }
 }

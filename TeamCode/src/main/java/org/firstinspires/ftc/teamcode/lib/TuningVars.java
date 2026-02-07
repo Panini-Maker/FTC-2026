@@ -12,6 +12,7 @@ public class TuningVars {
     public static double autoEndY = 0; // in inches
     public static double autoEndHeading = 0; // in degrees
     public static double autoEndTurretHeading = 0; // in degrees
+    public static double timeToShoot = 0.1; // Seconds
 
     // Method to save robot position at end of autonomous
     public static void saveEndPosition(double x, double y, double heading, double turretHeading) {
