@@ -38,8 +38,6 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
 
         //Create RR drive object
         MecanumDrive drive = new MecanumDrive(hardwareMap, beginPose, drivePowerMag);
-        AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
-        tagProcessor.setDecimation(0.5f); // Lower decimation for lighting conditions
 
         DcMotor intake = hardwareMap.dcMotor.get("intake");
 
