@@ -31,6 +31,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.lib.AprilTag;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
@@ -40,7 +41,6 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 @Autonomous
 public class AutoBlueLong9Artifacts extends LinearOpMode {
-
     @Override
     public void runOpMode() throws InterruptedException {
 
@@ -54,8 +54,6 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
 
         //Create RR drive object
         MecanumDrive drive = new MecanumDrive(hardwareMap, beginPose, drivePowerMag);
-        AprilTagProcessor tagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
-        tagProcessor.setDecimation(0.5f); // Lower decimation for lighting conditions
 
         DcMotor intake = hardwareMap.dcMotor.get("intake");
 
@@ -93,6 +91,7 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
 
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
+
         try {
             auto.AutoLong9Artifacts(blue, drive, leftShooter, rightShooter, intake, shooter, turretControl, shooterController, telemetry, beginPose);
         } finally {

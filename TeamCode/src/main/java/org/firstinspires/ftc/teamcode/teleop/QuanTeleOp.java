@@ -94,7 +94,7 @@ public class QuanTeleOp extends LinearOpMode {
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         // Presets
-        double drivetrainPower = 0.9;
+        double drivetrainPower = 1.0;
 
         // Mode Variables
         int latchState = 0;
@@ -210,7 +210,7 @@ public class QuanTeleOp extends LinearOpMode {
 
             // Speed toggle
             if (gamepad1.aWasPressed()) {
-                drivetrainPower = 1.5 - drivetrainPower;
+                drivetrainPower = 1.6 - drivetrainPower;
             }
             // Drivetrain inputs
             double y = -gamepad1.left_stick_y; // Forward/Backward
