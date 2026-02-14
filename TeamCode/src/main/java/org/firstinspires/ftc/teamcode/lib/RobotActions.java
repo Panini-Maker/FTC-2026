@@ -113,11 +113,11 @@ public class RobotActions {
     }
 
     public double getShooterRPM(double distance) {
-        return distance * 7.05 + 1019;
+        return distance * 6.36 + 983; // was distance * 7.05 + 1019
     }
 
     public double getShooterAngle(double distance) {
-        return 0.061 + 0.00602 * distance - 0.0000207 * distance * distance;
+        return -0.317 + 0.0116 * distance - 0.0000451 * distance * distance; // was 0.061 + 0.00602 * distance - 0.0000207 * distance * distance
     }
 
     public double angleToGoal(Pose2D pos, double turretCurrentAngle, boolean targetIsRed) {
