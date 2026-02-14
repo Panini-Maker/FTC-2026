@@ -113,11 +113,11 @@ public class RobotActions {
     }
 
     public double getShooterRPM(double distance) {
-        return distance * 7.05 + 1019;
+        return distance * 6.36 + 983; // was distance * 7.05 + 1019
     }
 
     public double getShooterAngle(double distance) {
-        return 0.061 + 0.00602 * distance - 0.0000207 * distance * distance;
+        return -0.317 + 0.0116 * distance - 0.0000451 * distance * distance; // was 0.061 + 0.00602 * distance - 0.0000207 * distance * distance
     }
 
     public double angleToGoal(Pose2D pos, double turretCurrentAngle, boolean targetIsRed) {
@@ -164,15 +164,15 @@ public class RobotActions {
         return output;
     }
 
-    public Pose2D shootWhileMoving(Pose2D pos, double x_velocity, double y_velocity) {
+    public Pose2D shootWhileMoving(Pose2D pos, double x_velocity, double y_velocity, double heading_velocity) {
         double x = pos.getX(DistanceUnit.INCH);
         double y = pos.getY(DistanceUnit.INCH);
-        double heading = pos.getHeading(AngleUnit.RADIANS);
+        double heading = pos.getHeading(AngleUnit.DEGREES);
 
         x = x + x_velocity * timeToShoot;
         y = y + y_velocity * timeToShoot;
+        heading = heading + heading_velocity * timeToShoot;
 
-        Pose2D pos_out = new Pose2D(DistanceUnit.INCH, x, y, AngleUnit.RADIANS, heading);
-        return pos_out;
+        return new Pose2D(DistanceUnit.INCH, x, y, AngleUnit.DEGREES, heading);
     }
 }
