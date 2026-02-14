@@ -94,7 +94,7 @@ public class TeleOpV2 extends LinearOpMode {
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         // Presets
-        double drivetrainPower = 0.9;
+        double drivetrainPower = 1.0;
 
         // Mode Variables
         int latchState = 0;
@@ -133,9 +133,9 @@ public class TeleOpV2 extends LinearOpMode {
             telemetry.addData("Odometry", "Reset to origin, IMU calibrating...");
         } else {
             // Have saved position from autonomous - set it without full reset
-            odo.setPosition(new Pose2D(
-                    DistanceUnit.INCH, autoEndX, autoEndY, AngleUnit.DEGREES, autoEndHeading));
-            telemetry.addData("Odometry", "Loaded from Auto: X=%.1f, Y=%.1f, H=%.1f", autoEndX, autoEndY, autoEndHeading);
+            odo.setPosition(new Pose2D(DistanceUnit.INCH, autoEndX, autoEndY, AngleUnit.DEGREES, autoEndHeading));
+            Pose2D startPose = odo.getPosition();
+            telemetry.addData("Odometry", "Loaded from Auto: X=%.1f, Y=%.1f, H=%.1f", startPose.getX(DistanceUnit.INCH), startPose.getY(DistanceUnit.INCH), startPose.getHeading(AngleUnit.RADIANS));
         }
 
         // Find correct april tag
@@ -210,11 +210,18 @@ public class TeleOpV2 extends LinearOpMode {
 
             // Speed toggle
             if (gamepad1.aWasPressed()) {
-                drivetrainPower = 1.5 - drivetrainPower;
+                drivetrainPower = 1.6 - drivetrainPower;
             }
             // Drivetrain inputs
-            double y = -gamepad1.left_stick_y; // Forward/Backward
-            double x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
+            double x;
+            double y;
+            if (!targetIsRed && !manualMode) {
+                y = gamepad1.left_stick_y; // Forward/Backward
+                x = -gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing
+            } else {
+                y = -gamepad1.left_stick_y; // Forward/Backward
+                x = gamepad1.left_stick_x * 1.1; // Counteract imperfect strafing and reverse for blue side
+            }
             double rx = gamepad1.right_stick_x; // Turning
 
             // Intake
@@ -273,8 +280,11 @@ public class TeleOpV2 extends LinearOpMode {
             /// SET POWER =================================================================================================================
 
 //            robot.driveRobotCentric(y, x, rx, drivetrainPower);
-            robot.driveFieldCentric(pos, y, x, rx, drivetrainPower);
-
+            if (!manualMode) {
+                robot.driveFieldCentric(pos, y, x, rx, drivetrainPower);
+            } else {
+                robot.driveRobotCentric(y, x, rx, drivetrainPower);
+            }
             robot.setLatch(latchState);
             hoodServo.setPosition(hoodState);
             if (shooterSpeed != 0) {

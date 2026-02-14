@@ -23,7 +23,6 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.lib.AutoAim;
 import org.firstinspires.ftc.teamcode.lib.RobotActions;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
@@ -32,7 +31,8 @@ import org.firstinspires.ftc.teamcode.lib.Turret;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous
-public class AutoBlueShort15Artifacts extends OpMode {
+
+public class AutoBlueLong15Artifacts extends OpMode {
 
     public Follower follower;
     public ShootingAction shooter;
@@ -42,7 +42,7 @@ public class AutoBlueShort15Artifacts extends OpMode {
     AutoAim autoAim;
     private Timer pathTimer, actionTimer, opmodeTimer;
     private int pathState;
-    private final Pose startPose = new Pose(32, 135, Math.toRadians(90)); // Start Pose of our robot.
+    private final Pose startPose = new Pose(63.5, 6, Math.toRadians(180)); // Start Pose of our robot.
     private final Pose scoreClosePose = new Pose(56, 76, Math.toRadians(180)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
     private final Pose scoreFarPose = new Pose(61.5, 69.5, Math.toRadians(180));
     public double shooterVelocity = 0;
@@ -50,9 +50,10 @@ public class AutoBlueShort15Artifacts extends OpMode {
     public double distanceFromGoal = 0;
     public Pose2D currentPose;
     public double turretAngle = 0;
-    int shootDuration = 400; // Duration of the shooting action in milliseconds, this is used in the ShootingAction.shoot() method and can be tuned for faster or slower shooting
-    int rampUpDuration = 300; // Duration of the ramp up of the shooter motors in milliseconds, this is used in the ShootingAction.shoot() method and can be tuned for faster or slower ramp up
-    int tolerance = 100; // Tolerance in shooting velocity
+    public int shootDuration = 1500;
+    public int rampUpDuration = 700;
+    int tolerance = 50; // Tolerance in shooting velocity
+
     // Hardware devices
     private DcMotor frontLeft;
     private DcMotor frontRight;
@@ -66,36 +67,54 @@ public class AutoBlueShort15Artifacts extends OpMode {
     private Servo leftLatch;
     private Servo rightLatch;
     private Servo light;
-    public GoBildaPinpointDriver odo;
 
     public PathChain Shoot1;
+    public PathChain BackUpHumanPlayer;
+    public PathChain CollectLastArtifact;
+    public PathChain TakeHumanArtifacts;
     public PathChain Shoot2;
-    public PathChain OpenGate1;
-    public PathChain Take2ndRow;
-    public PathChain IntakeGate1;
+    public PathChain Collect3rdRow;
     public PathChain Shoot3;
-    public PathChain Take1stRow;
-    public PathChain Shoot4;
-    public PathChain Take3rdRow;
-    public PathChain Shoot5;
+    public PathChain CollectOverflow;
+    public PathChain ShootOverflow;
     public PathChain Park;
 
     public void buildPaths() {
         Shoot1 = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(29.100, 133.500),
+                                new Pose(63.5, 6),
 
-                                new Pose(54.000, 78.000)
+                                new Pose(60, 12)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
 
                 .build();
 
-        Take2ndRow = follower.pathBuilder().addPath(
+        TakeHumanArtifacts = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(60.000, 12.000),
+
+                                new Pose(10.000, 12.000)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+
+                .build();
+
+        BackUpHumanPlayer = follower.pathBuilder().addPath(
                         new BezierCurve(
-                                new Pose(54.000, 78.000),
-                                new Pose(42.000, 58.000),
-                                new Pose(16.000, 60.000)
+                                new Pose(10.000, 12.000),
+                                new Pose(16.000, 12.000),
+                                new Pose(16.000, 7.000)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+
+                .build();
+
+        CollectLastArtifact = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(16.000, 7.000),
+
+                                new Pose(10.000, 7.000)
                         )
                 ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
 
@@ -103,89 +122,59 @@ public class AutoBlueShort15Artifacts extends OpMode {
 
         Shoot2 = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(16.000, 60.000),
+                                new Pose(10.000, 7.000),
 
-                                new Pose(60.000, 72.000)
+                                new Pose(60.000, 12.000)
                         )
                 ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
 
                 .build();
 
-        OpenGate1 = follower.pathBuilder().addPath(
-                        new BezierLine(
-                                new Pose(60.000, 72.000),
-
-                                new Pose(16.000, 68.000)
-                        )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(90))
-
-                .build();
-
-        IntakeGate1 = follower.pathBuilder().addPath(
+        Collect3rdRow = follower.pathBuilder().addPath(
                         new BezierCurve(
-                                new Pose(16.000, 68.000),
-                                new Pose(20.000, 57.000),
-                                new Pose(12.000, 50.000)
+                                new Pose(60.000, 12.000),
+                                new Pose(59.988, 35.988),
+                                new Pose(10.000, 36.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(90), Math.toRadians(135))
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
 
                 .build();
 
         Shoot3 = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(12.000, 50.000),
+                                new Pose(10.000, 36.000),
 
-                                new Pose(54.000, 78.000)
+                                new Pose(60.000, 12.000)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+
+                .build();
+
+        CollectOverflow = follower.pathBuilder().addPath(
+                        new BezierCurve(
+                                new Pose(60.000, 12.000),
+                                new Pose(12.000, 12.000),
+                                new Pose(11.000, 23.000)
+                        )
+                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(135))
+
+                .build();
+
+        ShootOverflow = follower.pathBuilder().addPath(
+                        new BezierLine(
+                                new Pose(11.000, 23.000),
+
+                                new Pose(60.000, 12.000)
                         )
                 ).setLinearHeadingInterpolation(Math.toRadians(135), Math.toRadians(180))
 
                 .build();
 
-        Take1stRow = follower.pathBuilder().addPath(
-                        new BezierCurve(
-                                new Pose(54.000, 78.000),
-                                new Pose(46.000, 85.000),
-                                new Pose(20.000, 84.000)
-                        )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
-
-                .build();
-
-        Shoot4 = follower.pathBuilder().addPath(
-                        new BezierLine(
-                                new Pose(20.000, 84.000),
-
-                                new Pose(60.000, 72.000)
-                        )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
-
-                .build();
-
-        Take3rdRow = follower.pathBuilder().addPath(
-                        new BezierCurve(
-                                new Pose(60.000, 72.000),
-                                new Pose(50.000, 32.000),
-                                new Pose(16.000, 36.000)
-                        )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
-
-                .build();
-
-        Shoot5 = follower.pathBuilder().addPath(
-                        new BezierLine(
-                                new Pose(16.000, 36.000),
-
-                                new Pose(60.000, 72.000)
-                        )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
-
-                .build();
-
         Park = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(60.000, 72.000),
+                                new Pose(60.000, 12.000),
 
-                                new Pose(19.000, 64.000)
+                                new Pose(36.000, 12.000)
                         )
                 ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(90))
 
@@ -198,13 +187,13 @@ public class AutoBlueShort15Artifacts extends OpMode {
                 /* Shoot 1st burst */
                 controller.setVelocityPID(idle);
                 follower.followPath(Shoot1, true);
-                turretControl.spinToHeadingLoop(135, turretSpeedAuto);
+                turretControl.spinToHeadingLoop(115, turretSpeedAuto);
                 setPathState(1);
                 break;
             case 1:
                 if (!follower.isBusy()) {
                     turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
-                    shooter.shoot(shooterVelocity, shootDuration, rampUpDuration, hoodAngle, tolerance, false);
+                    shooter.shoot(shooterVelocity, shootDuration, rampUpDuration, hoodAngle, tolerance, true);
                     setPathState(2);
                 }
                 break;
@@ -214,53 +203,51 @@ public class AutoBlueShort15Artifacts extends OpMode {
             - Time: "if(pathTimer.getElapsedTimeSeconds() > 1) {}"
             - Robot Position: "if(follower.getPose().getX() > 36) {}"
             */
-                /* Take 2nd row */
+                /* Take Human Player Artifacts */
                 if (!follower.isBusy()) {
                     intake.setPower(1);
-                    follower.followPath(Take2ndRow, true);
+                    follower.followPath(TakeHumanArtifacts, true);
                     setPathState(3);
                 }
                 break;
             case 3:
-                /* Shoot 2nd burst */
+                /* Back Up */
                 if (!follower.isBusy()) {
-                    follower.followPath(Shoot2, true);
+                    follower.followPath(BackUpHumanPlayer, true);
                     setPathState(4);
                 }
                 break;
             case 4:
+                /* Take Last Artifact */
                 if (!follower.isBusy()) {
-                    turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
-                    shooter.shoot(shooterVelocity, shootDuration, rampUpDuration, hoodAngle, tolerance, false);
+                    follower.followPath(CollectLastArtifact, true);
                     setPathState(5);
                 }
                 break;
             case 5:
-                /* Open Gate */
+                /* Shoot Second Burst */
                 if (!follower.isBusy()) {
-                    intake.setPower(1);
-                    follower.followPath(OpenGate1, true);
+                    follower.followPath(Shoot2, true);
                     setPathState(6);
                 }
                 break;
             case 6:
-                /* Take from gate */
                 if (!follower.isBusy()) {
-                    follower.followPath(IntakeGate1, true);
+                    turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
+                    shooter.shoot(shooterVelocity, shootDuration, rampUpDuration, hoodAngle, tolerance, true);
                     setPathState(7);
                 }
                 break;
             case 7:
+                /* Collect Near Row */
                 if (!follower.isBusy()) {
-                    actionTimer.resetTimer();
-                    while (actionTimer.getElapsedTime() < 500) {
-                        intake.setPower(1);
-                    }
+                    intake.setPower(1);
+                    follower.followPath(Collect3rdRow, true);
                     setPathState(8);
                 }
                 break;
             case 8:
-                /* Shoot 3rd burst */
+                /* Shoot 3rd Burst */
                 if (!follower.isBusy()) {
                     follower.followPath(Shoot3, true);
                     setPathState(9);
@@ -269,67 +256,69 @@ public class AutoBlueShort15Artifacts extends OpMode {
             case 9:
                 if (!follower.isBusy()) {
                     turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
-                    shooter.shoot(shooterVelocity, shootDuration, rampUpDuration, hoodAngle, tolerance, false);
+                    shooter.shoot(shooterVelocity, shootDuration, rampUpDuration, hoodAngle, tolerance, true);
                     setPathState(10);
                 }
                 break;
             case 10:
-                /* Take 1st row */
+                /* Collect Overflow */
                 if (!follower.isBusy()) {
                     intake.setPower(1);
-                    follower.followPath(Take1stRow, true);
+                    follower.followPath(CollectOverflow, true);
                     setPathState(11);
                 }
                 break;
             case 11:
-                /* Shoot 4th burst */
                 if (!follower.isBusy()) {
-                    follower.followPath(Shoot4, true);
+                    actionTimer.resetTimer();
+                    while (actionTimer.getElapsedTime() < 2000) {
+                        intake.setPower(1);
+                    }
                     setPathState(12);
                 }
                 break;
             case 12:
+                /* Shoot Overflow */
                 if (!follower.isBusy()) {
-                    turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
-                    shooter.shoot(shooterVelocity, shootDuration, rampUpDuration, hoodAngle, tolerance, false);
+                    follower.followPath(ShootOverflow, true);
                     setPathState(13);
                 }
                 break;
             case 13:
-                /* Grab from gate */
                 if (!follower.isBusy()) {
-                    intake.setPower(1);
-                    follower.followPath(OpenGate1, true);
+                    turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
+                    shooter.shoot(shooterVelocity, shootDuration, rampUpDuration, hoodAngle, tolerance, true);
                     setPathState(14);
                 }
                 break;
             case 14:
-                /* Collect From Gate */
+                /* Collect Overflow */
                 if (!follower.isBusy()) {
-                    follower.followPath(IntakeGate1, true);
+                    intake.setPower(1);
+                    follower.followPath(CollectOverflow, true);
                     setPathState(15);
                 }
                 break;
             case 15:
                 if (!follower.isBusy()) {
                     actionTimer.resetTimer();
-                    while (actionTimer.getElapsedTime() < 500) {
+                    while (actionTimer.getElapsedTime() < 2000) {
                         intake.setPower(1);
                     }
                     setPathState(16);
                 }
                 break;
             case 16:
-                /* Shoot 5th Burst */
+                /* Shoot Overflow */
                 if (!follower.isBusy()) {
-                    follower.followPath(Shoot3, true);
+                    follower.followPath(ShootOverflow, true);
                     setPathState(17);
                 }
                 break;
             case 17:
                 if (!follower.isBusy()) {
                     turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
-                    shooter.shoot(shooterVelocity, shootDuration, rampUpDuration, hoodAngle, tolerance, false);
+                    shooter.shoot(shooterVelocity, shootDuration, rampUpDuration, hoodAngle, tolerance, true);
                     setPathState(18);
                 }
                 break;
@@ -344,7 +333,7 @@ public class AutoBlueShort15Artifacts extends OpMode {
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if (!follower.isBusy()) {
                     /* Set the state to a Case we won't use or define, so it just stops running an new paths */
-                    /* Ideally wait until and of auto so odometry can track collisions */
+                    /* Ideally wait to end of auto so odometry can track collisions */
                     setPathState(-1);
                 }
                 break;
@@ -429,8 +418,6 @@ public class AutoBlueShort15Artifacts extends OpMode {
         hoodServo.setDirection(Servo.Direction.REVERSE);
         light = hardwareMap.get(Servo.class, "light");
 
-        odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-
 
         shooter = new ShootingAction(
                 leftShooter,
@@ -468,7 +455,7 @@ public class AutoBlueShort15Artifacts extends OpMode {
     }
 
     /**
-     * Kill shooter and turret threads and save end position for TeleOp
+     * We do not use this because everything should automatically disable
      **/
     @Override
     public void stop() {

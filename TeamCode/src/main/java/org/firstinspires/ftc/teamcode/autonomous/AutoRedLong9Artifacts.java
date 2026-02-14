@@ -15,6 +15,10 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.MecanumDrive;
 import org.firstinspires.ftc.teamcode.lib.AprilTag;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
@@ -24,7 +28,6 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 @Autonomous
 public class AutoRedLong9Artifacts extends LinearOpMode {
-
     @Override
     public void runOpMode() throws InterruptedException {
 
@@ -35,7 +38,6 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
 
         //Create starting pose
         Pose2d beginPose = new Pose2d(new Vector2d(7, -64.75), Math.toRadians(0));
-
         //Create RR drive object
         MecanumDrive drive = new MecanumDrive(hardwareMap, beginPose, drivePowerMag);
 
@@ -76,6 +78,7 @@ public class AutoRedLong9Artifacts extends LinearOpMode {
 
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
+
         try {
             auto.AutoLong9Artifacts(red, drive, leftShooter, rightShooter, intake, shooter, turretControl, controller, telemetry, beginPose);
         } finally {
