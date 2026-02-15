@@ -22,9 +22,10 @@ public class TuningVars {
         autoEndTurretHeading = turretHeading;
     }
     //Shooter Tuning Vars
-    public static double shooterKp = 0.005;//0.25
-    public static double shooterKi = 0.0011;//0.0002
-    public static double shooterKd = 0;//0.002
+    public static double shooterKp = 0.0001;//0.25
+    public static double shooterKi = 0.0001;//0.0002
+    public static double shooterKd = 0.008;//0.002
+    public static double shooterKf = 0.000415; // Feedforward gain for velocity control
     public static int shootingSlowDownSpeed = 200;
     public static int shotgun = 1550; //Was 1600
     public static int shotgunTeleOp = 1800;
@@ -48,9 +49,9 @@ public class TuningVars {
     public static double turretSpeedAuto = 0.8; // 0 to 1
 
     // Turret PID Tuning Vars for Auto Aim
-    public static double turretKp = 0.04; // Proportional constant
-    public static double turretKi = 0.0; // Integral constant
-    public static double turretKd = 0.0; // Derivative constant
+    public static double turretKp = 0.032; // Proportional constant (tested)
+    public static double turretKi = 0.0; // Integral constant (not needed)
+    public static double turretKd = 0.001; // Derivative constant (tested - reduces overshoot)
     public static double turretMinPower = 0.0; // Minimum power to overcome friction
     public static double turretMaxPower = 0.8; // Maximum power for turret
     public static double turretTolerance = 2.0; // Tolerance in degrees

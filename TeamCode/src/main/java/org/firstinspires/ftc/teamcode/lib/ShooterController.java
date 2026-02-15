@@ -12,21 +12,32 @@ public class ShooterController {
 
     private final DcMotorEx leftShooter;
     private final DcMotorEx rightShooter;
-    private final PIDController pidController;
+    private final PIDFController pidfController;
     private final Telemetry telemetry;
 
     // Parallel thread variables
-    private volatile boolean pidRunning = false;
+    private volatile boolean pidfRunning = false;
     private volatile double targetVelocity = 0;
-    private Thread pidThread;
+    private Thread pidfThread;
 
+    /**
+     * Constructor for ShooterController using PID (without feedforward).
+     * Maintains backwards compatibility with existing code using PID tuner.
+     */
     public ShooterController(DcMotorEx leftShooter, DcMotorEx rightShooter, double Kp, double Ki, double Kd, Telemetry telemetry) {
+        this(leftShooter, rightShooter, Kp, Ki, Kd, 0, telemetry);
+    }
+
+    /**
+     * Constructor for ShooterController using PIDF (with feedforward).
+     */
+    public ShooterController(DcMotorEx leftShooter, DcMotorEx rightShooter, double Kp, double Ki, double Kd, double Kf, Telemetry telemetry) {
         this.leftShooter = leftShooter;
         this.rightShooter = rightShooter;
         this.telemetry = telemetry;
 
-        // Initialize PID controller
-        this.pidController = new PIDController(Kp, Ki, Kd, telemetry);
+        // Initialize PIDF controller
+        this.pidfController = new PIDFController(Kp, Ki, Kd, Kf, telemetry);
 
         // Set motor directions if needed
         this.leftShooter.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -36,13 +47,13 @@ public class ShooterController {
     }
 
     /**
-     * Runs the shooter motors at the desired velocity using PID control.
+     * Runs the shooter motors at the desired velocity using PIDF control.
      *
      * @param desiredVelocity The target velocity in ticks per second.
      */
     public void runShooter(double desiredVelocity) {
         double currentVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
-        double powerAdjustment = pidController.calculate(desiredVelocity, currentVelocity);
+        double powerAdjustment = pidfController.calculate(desiredVelocity, currentVelocity);
 
         leftShooter.setPower(powerAdjustment);
         rightShooter.setPower(powerAdjustment);
@@ -52,24 +63,24 @@ public class ShooterController {
     }
 
     /**
-     * Starts the shooter at the desired velocity using PID control in a parallel thread.
+     * Starts the shooter at the desired velocity using PIDF control in a parallel thread.
      * This replaces setVelocity and can run in parallel with other actions.
      *
      * @param desiredVelocity The target velocity in ticks per second.
      */
-    public void setVelocityPID(double desiredVelocity) {
+    public void setVelocityPIDF(double desiredVelocity) {
         // If already running, just update target velocity
-        if (pidRunning) {
+        if (pidfRunning) {
             targetVelocity = desiredVelocity;
             return;
         }
 
         targetVelocity = desiredVelocity;
-        pidRunning = true;
-        pidController.reset();
+        pidfRunning = true;
+        pidfController.reset();
 
-        pidThread = new Thread(() -> {
-            while (pidRunning && !Thread.currentThread().isInterrupted()) {
+        pidfThread = new Thread(() -> {
+            while (pidfRunning && !Thread.currentThread().isInterrupted()) {
                 runShooter(targetVelocity);
 
                 try {
@@ -83,28 +94,28 @@ public class ShooterController {
             leftShooter.setPower(0);
             rightShooter.setPower(0);
         });
-        pidThread.setDaemon(true); // Thread will stop when main program ends
-        pidThread.start();
+        pidfThread.setDaemon(true); // Thread will stop when main program ends
+        pidfThread.start();
     }
 
     /**
-     * Updates the target velocity while the PID loop is running.
+     * Updates the target velocity while the PIDF loop is running.
      *
      * @param desiredVelocity The new target velocity in ticks per second.
      */
-    public void updateVelocityPID(double desiredVelocity) {
+    public void updateVelocityPIDF(double desiredVelocity) {
         targetVelocity = desiredVelocity;
     }
 
     /**
-     * Stops the parallel PID loop and the shooter motors.
+     * Stops the parallel PIDF loop and the shooter motors.
      */
-    public void stopVelocityPID() {
-        pidRunning = false;
-        if (pidThread != null) {
-            pidThread.interrupt();
+    public void stopVelocityPIDF() {
+        pidfRunning = false;
+        if (pidfThread != null) {
+            pidfThread.interrupt();
             try {
-                pidThread.join(100);
+                pidfThread.join(100);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
@@ -113,11 +124,47 @@ public class ShooterController {
     }
 
     /**
-     * Returns whether the PID loop is currently running.
+     * Returns whether the PIDF loop is currently running.
      */
     public boolean isRunning() {
-        return pidRunning;
+        return pidfRunning;
     }
+
+    // ==================== DEPRECATED METHODS (for backwards compatibility) ====================
+
+    /**
+     * @deprecated Use {@link #setVelocityPIDF(double)} instead.
+     */
+    @Deprecated
+    public void setVelocityPID(double desiredVelocity) {
+        setVelocityPIDF(desiredVelocity);
+    }
+
+    /**
+     * @deprecated Use {@link #updateVelocityPIDF(double)} instead.
+     */
+    @Deprecated
+    public void updateVelocityPID(double desiredVelocity) {
+        updateVelocityPIDF(desiredVelocity);
+    }
+
+    /**
+     * @deprecated Use {@link #stopVelocityPIDF()} instead.
+     */
+    @Deprecated
+    public void stopVelocityPID() {
+        stopVelocityPIDF();
+    }
+
+    /**
+     * @deprecated Use {@link #resetPIDF()} instead.
+     */
+    @Deprecated
+    public void resetPID() {
+        resetPIDF();
+    }
+
+    // ==================== END DEPRECATED METHODS ====================
 
     /**
      * Stops the shooter motors.
@@ -125,23 +172,30 @@ public class ShooterController {
     public void stopShooter() {
         leftShooter.setPower(0);
         rightShooter.setPower(0);
-        pidController.reset();
+        pidfController.reset();
     }
 
     /**
-     * Resets the PID controller.
+     * Resets the PIDF controller.
      */
-    public void resetPID() {
-        pidController.reset();
+    public void resetPIDF() {
+        pidfController.reset();
     }
 
     /**
      * Dynamically update PID constants.
      */
     public void setPIDConstants(double Kp, double Ki, double Kd) {
-        pidController.setKp(Kp);
-        pidController.setKi(Ki);
-        pidController.setKd(Kd);
+        pidfController.setKp(Kp);
+        pidfController.setKi(Ki);
+        pidfController.setKd(Kd);
+    }
+
+    /**
+     * Dynamically update PIDF constants (including feedforward).
+     */
+    public void setPIDFConstants(double Kp, double Ki, double Kd, double Kf) {
+        pidfController.setPIDFConstants(Kp, Ki, Kd, Kf);
     }
     public double getDistanceFromGoal(Pose2D pos, boolean targetIsRed) {
 

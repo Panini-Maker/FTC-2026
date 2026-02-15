@@ -21,12 +21,18 @@ public class Turret {
     private Thread pidThread;
     private Telemetry telemetry;
 
+    // Persistent PID controller (not recreated each loop)
+    private PIDController pidController;
+
     private final double ticksPerDegree = turretTicksPerDegree;
     public Turret(DcMotorEx turret, Telemetry telemetry) {
         this.turret = turret;
         this.telemetry = telemetry;
         turret.setMode(DcMotorEx.RunMode.STOP_AND_RESET_ENCODER); // Reset encoder at initialization
         turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER); // Set to use encoder
+
+        // Initialize PID controller once
+        this.pidController = new PIDController(turretKp, turretKi, turretKd, telemetry);
     }
 
     public void spinToPosition (int position, double power) {
@@ -40,16 +46,17 @@ public class Turret {
         int currentPosition = turret.getCurrentPosition();
         int error = targetPosition - currentPosition;
 
-        double kP = turretKp; // Proportional constant, tune as needed
-        double kI = turretKi; // Integral constant, tune as needed
-        double kD = turretKd; // Derivative constant, tune as needed
         double minPower = 0; // Minimum power to overcome friction
         int tolerance = (int)(ticksPerDegree); // 1 degree tolerance
-        PIDController pid = new PIDController(kP, kI, kD, telemetry);
+
+        // Update PID constants in case they changed via dashboard
+        pidController.setKp(turretKp);
+        pidController.setKi(turretKi);
+        pidController.setKd(turretKd);
 
         if (Math.abs(error) > tolerance) {
             turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-            double calculatedPower = pid.calculate(headingDegrees, currentPosition / ticksPerDegree);
+            double calculatedPower = pidController.calculate(headingDegrees, currentPosition / ticksPerDegree);
             // Ensure minimum power to overcome friction, preserve direction
             calculatedPower = Math.copySign(Math.max(Math.abs(calculatedPower), minPower), calculatedPower);
             // Clamp to max power
@@ -80,6 +87,7 @@ public class Turret {
 
         targetPosition = desiredHeading;
         pidRunning = true;
+        pidController.reset(); // Reset PID state for new movement
 
         pidThread = new Thread(() -> {
             while (pidRunning && !Thread.currentThread().isInterrupted()) {
