@@ -30,6 +30,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.lib.AutoAim;
 import org.firstinspires.ftc.teamcode.lib.RobotActions;
@@ -45,6 +46,7 @@ public class TeleOpV2 extends LinearOpMode {
     @Override
 
     public void runOpMode() throws InterruptedException {
+        // Motors and Servos
         DcMotor frontLeft = hardwareMap.dcMotor.get("frontLeft");
         DcMotor frontRight = hardwareMap.dcMotor.get("frontRight");
         DcMotor backLeft = hardwareMap.dcMotor.get("backLeft");
@@ -61,16 +63,9 @@ public class TeleOpV2 extends LinearOpMode {
         rightShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         rightShooter.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        ShooterController shooter = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, telemetry);
-
         DcMotorEx turret = hardwareMap.get(DcMotorEx.class, "turret");
         turret.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         turret.setMode(DcMotorEx.RunMode.RUN_USING_ENCODER);
-
-        Turret turretController = new Turret(turret, telemetry);
-
-        // Initialize AutoAim (default to red team, can be toggled)
-        AutoAim autoAimController = new AutoAim(turret, telemetry, targetIsRed);
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
@@ -79,50 +74,52 @@ public class TeleOpV2 extends LinearOpMode {
 
         hoodServo.setDirection(Servo.Direction.REVERSE);
 
-        // Configure odometry
+        VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
+
+        // Odometry
         odo = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         odo.setOffsets(odoXOffset, odoYOffset, DistanceUnit.MM); // Set offsets
         odo.setEncoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
-        Pose2D pos;
-
+        // Activate External Classes
+        ShooterController shooter = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, telemetry);
+        Turret turretController = new Turret(turret, telemetry);
+        AutoAim autoAimController = new AutoAim(turret, telemetry, targetIsRed);
         RobotActions robot = new RobotActions(frontLeft, frontRight, backLeft, backRight,
                 rightShooter, leftShooter, turret, intake,
                 rightLatch, leftLatch, hoodServo, light);
 
-        VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
-
         // Presets
-        double drivetrainPower = 1.0;
+        double drivetrainPower = 0.9;
+        double turretPower = 1.0;
+        double manualTurretHeading = 0.0;
 
         // Mode Variables
+        Pose2D pos;
         int latchState = 0;
         double hoodState;
         double intakePower;
         double lightState;
-        double turretPower = 1.0;
-
-//        boolean targetIsRed = true;
+        double calculatedTargetAngle;
         double shooterSpeed;
+
+        // Info Variables
         int target = redTagID;
         boolean isAligned = false;
         double currentHeading = 0.0;
         double distanceToGoal;
-        double calculatedTargetAngle;
-        double currentTurretAngle;
-        double manualTurretHeading = 0.0;
 
-        //Auto Aim and Auto Shoot variables
-        boolean autoAim = false;
-        boolean autoShoot = false;
-        boolean safeShooting = false;
         boolean manualMode = false;
+        boolean shootingWhileMoving = true;
 
         // Odometry
         double currentXOdo;
         double currentYOdo;
         double currentHeadingOdo;
+        double x_velocity;
+        double y_velocity;
+        double heading_velocity;
 
         // Initialize odometry
         // Only reset if we don't have saved position from autonomous
@@ -172,6 +169,14 @@ public class TeleOpV2 extends LinearOpMode {
             // Get position
             odo.update();
             pos = odo.getPosition();
+            x_velocity = odo.getVelX(DistanceUnit.INCH);
+            y_velocity = odo.getVelY(DistanceUnit.INCH);
+            heading_velocity = odo.getHeadingVelocity(UnnormalizedAngleUnit.DEGREES);
+
+            // Adjust robot position for shooting while moving
+            if (shootingWhileMoving) {
+                pos = robot.shootWhileMoving(pos, x_velocity, y_velocity, heading_velocity);
+            }
 
             currentXOdo = pos.getX(DistanceUnit.INCH);
             currentYOdo = pos.getY(DistanceUnit.INCH);
@@ -210,7 +215,7 @@ public class TeleOpV2 extends LinearOpMode {
 
             // Speed toggle
             if (gamepad1.aWasPressed()) {
-                drivetrainPower = 1.6 - drivetrainPower;
+                drivetrainPower = 1.5 - drivetrainPower;
             }
             // Drivetrain inputs
             double x;
@@ -247,7 +252,6 @@ public class TeleOpV2 extends LinearOpMode {
 
             // Turret
             calculatedTargetAngle = autoAimController.calculateTargetAngle(currentXOdo, currentYOdo, currentHeadingOdo);
-            currentTurretAngle = turretController.getCurrentHeading();
 
             // Light for shooter status
             double avgShooterVel = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2;
@@ -297,18 +301,17 @@ public class TeleOpV2 extends LinearOpMode {
 
             /// TELEMETRY ==================================================================================================================
 
+            telemetry.addData("Team Red?", targetIsRed);
+            telemetry.addData("Shooting While Moving", shootingWhileMoving);
+
             telemetry.addData("Robot Speed", drivetrainPower);
             telemetry.addData("Robot X", currentXOdo);
             telemetry.addData("Robot Y", currentYOdo);
             telemetry.addData("Robot Heading", currentHeadingOdo);
             telemetry.addData("Distance from Goal", distanceToGoal);
-            telemetry.addData("Auto Aim", autoAim);
             telemetry.addData("Auto Aim Aligned", isAligned);
-            telemetry.addData("Auto Shoot", autoShoot);
-            telemetry.addData("Safe Shooting", safeShooting);
             telemetry.addData("Turret Target Heading", currentHeading);
             telemetry.addData("Turret Actual Heading", autoAimController.getCurrentTurretHeading());
-            telemetry.addData("Turret Power", turret.getPower());
             telemetry.addData("Shooter Target RPM", shooterSpeed);
             telemetry.addData("Shooter Actual RPM", avgShooterVel);
             telemetry.update();

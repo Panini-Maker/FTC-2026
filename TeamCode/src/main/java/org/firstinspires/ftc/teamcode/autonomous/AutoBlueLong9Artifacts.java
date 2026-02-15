@@ -91,7 +91,6 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
 
         waitForStart();
         org.firstinspires.ftc.teamcode.lib.Autonomous auto = new org.firstinspires.ftc.teamcode.lib.Autonomous();
-
         try {
             auto.AutoLong9Artifacts(blue, drive, leftShooter, rightShooter, intake, shooter, turretControl, shooterController, telemetry, beginPose);
         } finally {
