@@ -50,9 +50,11 @@ public class RobotActions {
         frontRight.setDirection(DcMotor.Direction.REVERSE);
         backRight.setDirection(DcMotor.Direction.REVERSE);
 
+        // Shooter motor configuration - must match ShooterController
+        leftShooter.setDirection(DcMotorEx.Direction.FORWARD);
+        rightShooter.setDirection(DcMotorEx.Direction.REVERSE);
         leftShooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightShooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rightShooter.setDirection(DcMotorEx.Direction.REVERSE);
     }
 
     public void driveRobotCentric(double y, double x, double rx, double power) {
@@ -113,11 +115,12 @@ public class RobotActions {
     }
 
     public double getShooterRPM(double distance) {
-        return distance * 6.36 + 983; // was distance * 7.05 + 1019
+        return 817 + distance * 12.6 + distance * distance * -0.0362; // was distance * 6.9 + 1029
     }
 
     public double getShooterAngle(double distance) {
-        return -0.317 + 0.0116 * distance - 0.0000451 * distance * distance; // was 0.061 + 0.00602 * distance - 0.0000207 * distance * distance
+        return -0.922 + 0.0258 * distance - 0.000174 * distance * distance + 0.000000372 * distance * distance * distance;
+        //-0.725 + 0.0181 * distance - 0.0000781 * distance * distance; // was 0.061 + 0.00602 * distance - 0.0000207 * distance * distance
     }
 
     public double angleToGoal(Pose2D pos, double turretCurrentAngle, boolean targetIsRed) {
@@ -164,6 +167,16 @@ public class RobotActions {
         return output;
     }
 
+    /**
+     * Returns an adjusted pose for shooting while moving.
+     * This is the original method that returns the full adjusted pose.
+     *
+     * @param pos Current robot pose
+     * @param x_velocity X velocity in inches/second
+     * @param y_velocity Y velocity in inches/second
+     * @param heading_velocity Heading velocity in degrees/second
+     * @return Adjusted pose accounting for movement during shot
+     */
     public Pose2D shootWhileMoving(Pose2D pos, double x_velocity, double y_velocity, double heading_velocity) {
         double x = pos.getX(DistanceUnit.INCH);
         double y = pos.getY(DistanceUnit.INCH);
@@ -172,6 +185,38 @@ public class RobotActions {
         x = x + x_velocity * timeToShoot;
         y = y + y_velocity * timeToShoot;
         heading = heading + heading_velocity * timeToShoot;
+
+        return new Pose2D(DistanceUnit.INCH, x, y, AngleUnit.DEGREES, heading);
+    }
+
+    /**
+     * Returns only the offsets for shooting while moving (not the full pose).
+     * Use this when you want to keep track of both the current pose and adjusted pose separately.
+     *
+     * @param x_velocity X velocity in inches/second
+     * @param y_velocity Y velocity in inches/second
+     * @param heading_velocity Heading velocity in degrees/second
+     * @return Array of offsets: [x_offset, y_offset, heading_offset]
+     */
+    public double[] getShootWhileMovingOffsets(double x_velocity, double y_velocity, double heading_velocity) {
+        double x_offset = x_velocity * timeToShoot;
+        double y_offset = y_velocity * timeToShoot;
+        double heading_offset = heading_velocity * timeToShoot;
+
+        return new double[] { x_offset, y_offset, heading_offset };
+    }
+
+    /**
+     * Applies shoot-while-moving offsets to a pose.
+     *
+     * @param pos Original pose
+     * @param offsets Offsets from getShootWhileMovingOffsets: [x_offset, y_offset, heading_offset]
+     * @return Adjusted pose with offsets applied
+     */
+    public Pose2D applyShootWhileMovingOffsets(Pose2D pos, double[] offsets) {
+        double x = pos.getX(DistanceUnit.INCH) + offsets[0];
+        double y = pos.getY(DistanceUnit.INCH) + offsets[1];
+        double heading = pos.getHeading(AngleUnit.DEGREES) + offsets[2];
 
         return new Pose2D(DistanceUnit.INCH, x, y, AngleUnit.DEGREES, heading);
     }

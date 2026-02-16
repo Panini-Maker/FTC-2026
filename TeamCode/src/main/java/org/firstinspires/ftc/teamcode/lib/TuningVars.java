@@ -22,10 +22,10 @@ public class TuningVars {
         autoEndTurretHeading = turretHeading;
     }
     //Shooter Tuning Vars
-    public static double shooterKp = 0.0001;//0.25
-    public static double shooterKi = 0.0001;//0.0002
-    public static double shooterKd = 0.008;//0.002
-    public static double shooterKf = 0.000415; // Feedforward gain for velocity control
+    public static double shooterKp = 0.00015;
+    public static double shooterKi = 0.0;
+    public static double shooterKd = 0.00002;
+    public static double shooterKf = 0.00041;
     public static int shootingSlowDownSpeed = 200;
     public static int shotgun = 1550; //Was 1600
     public static int shotgunTeleOp = 1800;
@@ -36,7 +36,7 @@ public class TuningVars {
     public static int shooterIdle = 0; // Run when not shooting during teleop
     public static int idle = 800; // Was 1200
     public static int shootingToleranceAuto = 50; // in RPM
-    public static int shootingToleranceTeleOp = 50; // in RPM
+    public static int shootingToleranceTeleOp = 30; // in RPM
     public static int shootDurationMs = 2500; // in milliseconds
     public static int rampUpTime = 3000; // in milliseconds
     public static int idealVoltage = 12; // in volts

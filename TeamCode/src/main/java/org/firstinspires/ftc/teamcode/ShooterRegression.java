@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKf;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
 
@@ -10,6 +11,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
 
@@ -28,7 +30,9 @@ public class ShooterRegression extends LinearOpMode {
         leftShooter.setDirection(DcMotorSimple.Direction.REVERSE);
         leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        ShooterController shooter = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, telemetry);
+        VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
+
+        ShooterController shooter = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, shooterKf, voltageSensor, telemetry);
 
         DcMotorEx intakeMotor = hardwareMap.get(DcMotorEx.class, "intake");
         intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -48,12 +52,22 @@ public class ShooterRegression extends LinearOpMode {
 
         double hoodState = 0.15;
 
+        // Pulse intake mode - when enabled, intake only runs when shooter is at speed
+        boolean pulseIntakeMode = true;
+        double shootingTolerance = 50; // RPM tolerance for pulse mode
+
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
         waitForStart();
 
         while (opModeIsActive()){
+
+            // Toggle pulse intake mode with gamepad1 right bumper
+            if (gamepad1.right_bumper && !gamepad1.start) {
+                pulseIntakeMode = !pulseIntakeMode;
+                sleep(200); // Debounce
+            }
 
             if (gamepad2.aWasPressed()) {
                 shooterSpeed += 10;
@@ -65,8 +79,17 @@ public class ShooterRegression extends LinearOpMode {
                 shooterSpeed -= 50;
             }
 
+            // Calculate shooter velocity (use Math.abs for reversed motor)
+            double shooterAverageSpeed = (Math.abs(rightShooter.getVelocity()) + Math.abs(leftShooter.getVelocity())) / 2;
+            boolean shooterAtSpeed = Math.abs(shooterSpeed - shooterAverageSpeed) < shootingTolerance;
+
             if (gamepad2.right_bumper) {
-                intakeMotor.setPower(1);
+                // Pulse mode: only run intake when shooter is at speed (but only if shooter is running)
+                if (pulseIntakeMode && gamepad2.right_trigger > 0) {
+                    intakeMotor.setPower(shooterAtSpeed ? 1 : 0);
+                } else {
+                    intakeMotor.setPower(1);
+                }
                 latchState = 0;
             } else if (gamepad2.left_bumper) {
                 intakeMotor.setPower(0.6);
@@ -79,7 +102,7 @@ public class ShooterRegression extends LinearOpMode {
                 latchState = 1;
                 shooter.runShooter(shooterSpeed);
             } else {
-                shooter.resetPID();
+                shooter.resetPIDF();
                 shooter.stopShooter();
             }
 
@@ -93,9 +116,7 @@ public class ShooterRegression extends LinearOpMode {
                 }
             }
 
-            double shooterAverageSpeed = (rightShooter.getVelocity()+leftShooter.getVelocity()) / 2;
-
-            if (Math.abs(shooterSpeed-shooterAverageSpeed) < 30) {
+            if (shooterAtSpeed) {
                 light.setPosition(0.5);
             } else {
                 light.setPosition(0.28);
@@ -106,8 +127,14 @@ public class ShooterRegression extends LinearOpMode {
             hood.setPosition(hoodState);
 
             telemetry.addData("Shooter Speed Target", shooterSpeed);
-            telemetry.addData("Shooter Speed", (rightShooter.getVelocity()+leftShooter.getVelocity())/2);
+            telemetry.addData("Shooter Speed", "%.1f", shooterAverageSpeed);
             telemetry.addData("Hood Position", hoodState);
+            telemetry.addData("Battery Voltage", "%.2f V", voltageSensor.getVoltage());
+            telemetry.addLine("---");
+            telemetry.addData("Pulse Intake Mode", pulseIntakeMode ? "ON" : "OFF");
+            telemetry.addData("Shooter At Speed", shooterAtSpeed ? "YES" : "NO");
+            telemetry.addData("PIDF Debug", shooter.getDebugInfo());
+            telemetry.addLine("GP1 Right Bumper: Toggle Pulse Mode");
             telemetry.update();
 
         }

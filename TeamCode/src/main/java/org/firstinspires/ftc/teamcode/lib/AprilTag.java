@@ -18,7 +18,31 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
 public class AprilTag {
     private static final String CAMERA_NAME = "Webcam 1";
+    private static VisionPortal visionPortal;
+
+    // Original calibration was at 640x480
+    private static final double CALIB_WIDTH = 640.0;
+    private static final double CALIB_HEIGHT = 480.0;
+    private static final double CALIB_FX = 549.651;
+    private static final double CALIB_FY = 549.651;
+    private static final double CALIB_CX = 317.108;
+    private static final double CALIB_CY = 236.644;
+
     public static AprilTagProcessor defineCameraFunctions(HardwareMap hardwareMap) {
+        // Close existing portal if it exists
+        if (visionPortal != null) {
+            visionPortal.close();
+            visionPortal = null;
+        }
+
+        // Scale lens intrinsics to current resolution
+        double scaleX = cameraResolutionWidth / CALIB_WIDTH;
+        double scaleY = cameraResolutionHeight / CALIB_HEIGHT;
+        double fx = CALIB_FX * scaleX;
+        double fy = CALIB_FY * scaleY;
+        double cx = CALIB_CX * scaleX;
+        double cy = CALIB_CY * scaleY;
+
         //Pose cameraPose = new Pose(0, 0, 0, 0, 0, 0);  X, Y, Z, Pitch, Roll, Yaw
 
         AprilTagLibrary.Builder aprilTagLibraryBuilder;
@@ -46,10 +70,11 @@ public class AprilTag {
                 .setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
                 .setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
                 .setTagLibrary(aprilTagLibrary)
+                .setLensIntrinsics(fx, fy, cx, cy)
                 //.setCameraPose(cameraPose)
                 .build();
 
-        VisionPortal visionPortal = new VisionPortal.Builder()
+        visionPortal = new VisionPortal.Builder()
                 .addProcessor(tagProcessor)
                 .setCamera(hardwareMap.get(WebcamName.class, CAMERA_NAME))
                 .setCameraResolution(new Size(cameraResolutionWidth, cameraResolutionHeight))
@@ -59,5 +84,12 @@ public class AprilTag {
                 .build();
 
         return tagProcessor;
+    }
+
+    public static void close() {
+        if (visionPortal != null) {
+            visionPortal.close();
+            visionPortal = null;
+        }
     }
 }

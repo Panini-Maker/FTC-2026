@@ -95,7 +95,7 @@ public class ShooterPIDTuner extends LinearOpMode {
         while (opModeIsActive()) {
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("targetVelocity", targetVelocity);
-            packet.put("currentVelocity", (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0);
+            packet.put("currentVelocity", (leftShooter.getVelocity() + Math.abs(rightShooter.getVelocity())) / 2.0);
             dashboard.sendTelemetryPacket(packet);
 
             // Y button to stop shooter
@@ -152,9 +152,9 @@ public class ShooterPIDTuner extends LinearOpMode {
                 intake.setPower(0.0);
             }
 
-            // Get current velocities
+            // Get current velocities (use Math.abs for rightShooter since it's reversed)
             double leftVelocity = leftShooter.getVelocity();
-            double rightVelocity = rightShooter.getVelocity();
+            double rightVelocity = Math.abs(rightShooter.getVelocity());
             double avgVelocity = (leftVelocity + rightVelocity) / 2.0;
             double error = targetVelocity - avgVelocity;
 
