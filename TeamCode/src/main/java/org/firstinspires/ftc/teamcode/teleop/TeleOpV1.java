@@ -19,6 +19,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretTolerance;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -36,6 +37,7 @@ import org.firstinspires.ftc.teamcode.lib.ShooterController;
 import org.firstinspires.ftc.teamcode.lib.Turret;
 
 
+@Disabled
 @TeleOp
 public class TeleOpV1 extends LinearOpMode {
 
@@ -73,7 +75,6 @@ public class TeleOpV1 extends LinearOpMode {
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
-        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
         Servo light = hardwareMap.get(Servo.class, "light");
 
         hoodServo.setDirection(Servo.Direction.REVERSE);
@@ -378,7 +379,6 @@ public class TeleOpV1 extends LinearOpMode {
 
             // Latch controls with error handling
             try {
-                rightLatch.setPosition(latchState);
                 leftLatch.setPosition(1 - latchState);
             } catch (Exception e) {
                 telemetry.addData("Latch Error", e.getMessage());

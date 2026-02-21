@@ -8,11 +8,13 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
@@ -43,6 +45,7 @@ import org.firstinspires.ftc.teamcode.lib.ShooterController;
  * 4. If there's steady-state error, increase Ki slightly
  * 5. Add Kf for feedforward (scales with target velocity)
  */
+@Disabled
 @Config
 @TeleOp(name = "Shooter PIDF Tuner", group = "Tuning")
 public class ShooterPIDTuner extends LinearOpMode {
@@ -70,11 +73,13 @@ public class ShooterPIDTuner extends LinearOpMode {
 
         DcMotor intake = hardwareMap.dcMotor.get("intake");
 
+        VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
+
         ElapsedTime runTime = new ElapsedTime();
 
         // Initialize shooter controller with PIDF
         ShooterController shooter = new ShooterController(leftShooter, rightShooter,
-                shooterKp, shooterKi, shooterKd, shooterKf, telemetry);
+                shooterKp, shooterKi, shooterKd, shooterKf, voltageSensor, telemetry);
 
         telemetry.addLine("=== Shooter PIDF Tuner ===");
         telemetry.addLine("A: Start PIDF control");
@@ -93,6 +98,9 @@ public class ShooterPIDTuner extends LinearOpMode {
         waitForStart();
 
         while (opModeIsActive()) {
+            // Update PIDF constants from TuningVars (allows live tuning via FTC Dashboard)
+            shooter.updatePIDFConstants(shooterKp, shooterKi, shooterKd, shooterKf);
+
             TelemetryPacket packet = new TelemetryPacket();
             packet.put("targetVelocity", targetVelocity);
             packet.put("currentVelocity", (leftShooter.getVelocity() + Math.abs(rightShooter.getVelocity())) / 2.0);

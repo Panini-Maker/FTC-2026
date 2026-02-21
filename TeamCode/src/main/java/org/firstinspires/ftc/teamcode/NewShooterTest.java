@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -20,6 +21,7 @@ ONLY WORKS WITH CORRECT SHOOTER CONFIGURATION
 --------------------------------------------------------------------------------------------------------------
 */
 
+@Disabled
 @TeleOp
 public class NewShooterTest extends LinearOpMode{
 
@@ -49,7 +51,6 @@ public class NewShooterTest extends LinearOpMode{
         turretMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         turretMotor.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
 
-        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
         Servo hood = hardwareMap.get(Servo.class, "hoodServo");
 
@@ -91,7 +92,6 @@ public class NewShooterTest extends LinearOpMode{
 
         double hoodAngle = 1; // 1 is all the way down, 0 is all the way up
 
-        rightLatch.setPosition(1 - latch); // 1 is closed, 0 is open
         leftLatch.setPosition(latch); // 0 is closed, 1 is open
         hood.setPosition(hoodAngle);
 
@@ -161,7 +161,6 @@ public class NewShooterTest extends LinearOpMode{
 
             turretMotor.setPower(turretPower);
 
-            rightLatch.setPosition(1 - latch);
             leftLatch.setPosition(latch);
 
             hood.setPosition(hoodAngle);

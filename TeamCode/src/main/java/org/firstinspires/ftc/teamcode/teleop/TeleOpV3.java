@@ -5,15 +5,18 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndTurretHeading
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndX;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndY;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.blueTagID;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoResetPosRed;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.saveEndPosition;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd2;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKf;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKf2;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi2;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp2;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceTeleOp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shotgunTeleOp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
@@ -25,12 +28,12 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
@@ -78,17 +81,40 @@ public class TeleOpV3 extends LinearOpMode {
         STANDARD        // Rank 2: Full auto-aim, field-centric
     }
 
+    // Movement types
+    private enum MovementType {
+        FIELD_CENTRIC,  // Field-centric driving (default)
+        QUAN_TELEOP_V2  // Robot-centric driving (Quan's preference)
+    }
+
     // Light colors for each mode
     private static final double LIGHT_BLUE = 0.611;    // Standard mode
     private static final double LIGHT_YELLOW = 0.388;  // Relocalization mode
     private static final double LIGHT_RED = 0.28;      // Manual mode
     private static final double LIGHT_GREEN = 0.5;     // Shooter ready
+    private static final double LIGHT_PINK = 0.72;     // System disconnected/error
 
     // Relocalization thresholds
     private static final double RELOCALIZATION_SPEED_THRESHOLD = 0.1; // inches/second for linear velocity
     private static final double RELOCALIZATION_ROTATION_THRESHOLD = 0.1; // degrees/second for rotational velocity
     private static final int RED_GOAL_TAG_ID = 24;  // AprilTag ID for red goal
     private static final int BLUE_GOAL_TAG_ID = 20; // AprilTag ID for blue goal
+
+    // Intake full detection
+    private static final double INTAKE_FULL_CURRENT_THRESHOLD = 3.0; // Amps - tune via ShooterRegression
+    private static final long INTAKE_FULL_DURATION_MS = 300; // Must be above threshold for this long to be considered full
+    private static final long LIGHT_FLASH_INTERVAL_MS = 500; // Flash interval in milliseconds
+
+    // Camera relocalization toggle - set to true to enable background relocalization in STANDARD mode
+    private static final boolean ENABLE_BACKGROUND_RELOCALIZATION = false;
+
+    // Relocalization method toggle:
+    // false = Use calculateRobotPose (uses current turret heading and robot heading from odometry)
+    // true = Use calculateRobotPoseAndHeading (sets turret to 0 and calculates heading from AprilTag)
+    private static final boolean USE_HEADING_FROM_APRILTAG = false;
+
+    // Shooter idle power - raw power when not actively shooting
+    private static final double SHOOTER_IDLE_POWER = 0.5;
 
     GoBildaPinpointDriver odo;
 
@@ -102,7 +128,7 @@ public class TeleOpV3 extends LinearOpMode {
         frontRight.setDirection(DcMotor.Direction.REVERSE);
         backRight.setDirection(DcMotor.Direction.REVERSE);
 
-        DcMotor intake = hardwareMap.dcMotor.get("intake");
+        DcMotorEx intake = hardwareMap.get(DcMotorEx.class, "intake");
 
         DcMotorEx leftShooter = hardwareMap.get(DcMotorEx.class, "leftShooter");
         DcMotorEx rightShooter = hardwareMap.get(DcMotorEx.class, "rightShooter");
@@ -114,7 +140,6 @@ public class TeleOpV3 extends LinearOpMode {
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
-        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
         Servo light = hardwareMap.get(Servo.class, "light");
 
         hoodServo.setDirection(Servo.Direction.REVERSE);
@@ -128,11 +153,15 @@ public class TeleOpV3 extends LinearOpMode {
         odo.setEncoderDirections(GoBildaPinpointDriver.EncoderDirection.REVERSED, GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
         // Activate External Classes
-        ShooterController shooter = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, shooterKf, voltageSensor, telemetry);
-        Turret turretController = new Turret(turret, telemetry);
+        ShooterController shooter = new ShooterController(leftShooter, rightShooter,
+                shooterKp, shooterKi, shooterKd, shooterKf,
+                shooterKp2, shooterKi2, shooterKd2, shooterKf2,
+                voltageSensor, telemetry);
+        // Initialize turret with heading from autonomous (don't reset encoder)
+        Turret turretController = new Turret(turret, telemetry, autoEndTurretHeading);
         RobotActions robot = new RobotActions(frontLeft, frontRight, backLeft, backRight,
                 rightShooter, leftShooter, turret, intake,
-                rightLatch, leftLatch, hoodServo, light);
+                leftLatch, hoodServo, light);
 
         // Initialize AprilTag processor for relocalization
         AprilTagProcessor aprilTagProcessor = null;
@@ -156,10 +185,10 @@ public class TeleOpV3 extends LinearOpMode {
         double manualTurretHeading = 0.0;
 
         // Mode Variables
-        Pose2D pos;
+        Pose2D pos = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
         int latchState = 0;
-        double hoodState;
-        double intakePower;
+        double hoodState = 0.5;
+        double intakePower = 0;
         double lightState = 0;
         double calculatedTargetAngle = 0;
         double shooterSpeed = 0;
@@ -167,7 +196,7 @@ public class TeleOpV3 extends LinearOpMode {
         // Info Variables
         int target = redTagID;
         double currentHeading = 0.0;
-        double distanceToGoal;
+        double distanceToGoal = 0;
 
         // Operating mode
         OperatingMode currentMode = OperatingMode.STANDARD;
@@ -177,29 +206,38 @@ public class TeleOpV3 extends LinearOpMode {
         boolean allianceIsRed = targetIsRed;
         ElapsedTime debounceTimer = new ElapsedTime();
 
-        // Odometry
-        double currentXOdo;
-        double currentYOdo;
-        double currentHeadingOdo;
-        double x_velocity;
-        double y_velocity;
-        double heading_velocity;
+        // Odometry - initialize with defaults so robot can still function if odometry fails
+        double currentXOdo = 0;
+        double currentYOdo = 0;
+        double currentHeadingOdo = 0;
+        double x_velocity = 0;
+        double y_velocity = 0;
+        double heading_velocity = 0;
 
         // Manual mode turret preset tracking
         boolean usingSniperPreset = false;
 
-        // ==================== INIT PHASE: ALLIANCE SELECTION ====================
-        telemetry.addLine("╔══════════════════════════════════╗");
-        telemetry.addLine("║      TeleOp V3 - Alliance Select      ║");
-        telemetry.addLine("╠══════════════════════════════════╣");
-        telemetry.addLine("║  Use DPad UP/DOWN to select alliance  ║");
-        telemetry.addLine("╚══════════════════════════════════╝");
-        telemetry.update();
+        // Intake current monitoring and light flashing
+        double intakeCurrent = 0;
+        boolean intakeFull = false;
+        ElapsedTime intakeFullTimer = new ElapsedTime(); // Tracks how long current has been above threshold
+        boolean currentAboveThreshold = false; // Tracks if current is currently above threshold
+        ElapsedTime flashTimer = new ElapsedTime();
+        boolean flashState = false; // false = mode color, true = green
 
-        // Alliance selection loop during init
+        // System error tracking - turns light pink if any system disconnects
+        boolean systemError = false;
+
+        // ==================== INIT PHASE: COMBINED SELECTION ====================
+        // DPad UP/DOWN = Alliance selection
+        // DPad LEFT/RIGHT = Movement type selection
+        // Press START to begin match
+        MovementType selectedMovementType = MovementType.FIELD_CENTRIC;
+
         while (!isStarted() && !isStopRequested()) {
-            // Handle alliance selection with debounce
+            // Handle selections with debounce
             if (debounceTimer.milliseconds() > 250) {
+                // Alliance selection: DPad UP/DOWN
                 if (gamepad1.dpad_up) {
                     allianceIsRed = true;
                     debounceTimer.reset();
@@ -207,26 +245,58 @@ public class TeleOpV3 extends LinearOpMode {
                     allianceIsRed = false;
                     debounceTimer.reset();
                 }
+
+                // Movement type selection: DPad LEFT/RIGHT
+                if (gamepad1.dpad_left) {
+                    selectedMovementType = MovementType.FIELD_CENTRIC;
+                    debounceTimer.reset();
+                } else if (gamepad1.dpad_right) {
+                    selectedMovementType = MovementType.QUAN_TELEOP_V2;
+                    debounceTimer.reset();
+                }
             }
 
-            // Display alliance selection
-            telemetry.addLine("╔══════════════════════════════════╗");
-            telemetry.addLine("║      TeleOp V3 - Alliance Select      ║");
-            telemetry.addLine("╠══════════════════════════════════╣");
+            // Display combined selection screen
+            telemetry.addLine("╔══════════════════════════════════════════╗");
+            telemetry.addLine("║         TeleOp V3 - Configuration        ║");
+            telemetry.addLine("╠══════════════════════════════════════════╣");
+            telemetry.addLine("║                                          ║");
+            telemetry.addLine("║  ALLIANCE         │  MOVEMENT TYPE       ║");
+            telemetry.addLine("║  (DPad UP/DOWN)   │  (DPad LEFT/RIGHT)   ║");
+            telemetry.addLine("║                   │                      ║");
 
-            if (allianceIsRed) {
-                telemetry.addLine("║            ▶ RED ALLIANCE ◀            ║");
-                telemetry.addLine("║              Blue Alliance              ║");
+            // Alliance display
+            String redText = allianceIsRed ? "▶ RED ◀" : "  Red  ";
+            String blueText = allianceIsRed ? "  Blue  " : "▶ BLUE ◀";
+
+            // Movement type display
+            String fieldText = selectedMovementType == MovementType.FIELD_CENTRIC ? "▶ Field Centric ◀" : "  Field Centric  ";
+            String quanText = selectedMovementType == MovementType.QUAN_TELEOP_V2 ? "▶ Quan TeleOp V2 ◀" : "  Quan TeleOp V2  ";
+
+            telemetry.addData("║  ", "%s    │  %s", redText, fieldText);
+            telemetry.addData("║  ", "%s   │  %s", blueText, quanText);
+
+            telemetry.addLine("║                                          ║");
+            telemetry.addLine("╠══════════════════════════════════════════╣");
+            telemetry.addLine("║  DPad UP = Red    │  DPad LEFT = Field   ║");
+            telemetry.addLine("║  DPad DOWN = Blue │  DPad RIGHT = Quan   ║");
+            telemetry.addLine("╠══════════════════════════════════════════╣");
+            telemetry.addLine("║        Press START to begin match        ║");
+            telemetry.addLine("╚══════════════════════════════════════════╝");
+
+            telemetry.addLine("");
+            if (selectedMovementType == MovementType.QUAN_TELEOP_V2) {
+                telemetry.addLine("Quan TeleOp V2: Robot-centric driving");
+                telemetry.addLine("Manual mode: Gamepad 1 drives");
             } else {
-                telemetry.addLine("║              Red Alliance               ║");
-                telemetry.addLine("║           ▶ BLUE ALLIANCE ◀           ║");
+                telemetry.addLine("Field Centric: Field-oriented driving");
+                telemetry.addLine("Manual mode: Gamepad 2 drives");
             }
 
-            telemetry.addLine("╠══════════════════════════════════╣");
-            telemetry.addLine("║  DPad UP = Red, DPad DOWN = Blue  ║");
-            telemetry.addLine("╚══════════════════════════════════╝");
-            telemetry.update();
+            telemetry.addData("Auton end position (X, Y, Heading)", "(%.1f, %.1f, %.1f)", autoEndX, autoEndY, autoEndHeading);
+            telemetry.addData("Auton end turret heading", "%.1f", autoEndTurretHeading);
 
+            telemetry.update();
             sleep(50);
         }
 
@@ -259,8 +329,11 @@ public class TeleOpV3 extends LinearOpMode {
         debounceTimer.reset();
 
         while (opModeIsActive()) {
+            try {
+                // Reset system error flag at start of each loop
+                systemError = false;
 
-            // ==================== MODE SWITCHING ====================
+                // ==================== MODE SWITCHING ====================
             // DPad Up: Go up ranking (MANUAL -> RELOCALIZATION -> STANDARD)
             // DPad Down: Go down ranking (STANDARD -> RELOCALIZATION -> MANUAL)
             if (debounceTimer.milliseconds() > 300) {
@@ -294,47 +367,134 @@ public class TeleOpV3 extends LinearOpMode {
             }
 
             // ==================== LOCALIZATION ====================
-            // Reset odo midmatch if needed
-            if (gamepad1.start && gamepad1.x) {
-                if (targetIsRed) {
-                    odo.setPosition(new Pose2D(DistanceUnit.INCH, odoResetPosRed.x, odoResetPosRed.y, AngleUnit.DEGREES, 90.0));
+            // Wrap in try-catch so driving can continue even if odometry fails
+            // Declare adjusted pose variables at higher scope for use later
+            double adjustedX = currentXOdo;
+            double adjustedY = currentYOdo;
+            double adjustedHeading = currentHeadingOdo;
+            Pose2D adjustedPose = pos; // Default to last known pose
+            boolean odoAvailable = true;
+
+            try {
+                // Get position
+                odo.update();
+                Pose2D currentPose = odo.getPosition();
+                x_velocity = odo.getVelX(DistanceUnit.INCH);
+                y_velocity = odo.getVelY(DistanceUnit.INCH);
+                heading_velocity = odo.getHeadingVelocity(UnnormalizedAngleUnit.DEGREES);
+
+                // Get shoot-while-moving offsets and create adjusted pose (only in STANDARD mode)
+                double[] swmOffsets = {0, 0, 0};
+                if (currentMode == OperatingMode.STANDARD && shootingWhileMoving) {
+                    swmOffsets = robot.getShootWhileMovingOffsets(x_velocity, y_velocity, heading_velocity);
+                    adjustedPose = robot.applyShootWhileMovingOffsets(currentPose, swmOffsets);
                 } else {
-                    odo.setPosition(new Pose2D(DistanceUnit.INCH, -odoResetPosRed.x, odoResetPosRed.y, AngleUnit.DEGREES, 90.0));
+                    adjustedPose = currentPose;
                 }
+
+                // Current pose values (from odometry, unmodified)
+                currentXOdo = currentPose.getX(DistanceUnit.INCH);
+                currentYOdo = currentPose.getY(DistanceUnit.INCH);
+                currentHeadingOdo = currentPose.getHeading(AngleUnit.DEGREES);
+
+                // Adjusted pose values (for auto-aim calculations)
+                adjustedX = adjustedPose.getX(DistanceUnit.INCH);
+                adjustedY = adjustedPose.getY(DistanceUnit.INCH);
+                adjustedHeading = adjustedPose.getHeading(AngleUnit.DEGREES);
+
+                // Use currentPose for driving, adjustedPose for auto-aim
+                pos = currentPose;
+            } catch (Exception e) {
+                odoAvailable = false;
+                systemError = true;
+                telemetry.addLine(">>> ODOMETRY ERROR <<<");
+                // Use last known values (already set above)
             }
-
-            // Get position
-            odo.update();
-            Pose2D currentPose = odo.getPosition();
-            x_velocity = odo.getVelX(DistanceUnit.INCH);
-            y_velocity = odo.getVelY(DistanceUnit.INCH);
-            heading_velocity = odo.getHeadingVelocity(UnnormalizedAngleUnit.DEGREES);
-
-            // Get shoot-while-moving offsets and create adjusted pose (only in STANDARD mode)
-            Pose2D adjustedPose;
-            double[] swmOffsets = {0, 0, 0};
-            if (currentMode == OperatingMode.STANDARD && shootingWhileMoving) {
-                swmOffsets = robot.getShootWhileMovingOffsets(x_velocity, y_velocity, heading_velocity);
-                adjustedPose = robot.applyShootWhileMovingOffsets(currentPose, swmOffsets);
-            } else {
-                adjustedPose = currentPose;
-            }
-
-            // Current pose values (from odometry, unmodified)
-            currentXOdo = currentPose.getX(DistanceUnit.INCH);
-            currentYOdo = currentPose.getY(DistanceUnit.INCH);
-            currentHeadingOdo = currentPose.getHeading(AngleUnit.DEGREES);
-
-            // Adjusted pose values (for auto-aim calculations)
-            double adjustedX = adjustedPose.getX(DistanceUnit.INCH);
-            double adjustedY = adjustedPose.getY(DistanceUnit.INCH);
-            double adjustedHeading = adjustedPose.getHeading(AngleUnit.DEGREES);
-
-            // Use currentPose for driving, adjustedPose for auto-aim
-            pos = currentPose;
 
             // ==================== RELOCALIZATION MODE ====================
-            if (currentMode == OperatingMode.RELOCALIZATION) {
+            // ==================== CAMERA RELOCALIZATION ====================
+            // In STANDARD mode: Run quietly in background to update odometry (if enabled)
+            // In RELOCALIZATION mode: Set turret to 0 and use calculateRobotPoseAndHeading
+            try {
+                if (currentMode == OperatingMode.STANDARD && ENABLE_BACKGROUND_RELOCALIZATION) {
+                // Quiet background relocalization - only when nearly stationary
+                if (aprilTagAvailable && aprilTagProcessor != null) {
+                    double linearSpeed = Math.sqrt(x_velocity * x_velocity + y_velocity * y_velocity);
+                    double rotationalSpeed = Math.abs(heading_velocity);
+
+                    if (linearSpeed < RELOCALIZATION_SPEED_THRESHOLD && rotationalSpeed < RELOCALIZATION_ROTATION_THRESHOLD) {
+                        List<AprilTagDetection> detections = aprilTagProcessor.getDetections();
+                        for (AprilTagDetection detection : detections) {
+                            if (detection.id == RED_GOAL_TAG_ID || detection.id == BLUE_GOAL_TAG_ID) {
+                                boolean isRedGoal = (detection.id == RED_GOAL_TAG_ID);
+                                double tagX = detection.ftcPose.x;
+                                double tagY = detection.ftcPose.y;
+                                double turretHeading = autoAimController.getCurrentTurretHeading();
+
+                                Pose2D calculatedPose = cameraRelocalization.calculateRobotPose(
+                                        turretHeading,
+                                        currentHeadingOdo,
+                                        tagX,
+                                        tagY,
+                                        isRedGoal
+                                );
+
+                                // Quietly update odometry if pose is valid
+                                if (calculatedPose != null && cameraRelocalization.isPoseValid(calculatedPose)) {
+                                    odo.setPosition(calculatedPose);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+            } else if (currentMode == OperatingMode.RELOCALIZATION) {
+                // Set turret position based on relocalization method
+                if (USE_HEADING_FROM_APRILTAG) {
+                    // Set turret to 0 (facing backward) for AprilTag-based heading calculation
+                    turretController.spinToHeadingLoop(0, turretPower);
+                } else {
+                    // Lock turret at current position for pose-only relocalization
+                    // This keeps the turret stable so we can get accurate readings with known turret heading
+                    turretController.spinToHeadingLoop(autoAimController.getCurrentTurretHeading(), turretPower);
+                }
+
+                // Turret error adjustment - non-movement gamepad
+                // Field Centric: Gamepad 1, Quan TeleOp V2: Gamepad 2
+                if (debounceTimer.milliseconds() > 200) {
+                    if (selectedMovementType == MovementType.QUAN_TELEOP_V2) {
+                        // Gamepad 2 adjusts turret error
+                        if (gamepad2.dpad_up) {
+                            turretController.setEncoderOffset(turretController.getEncoderOffset() + 1);
+                            debounceTimer.reset();
+                        } else if (gamepad2.dpad_down) {
+                            turretController.setEncoderOffset(turretController.getEncoderOffset() - 1);
+                            debounceTimer.reset();
+                        } else if (gamepad2.dpad_right) {
+                            turretController.setEncoderOffset(turretController.getEncoderOffset() + 5);
+                            debounceTimer.reset();
+                        } else if (gamepad2.dpad_left) {
+                            turretController.setEncoderOffset(turretController.getEncoderOffset() - 5);
+                            debounceTimer.reset();
+                        }
+                    } else {
+                        // Gamepad 1 adjusts turret error
+                        if (gamepad1.dpad_up) {
+                            turretController.setEncoderOffset(turretController.getEncoderOffset() + 1);
+                            debounceTimer.reset();
+                        } else if (gamepad1.dpad_down) {
+                            turretController.setEncoderOffset(turretController.getEncoderOffset() - 1);
+                            debounceTimer.reset();
+                        } else if (gamepad1.dpad_right) {
+                            turretController.setEncoderOffset(turretController.getEncoderOffset() + 5);
+                            debounceTimer.reset();
+                        } else if (gamepad1.dpad_left) {
+                            turretController.setEncoderOffset(turretController.getEncoderOffset() - 5);
+                            debounceTimer.reset();
+                        }
+                    }
+                }
+
                 // Check if AprilTag is available
                 if (!aprilTagAvailable || aprilTagProcessor == null) {
                     telemetry.addLine(">>> RELOCALIZATION UNAVAILABLE <<<");
@@ -357,28 +517,32 @@ public class TeleOpV3 extends LinearOpMode {
                                 boolean isRedGoal = (detection.id == RED_GOAL_TAG_ID);
 
                                 // Get AprilTag pose data
-                                // ftcPose.x = horizontal offset (right is positive)
-                                // ftcPose.y = forward distance (depth)
-                                // ftcPose.yaw = tag rotation relative to camera
                                 double tagX = detection.ftcPose.x;
-                                double tagY = detection.ftcPose.y; // This is the forward distance (depth)
-                                double tagYaw = detection.ftcPose.yaw;
+                                double tagY = detection.ftcPose.y;
 
-                                // Get current turret heading from auto-aim controller
-                                double turretHeading = autoAimController.getCurrentTurretHeading();
-
-                                // Calculate robot pose using camera relocalization
-                                Pose2D calculatedPose = cameraRelocalization.calculateRobotPose(
-                                        tagYaw,
-                                        turretHeading,
-                                        currentHeadingOdo, // Use current IMU/odo heading
-                                        tagX,
-                                        tagY,
-                                        isRedGoal
-                                );
+                                Pose2D calculatedPose;
+                                if (USE_HEADING_FROM_APRILTAG) {
+                                    // Use calculateRobotPoseAndHeading since turret is at 0 (facing backward)
+                                    // This assumes turret/IMU might be incorrect and calculates heading from AprilTag
+                                    calculatedPose = cameraRelocalization.calculateRobotPoseAndHeading(
+                                            tagX,
+                                            tagY,
+                                            isRedGoal
+                                    );
+                                } else {
+                                    // Use calculateRobotPose with current turret heading and robot heading
+                                    // This trusts the current turret encoder and IMU/odometry heading
+                                    double turretHeading = autoAimController.getCurrentTurretHeading();
+                                    calculatedPose = cameraRelocalization.calculateRobotPose(
+                                            turretHeading,
+                                            currentHeadingOdo,
+                                            tagX,
+                                            tagY,
+                                            isRedGoal
+                                    );
+                                }
 
                                 telemetry.addData(">> AprilTag Detected: ID ", detection.id);
-                                telemetry.update();
 
                                 if (!cameraRelocalization.isPoseValid(calculatedPose)) {
                                     telemetry.addLine(">>> RELOCALIZATION FAILED <<<");
@@ -387,7 +551,6 @@ public class TeleOpV3 extends LinearOpMode {
                                             calculatedPose.getX(DistanceUnit.INCH),
                                             calculatedPose.getY(DistanceUnit.INCH),
                                             calculatedPose.getHeading(AngleUnit.DEGREES));
-                                    telemetry.update();
                                 }
 
                                 // Validate and apply the new pose
@@ -413,13 +576,22 @@ public class TeleOpV3 extends LinearOpMode {
                     }
                 }
             }
+            } catch (Exception e) {
+                systemError = true;
+                telemetry.addLine(">>> CAMERA ERROR <<<");
+            }
 
             // ==================== CALCULATIONS ====================
             // Use adjusted pose for auto-aim calculations
-            autoAimController.updateRobotPosition(adjustedX, adjustedY, adjustedHeading, autoAimController.getCurrentTurretHeading());
-            // Use adjusted pose for distance calculation too
-            distanceToGoal = robot.getDistanceFromGoal(adjustedPose, targetIsRed);
-            hoodState = robot.getShooterAngle(distanceToGoal);
+            try {
+                autoAimController.updateRobotPosition(adjustedX, adjustedY, adjustedHeading, autoAimController.getCurrentTurretHeading());
+                // Use adjusted pose for distance calculation too
+                distanceToGoal = robot.getDistanceFromGoal(adjustedPose, targetIsRed);
+                hoodState = robot.getShooterAngle(distanceToGoal);
+            } catch (Exception e) {
+                systemError = true;
+                telemetry.addLine(">>> AUTO-AIM CALC ERROR <<<");
+            }
 
             // ==================== CONTROLS ====================
             double x, y, rx;
@@ -430,13 +602,21 @@ public class TeleOpV3 extends LinearOpMode {
             }
 
             // ==================== MODE-SPECIFIC CONTROLS ====================
-            switch (currentMode) {
+            try {
+                switch (currentMode) {
                 case STANDARD:
-                    // Field-centric driving, 1 driver, full auto-aim
-                    if (!targetIsRed) {
-                        y = gamepad1.left_stick_y;
-                        x = -gamepad1.left_stick_x * 1.1;
+                    // Driving based on selected movement type
+                    if (selectedMovementType == MovementType.FIELD_CENTRIC) {
+                        // Field-centric driving
+                        if (!targetIsRed) {
+                            y = gamepad1.left_stick_y;
+                            x = -gamepad1.left_stick_x * 1.1;
+                        } else {
+                            y = -gamepad1.left_stick_y;
+                            x = gamepad1.left_stick_x * 1.1;
+                        }
                     } else {
+                        // Quan TeleOp V2: Robot-centric driving
                         y = -gamepad1.left_stick_y;
                         x = gamepad1.left_stick_x * 1.1;
                     }
@@ -445,116 +625,252 @@ public class TeleOpV3 extends LinearOpMode {
                     // Auto-aim turret using adjusted pose (accounts for movement)
                     // Apply 1.1 multiplier only for long-range shots (>125 inches)
                     double rawTargetAngle = autoAimController.calculateTargetAngle(adjustedX, adjustedY, adjustedHeading);
+
+                    calculatedTargetAngle = rawTargetAngle; // Start with raw angle by default
+
+                    /* Doesn't work
                     if (distanceToGoal > 125) {
                         calculatedTargetAngle = rawTargetAngle * 1.1;
                     } else {
                         calculatedTargetAngle = rawTargetAngle;
                     }
 
+                     */
+
                     // Dynamic shooter speed based on distance
                     if (gamepad1.right_trigger > 0) {
                         shooterSpeed = robot.getShooterRPM(distanceToGoal);
                     } else {
                         shooter.stopVelocityPIDF();
-                        shooter.stopShooter();
+                        shooter.setRawPower(SHOOTER_IDLE_POWER);
                         shooterSpeed = 0;
                     }
 
-                    // Drive field-centric
-                    robot.driveFieldCentric(pos, y, x, rx, drivetrainPower);
+                    // Drive based on selected movement type
+                    if (selectedMovementType == MovementType.FIELD_CENTRIC) {
+                        robot.driveFieldCentric(pos, y, x, rx, drivetrainPower);
+                    } else {
+                        robot.driveRobotCentric(y, x, rx, drivetrainPower);
+                    }
                     break;
 
                 case RELOCALIZATION:
-                    // Field-centric driving while searching for AprilTag
-                    if (!targetIsRed) {
-                        y = gamepad1.left_stick_y;
-                        x = -gamepad1.left_stick_x * 1.1;
+                    // Driving based on selected movement type while searching for AprilTag
+                    if (selectedMovementType == MovementType.FIELD_CENTRIC) {
+                        // Field-centric driving
+                        if (!targetIsRed) {
+                            y = gamepad1.left_stick_y;
+                            x = -gamepad1.left_stick_x * 1.1;
+                        } else {
+                            y = -gamepad1.left_stick_y;
+                            x = gamepad1.left_stick_x * 1.1;
+                        }
                     } else {
+                        // Quan TeleOp V2: Robot-centric driving
                         y = -gamepad1.left_stick_y;
                         x = gamepad1.left_stick_x * 1.1;
                     }
                     rx = gamepad1.right_stick_x;
 
-                    // Keep turret still during relocalization - hold current position
-                    calculatedTargetAngle = autoAimController.getCurrentTurretHeading();
+                    // Set turret target angle based on relocalization method
+                    if (USE_HEADING_FROM_APRILTAG) {
+                        // Turret is set to 0 in the relocalization section above
+                        calculatedTargetAngle = 0;
+                    } else {
+                        // Turret is locked at current position in the relocalization section above
+                        // Just display the current heading (don't auto-aim)
+                        calculatedTargetAngle = autoAimController.getCurrentTurretHeading();
+                    }
 
                     // Shooter controls same as standard
                     if (gamepad1.right_trigger > 0) {
                         shooterSpeed = robot.getShooterRPM(distanceToGoal);
                     } else {
                         shooter.stopVelocityPIDF();
-                        shooter.stopShooter();
+                        shooter.setRawPower(SHOOTER_IDLE_POWER);
                         shooterSpeed = 0;
                     }
 
-                    // Drive field-centric
-                    robot.driveFieldCentric(pos, y, x, rx, drivetrainPower);
+                    // Drive based on selected movement type
+                    if (selectedMovementType == MovementType.FIELD_CENTRIC) {
+                        robot.driveFieldCentric(pos, y, x, rx, drivetrainPower);
+                    } else {
+                        robot.driveRobotCentric(y, x, rx, drivetrainPower);
+                    }
                     break;
 
                 case MANUAL:
-                    // Robot-centric driving, 2 drivers
-                    // Driver 2 (gamepad2): Driving and turret
-                    y = -gamepad2.left_stick_y;
-                    x = gamepad2.left_stick_x * 1.1;
-                    rx = gamepad2.right_stick_x;
+                    // Manual mode driving depends on movement type selection
+                    // Field Centric: Gamepad 2 drives, Gamepad 1 controls shooter
+                    // Quan TeleOp V2: Gamepad 1 drives, Gamepad 2 controls turret
 
-                    // Driver 2: Turret manual control with limits
-                    double turretInput = -gamepad2.left_trigger + gamepad2.right_trigger; // Use triggers for turret
-                    if (turretInput != 0) {
-                        double currentTurretHeading = autoAimController.getCurrentTurretHeading();
-                        manualTurretHeading = currentTurretHeading + (turretInput * 3.0); // Scale for sensitivity
-                        // Clamp to limits
-                        manualTurretHeading = Math.max(turretLimitCW, Math.min(turretLimitCCW, manualTurretHeading));
-                    }
+                    // TODO: Change corner reset button to driver preference
+                    // Corner pose reset for manual mode - resets to corner position as last resort for auto aim
+                    // Movement driver presses DPad Left + Back to reset pose to corner
+                    // Field Centric: Gamepad 2, Quan TeleOp V2: Gamepad 1
+                    boolean cornerResetPressed = selectedMovementType == MovementType.QUAN_TELEOP_V2
+                            ? (gamepad1.start)
+                            : (gamepad2.start);
 
-                    // Driver 1 (gamepad1): Shooter presets and intake
-                    // Shooter presets (gamepad1)
-                    if (gamepad1.a) {
-                        // Shotgun preset
-                        usingSniperPreset = false;
-                    } else if (gamepad1.b) {
-                        // Sniper preset
-                        usingSniperPreset = true;
-                    }
-
-                    // Set shooter speed based on preset (driver 1 controls shooter)
-                    if (gamepad1.right_trigger > 0) {
-                        if (usingSniperPreset) {
-                            shooterSpeed = sniper;
-                            hoodState = 0.5;
+                    if (cornerResetPressed) {
+                        if (targetIsRed) {
+                            // Red corner position
+                            odo.setPosition(new Pose2D(DistanceUnit.INCH, -65, -64.5, AngleUnit.DEGREES, 90.0));
                         } else {
-                            shooterSpeed = shotgunTeleOp;
-                            hoodState = 0.42;
+                            // Blue corner position
+                            odo.setPosition(new Pose2D(DistanceUnit.INCH, 65, -64.5, AngleUnit.DEGREES, 90.0));
+                        }
+                        // Go back to standard mode after pose reset
+                        currentMode = OperatingMode.STANDARD;
+                    }
+
+                    // Turret error adjustment - non-movement gamepad (only when back is NOT pressed)
+                    // Field Centric: Gamepad 1, Quan TeleOp V2: Gamepad 2
+                    // DPad Up/Down: +/- 1 degree, DPad Left/Right: +/- 5 degrees
+                    if (debounceTimer.milliseconds() > 200) {
+                        if (selectedMovementType == MovementType.QUAN_TELEOP_V2) {
+                            // Gamepad 2 adjusts turret error (non-movement gamepad)
+                            if (!gamepad2.back) {
+                                if (gamepad2.dpad_up) {
+                                    turretController.setEncoderOffset(turretController.getEncoderOffset() + 1);
+                                    debounceTimer.reset();
+                                } else if (gamepad2.dpad_down) {
+                                    turretController.setEncoderOffset(turretController.getEncoderOffset() - 1);
+                                    debounceTimer.reset();
+                                } else if (gamepad2.dpad_right) {
+                                    turretController.setEncoderOffset(turretController.getEncoderOffset() + 5);
+                                    debounceTimer.reset();
+                                } else if (gamepad2.dpad_left) {
+                                    turretController.setEncoderOffset(turretController.getEncoderOffset() - 5);
+                                    debounceTimer.reset();
+                                }
+                            }
+                        } else {
+                            // Gamepad 1 adjusts turret error (non-movement gamepad)
+                            if (!gamepad1.back) {
+                                if (gamepad1.dpad_up) {
+                                    turretController.setEncoderOffset(turretController.getEncoderOffset() + 1);
+                                    debounceTimer.reset();
+                                } else if (gamepad1.dpad_down) {
+                                    turretController.setEncoderOffset(turretController.getEncoderOffset() - 1);
+                                    debounceTimer.reset();
+                                } else if (gamepad1.dpad_right) {
+                                    turretController.setEncoderOffset(turretController.getEncoderOffset() + 5);
+                                    debounceTimer.reset();
+                                } else if (gamepad1.dpad_left) {
+                                    turretController.setEncoderOffset(turretController.getEncoderOffset() - 5);
+                                    debounceTimer.reset();
+                                }
+                            }
+                        }
+                    }
+
+                    if (selectedMovementType == MovementType.QUAN_TELEOP_V2) {
+                        // Quan TeleOp V2: Gamepad 1 drives (robot-centric)
+                        y = -gamepad1.left_stick_y;
+                        x = gamepad1.left_stick_x * 1.1;
+                        rx = gamepad1.right_stick_x;
+
+                        // Gamepad 2: Turret manual control with limits
+                        double turretInput = -gamepad2.left_trigger + gamepad2.right_trigger;
+                        if (turretInput != 0) {
+                            double currentTurretHeading = autoAimController.getCurrentTurretHeading();
+                            manualTurretHeading = currentTurretHeading + (turretInput * 3.0);
+                            manualTurretHeading = Math.max(turretLimitCW, Math.min(turretLimitCCW, manualTurretHeading));
+                        }
+
+                        // Gamepad 2: Shooter presets
+                        if (gamepad2.a) {
+                            usingSniperPreset = false; // Shotgun
+                        } else if (gamepad2.b) {
+                            usingSniperPreset = true; // Sniper
+                        }
+
+                        // Gamepad 1: Shooter trigger (since they're driving)
+                        if (gamepad1.right_trigger > 0) {
+                            if (usingSniperPreset) {
+                                shooterSpeed = sniper;
+                                hoodState = 0.5;
+                            } else {
+                                shooterSpeed = shotgunTeleOp;
+                                hoodState = 0.42;
+                            }
+                        } else {
+                            shooter.stopVelocityPIDF();
+                            shooter.setRawPower(SHOOTER_IDLE_POWER);
+                            shooterSpeed = 0;
                         }
                     } else {
-                        shooter.stopVelocityPIDF();
-                        shooter.stopShooter();
-                        shooterSpeed = 0;
+                        // Field Centric: Gamepad 2 drives (robot-centric in manual mode)
+                        y = -gamepad2.left_stick_y;
+                        x = gamepad2.left_stick_x * 1.1;
+                        rx = gamepad2.right_stick_x;
+
+                        // Gamepad 2: Turret manual control with limits
+                        double turretInput = -gamepad2.left_trigger + gamepad2.right_trigger;
+                        if (turretInput != 0) {
+                            double currentTurretHeading = autoAimController.getCurrentTurretHeading();
+                            manualTurretHeading = currentTurretHeading + (turretInput * 3.0);
+                            manualTurretHeading = Math.max(turretLimitCW, Math.min(turretLimitCCW, manualTurretHeading));
+                        }
+
+                        // Gamepad 1: Shooter presets
+                        if (gamepad1.a) {
+                            usingSniperPreset = false; // Shotgun
+                        } else if (gamepad1.b) {
+                            usingSniperPreset = true; // Sniper
+                        }
+
+                        // Gamepad 1: Shooter trigger
+                        if (gamepad1.right_trigger > 0) {
+                            if (usingSniperPreset) {
+                                shooterSpeed = sniper;
+                                hoodState = 0.5;
+                            } else {
+                                shooterSpeed = shotgunTeleOp;
+                                hoodState = 0.42;
+                            }
+                        } else {
+                            shooter.stopVelocityPIDF();
+                            shooter.setRawPower(SHOOTER_IDLE_POWER);
+                            shooterSpeed = 0;
+                        }
                     }
 
                     calculatedTargetAngle = manualTurretHeading;
 
-                    // Drive robot-centric (driver 2)
+                    // Drive robot-centric in manual mode
                     robot.driveRobotCentric(y, x, rx, drivetrainPower);
                     break;
+            }
+            } catch (Exception e) {
+                systemError = true;
+                telemetry.addLine(">>> DRIVING/CONTROLS ERROR <<<");
             }
 
             // ==================== COMMON CONTROLS (ALL MODES) ====================
             // Calculate shooter velocity for use in multiple places
             // Use Math.abs() because rightShooter has reversed direction
-            double avgShooterVel = (Math.abs(leftShooter.getVelocity()) + Math.abs(rightShooter.getVelocity())) / 2;
+            double avgShooterVel = 0;
+            boolean shooterAtSpeed = false;
+            try {
+                avgShooterVel = (Math.abs(leftShooter.getVelocity()) + Math.abs(rightShooter.getVelocity())) / 2;
+                shooterAtSpeed = shooterSpeed > 0 && Math.abs(avgShooterVel - shooterSpeed) < shootingToleranceTeleOp;
+            } catch (Exception e) {
+                systemError = true;
+                telemetry.addLine(">>> SHOOTER VELOCITY READ ERROR <<<");
+            }
 
             // Intake (driver 1 in all modes)
             // For long-range shots (>125 inches), pulse intake - only run when shooter is at speed
             boolean isLongRangeShot = distanceToGoal > 125;
-            boolean shooterAtSpeed = shooterSpeed > 0 && Math.abs(avgShooterVel - shooterSpeed) < shootingToleranceTeleOp;
 
             if (gamepad1.right_bumper) {
                 // If long-range shot, only run intake when shooter is at speed (pulse mode)
                 if (isLongRangeShot && shooterSpeed > 0) {
-                    intakePower = shooterAtSpeed ? 1 : 0;
+                    intakePower = 0.6; // Base power for pulsing
                 } else {
-                    intakePower = 1;
+                    intakePower = 1; // Full power when not pulsing
                 }
             } else if (gamepad1.left_bumper) {
                 intakePower = -0.5;
@@ -570,37 +886,127 @@ public class TeleOpV3 extends LinearOpMode {
             }
 
             // ==================== LIGHT COLOR ====================
-            // Base color on mode
+            // Monitor intake current with consistent detection
+            try {
+                intakeCurrent = intake.getCurrent(CurrentUnit.AMPS);
+
+                // Check if current is above threshold while intake is running
+                boolean isAboveThreshold = intakeCurrent > INTAKE_FULL_CURRENT_THRESHOLD && intake.getPower() > 0;
+
+                if (isAboveThreshold) {
+                    // If we just went above threshold, start the timer
+                    if (!currentAboveThreshold) {
+                        intakeFullTimer.reset();
+                        currentAboveThreshold = true;
+                    }
+                    // Check if we've been above threshold long enough
+                    intakeFull = intakeFullTimer.milliseconds() >= INTAKE_FULL_DURATION_MS;
+                } else {
+                    // Current dropped below threshold, reset
+                    currentAboveThreshold = false;
+                    intakeFull = false;
+                }
+            } catch (Exception e) {
+                // If intake current reading fails, just disable the full detection
+                intakeFull = false;
+            }
+
+            // Handle flash timing
+            if (flashTimer.milliseconds() > LIGHT_FLASH_INTERVAL_MS) {
+                flashState = !flashState;
+                flashTimer.reset();
+            }
+
+            // Determine base mode color
+            double modeColor;
             switch (currentMode) {
                 case STANDARD:
-                    lightState = LIGHT_BLUE;
+                    modeColor = LIGHT_BLUE;
                     break;
                 case RELOCALIZATION:
-                    lightState = LIGHT_YELLOW;
+                    modeColor = LIGHT_YELLOW;
                     break;
                 case MANUAL:
-                    lightState = LIGHT_RED;
+                default:
+                    modeColor = LIGHT_RED;
                     break;
             }
 
-            // Override with green if shooter is ready
-            if (shooterAtSpeed) {
+            // Determine final light state
+            if (systemError) {
+                // System error - solid pink (highest priority, visible from far away)
+                lightState = LIGHT_PINK;
+            } else if (shooterAtSpeed) {
+                // Shooter ready - solid green (high priority)
                 lightState = LIGHT_GREEN;
+            } else if (intakeFull) {
+                // Intake full - flash between mode color and green
+                lightState = flashState ? LIGHT_GREEN : modeColor;
+            } else {
+                // Normal operation - solid mode color
+                lightState = modeColor;
+            }
+
+            // Set light - in its own try-catch
+            try {
+                light.setPosition(lightState);
+            } catch (Exception e) {
+                // Can't even set the light, nothing we can do
             }
 
             // ==================== SET POWER ====================
-            robot.setLatch(latchState);
-            hoodServo.setPosition(hoodState);
-            if (shooterSpeed != 0) {
-                shooter.setVelocityPIDF(shooterSpeed);
+            // Wrap each subsystem in try-catch so partial functionality is maintained
+            // if one system disconnects
+
+            // Latch
+            try {
+                robot.setLatch(latchState);
+            } catch (Exception e) {
+                systemError = true;
+                telemetry.addLine(">>> LATCH ERROR <<<");
             }
-            intake.setPower(intakePower);
-            turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
-            light.setPosition(lightState);
+
+            // Hood servo
+            try {
+                hoodServo.setPosition(hoodState);
+            } catch (Exception e) {
+                systemError = true;
+                telemetry.addLine(">>> HOOD ERROR <<<");
+            }
+
+            // Shooter
+            try {
+                if (shooterSpeed != 0) {
+                    shooter.setVelocityPIDF(shooterSpeed);
+                }
+            } catch (Exception e) {
+                systemError = true;
+                telemetry.addLine(">>> SHOOTER ERROR <<<");
+            }
+
+            // Intake
+            try {
+                intake.setPower(intakePower);
+            } catch (Exception e) {
+                systemError = true;
+                telemetry.addLine(">>> INTAKE ERROR <<<");
+            }
+
+            // Turret
+            try {
+                turretController.setRobotAngularVelocity(heading_velocity);
+                turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
+            } catch (Exception e) {
+                systemError = true;
+                telemetry.addLine(">>> TURRET ERROR <<<");
+            }
+
+            // Light - handled separately after determining color
 
             // ==================== TELEMETRY ====================
             telemetry.addLine("═══════════════════════════════");
             telemetry.addData("MODE", currentMode.toString());
+            telemetry.addData("Movement", selectedMovementType == MovementType.FIELD_CENTRIC ? "Field Centric" : "Quan TeleOp");
             telemetry.addData("Alliance", targetIsRed ? "RED" : "BLUE");
             telemetry.addLine("═══════════════════════════════");
 
@@ -611,6 +1017,7 @@ public class TeleOpV3 extends LinearOpMode {
             telemetry.addLine("--- Turret ---");
             telemetry.addData("Target Heading", "%.1f°", calculatedTargetAngle);
             telemetry.addData("Actual Heading", "%.1f°", autoAimController.getCurrentTurretHeading());
+            telemetry.addData("Encoder Offset", "%.1f°", turretController.getEncoderOffset());
 
             telemetry.addLine("--- Shooter ---");
             telemetry.addData("Target RPM", "%.0f", shooterSpeed);
@@ -620,18 +1027,54 @@ public class TeleOpV3 extends LinearOpMode {
                 telemetry.addData("Preset", usingSniperPreset ? "SNIPER" : "SHOTGUN");
             }
 
+            telemetry.addLine("--- Intake ---");
+            telemetry.addData("Current", "%.2f A", intakeCurrent);
+            telemetry.addData("Intake Full", intakeFull ? ">>> YES <<<" : "No");
+
             telemetry.addLine("═══════════════════════════════");
             telemetry.addLine("DPad UP/DOWN to change mode");
             telemetry.update();
+
+            } catch (Exception e) {
+                // Handle hardware disconnection gracefully
+                telemetry.addLine(">>> HARDWARE ERROR <<<");
+                telemetry.addData("Error", e.getMessage());
+                telemetry.addLine("Expansion hub may have disconnected.");
+                telemetry.addLine("Attempting to continue...");
+                telemetry.update();
+
+                // Small delay to prevent spam
+                sleep(100);
+            }
         }
 
         // Cleanup
-        if (aprilTagAvailable) {
-            AprilTag.close();
+        try {
+            if (aprilTagAvailable) {
+                AprilTag.close();
+            }
+        } catch (Exception e) {
+            // Ignore - camera may already be closed
         }
-        autoAimController.stopAutoAim();
-        shooter.stopVelocityPIDF();
-        turretController.stopVelocityPID();
+
+        try {
+            autoAimController.stopAutoAim();
+        } catch (Exception e) {
+            // Ignore - hardware may be disconnected
+        }
+
+        try {
+            shooter.stopVelocityPIDF();
+        } catch (Exception e) {
+            // Ignore - hardware may be disconnected
+        }
+
+        try {
+            turretController.stopVelocityPID();
+        } catch (Exception e) {
+            // Ignore - hardware may be disconnected
+        }
+
         saveEndPosition(0, 0, 0, 0);
     }
 }

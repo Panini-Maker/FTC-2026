@@ -49,7 +49,7 @@ public class CameraTest {
      */
     @Test
     public void testCalculateRobotPose_ReturnsNonNull() {
-        Pose2D result = camera.calculateRobotPose(0, 0, 0, 0, 48, true);
+        Pose2D result = camera.calculateRobotPose(0, 0, 0, 48, true);
         assertNotNull("calculateRobotPose should return a non-null Pose2D", result);
     }
 
@@ -59,7 +59,7 @@ public class CameraTest {
     @Test
     public void testCalculateRobotPose_PreservesHeading() {
         double inputHeading = 45.0;
-        Pose2D result = camera.calculateRobotPose(0, 0, inputHeading, 0, 48, true);
+        Pose2D result = camera.calculateRobotPose(0, inputHeading, 0, 48, true);
         assertEquals("Pose heading should match input robot heading",
                 inputHeading, result.getHeading(AngleUnit.DEGREES), ANGLE_TOLERANCE);
     }
@@ -82,7 +82,7 @@ public class CameraTest {
         double tagZ = 48; // 48 inches away
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         // Red tag is at (57, 61)
         // Camera heading = 45° + 0° = 45°
@@ -115,7 +115,7 @@ public class CameraTest {
         double tagZ = Math.sqrt(distance * distance - tagX * tagX);
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(result);
         System.out.println("Red FacingY - X: " + result.getX(DistanceUnit.INCH) +
@@ -134,7 +134,7 @@ public class CameraTest {
         double tagZ = 80; // Distance to tag
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, false);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, false);
 
         assertNotNull(result);
         System.out.println("Red Origin - X: " + result.getX(DistanceUnit.INCH) +
@@ -159,7 +159,7 @@ public class CameraTest {
         double tagZ = 48;
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, false);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, false);
 
         assertNotNull(result);
         System.out.println("Blue Direct - X: " + result.getX(DistanceUnit.INCH) +
@@ -178,7 +178,7 @@ public class CameraTest {
         double tagZ = 70;
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, false);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, false);
 
         assertNotNull(result);
         System.out.println("Blue NegX - X: " + result.getX(DistanceUnit.INCH) +
@@ -201,8 +201,8 @@ public class CameraTest {
         double tagZ = 48;
         double yaw = 0;
 
-        Pose2D resultNoOffset = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
-        Pose2D resultWithOffset = cameraWithOffset.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D resultNoOffset = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D resultWithOffset = cameraWithOffset.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(resultNoOffset);
         assertNotNull(resultWithOffset);
@@ -231,8 +231,8 @@ public class CameraTest {
         double tagZ = 60;
         double yaw = 0;
 
-        Pose2D resultNoOffset = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
-        Pose2D resultWithOffset = cameraWithOffset.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D resultNoOffset = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D resultWithOffset = cameraWithOffset.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(resultNoOffset);
         assertNotNull(resultWithOffset);
@@ -259,7 +259,7 @@ public class CameraTest {
         double tagZ = 48;
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(result);
         System.out.println("Tag Right - X: " + result.getX(DistanceUnit.INCH) +
@@ -278,7 +278,7 @@ public class CameraTest {
         double tagZ = 48;
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(result);
         System.out.println("Tag Left - X: " + result.getX(DistanceUnit.INCH) +
@@ -346,7 +346,7 @@ public class CameraTest {
         double tagZ = 50;
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(result);
         System.out.println("Turret 90 - X: " + result.getX(DistanceUnit.INCH) +
@@ -365,7 +365,7 @@ public class CameraTest {
         double tagZ = 50;
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(result);
         System.out.println("Turret -90 - X: " + result.getX(DistanceUnit.INCH) +
@@ -384,7 +384,7 @@ public class CameraTest {
         double tagZ = 50;
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(result);
         System.out.println("Turret 180 - X: " + result.getX(DistanceUnit.INCH) +
@@ -405,7 +405,7 @@ public class CameraTest {
         double tagZ = 50;
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(result);
         assertEquals("Heading should be preserved", 90.0,
@@ -425,7 +425,7 @@ public class CameraTest {
         double tagZ = 60;
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(result);
         assertEquals("Heading should be preserved", -45.0,
@@ -447,7 +447,7 @@ public class CameraTest {
         double tagZ = 24; // Very close
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(result);
         System.out.println("Close - X: " + result.getX(DistanceUnit.INCH) +
@@ -468,7 +468,7 @@ public class CameraTest {
         double tagZ = 96; // Far away
         double yaw = 0;
 
-        Pose2D result = camera.calculateRobotPose(yaw, turretHeading, robotHeading, tagX, tagZ, true);
+        Pose2D result = camera.calculateRobotPose(turretHeading, robotHeading, tagX, tagZ, true);
 
         assertNotNull(result);
         System.out.println("Far - X: " + result.getX(DistanceUnit.INCH) +
@@ -490,8 +490,8 @@ public class CameraTest {
         double tagZ = 50;
         double yaw = 0;
 
-        Pose2D redResult = camera.calculateRobotPose(yaw, turretHeading, 45.0, tagX, tagZ, true);
-        Pose2D blueResult = camera.calculateRobotPose(yaw, turretHeading, 135.0, tagX, tagZ, false);
+        Pose2D redResult = camera.calculateRobotPose(turretHeading, 45.0, tagX, tagZ, true);
+        Pose2D blueResult = camera.calculateRobotPose(turretHeading, 135.0, tagX, tagZ, false);
 
         assertNotNull(redResult);
         assertNotNull(blueResult);
@@ -518,12 +518,12 @@ public class CameraTest {
     @Test
     public void testCalculateRobotPoseWithIMU_Basic() {
         double xRelative = 0;
-        double zRelative = 48;
+        double yRelative = 80;
         double turretHeading = 0;
-        double robotHeadingIMU = 45;
-        boolean isRed = true;
+        double robotHeadingIMU = -45;
+        boolean isRed = false;
 
-        Pose2D result = camera.calculateRobotPoseWithIMU(xRelative, zRelative, turretHeading, robotHeadingIMU, isRed);
+        Pose2D result = camera.calculateRobotPoseWithIMU(xRelative, yRelative, turretHeading, robotHeadingIMU, isRed);
 
         assertNotNull(result);
         assertEquals("Heading should match IMU heading", robotHeadingIMU,

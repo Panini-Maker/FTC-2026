@@ -12,6 +12,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 import java.util.Locale;
 
+@Disabled
 @TeleOp
 
 public class FieldCentricDrive extends LinearOpMode {

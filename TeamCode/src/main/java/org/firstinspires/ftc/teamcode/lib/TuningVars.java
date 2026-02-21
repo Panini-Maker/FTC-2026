@@ -12,7 +12,7 @@ public class TuningVars {
     public static double autoEndY = 0; // in inches
     public static double autoEndHeading = 0; // in degrees
     public static double autoEndTurretHeading = 0; // in degrees
-    public static double timeToShoot = 0.1; // Seconds
+    public static double timeToShoot = 0; // Seconds
 
     // Method to save robot position at end of autonomous
     public static void saveEndPosition(double x, double y, double heading, double turretHeading) {
@@ -22,10 +22,17 @@ public class TuningVars {
         autoEndTurretHeading = turretHeading;
     }
     //Shooter Tuning Vars
-    public static double shooterKp = 0.00015;
+    // Primary PIDF - used when far from target (coarse control)
+    public static double shooterKp = 0.0035;
     public static double shooterKi = 0.0;
-    public static double shooterKd = 0.00002;
+    public static double shooterKd = 0.0;
     public static double shooterKf = 0.00041;
+    // Secondary PIDF - used when within tolerance (fine control)
+    public static double shooterKp2 = 0.00067; // Lower P for fine control
+    public static double shooterKi2 = 0.0;
+    public static double shooterKd2 = 0.0;
+    public static double shooterKf2 = 0.00041; // Same feedforward
+    public static double shooterDualPIDThreshold = 50; // RPM - switch to secondary PID when within this tolerance
     public static int shootingSlowDownSpeed = 200;
     public static int shotgun = 1550; //Was 1600
     public static int shotgunTeleOp = 1800;
@@ -46,15 +53,16 @@ public class TuningVars {
     public static double turretTicksPerDegree = (turretMotorTPR * turretGearTeeth) / (turretMotorGearTeeth * 360.0);
     public static double turretLimitCCW = 175; // in degrees (Limits added back in)
     public static double turretLimitCW = -130; // in degrees (Limits added back in)
-    public static double turretSpeedAuto = 0.8; // 0 to 1
+    public static double turretSpeedAuto = 1; // 0 to 1
 
     // Turret PID Tuning Vars for Auto Aim
-    public static double turretKp = 0.032; // Proportional constant (tested)
+    public static double turretKp = 0.04; // Proportional constant (tested)
     public static double turretKi = 0.0; // Integral constant (not needed)
-    public static double turretKd = 0.001; // Derivative constant (tested - reduces overshoot)
+    public static double turretKd = 0.0008; // Derivative constant (tested - reduces overshoot)
+    public static double turretKv = 0; // Velocity feedforward - multiplied by robot angular velocity (deg/sec) to counter-rotate
     public static double turretMinPower = 0.0; // Minimum power to overcome friction
     public static double turretMaxPower = 0.8; // Maximum power for turret
-    public static double turretTolerance = 2.0; // Tolerance in degrees
+    public static double turretTolerance = 0.5; // Tolerance in degrees
     public static double turretPhysicalOffset = 180.0; // Turret encoder 0 faces back of robot (180° from front)
 
     // Auto Aim Target Positions (center of field is origin 0,0)

@@ -13,6 +13,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretTolerance;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -53,6 +54,7 @@ import org.firstinspires.ftc.teamcode.lib.Turret;
  * 3. Increase Kd until oscillation stops
  * 4. If there's steady-state error, increase Ki slightly
  */
+@Disabled
 @Config
 @TeleOp(name = "Turret PID Tuner", group = "Tuning")
 public class TurretPIDTuner extends LinearOpMode {
@@ -111,6 +113,9 @@ public class TurretPIDTuner extends LinearOpMode {
             effectiveTarget = Math.max(turretLimitCW, Math.min(turretLimitCCW, effectiveTarget));
 
             double error = effectiveTarget - currentAngle;
+
+            // Update PID constants from TuningVars (allows live tuning via FTC Dashboard)
+            turretController.updatePIDConstants(turretKp, turretKi, turretKd);
 
             // Send data to FTC Dashboard for graphing
             TelemetryPacket packet = new TelemetryPacket();

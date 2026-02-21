@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.lib;
 
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterDualPIDThreshold;
+
 import android.annotation.SuppressLint;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -15,15 +17,21 @@ public class ShooterController {
 
     private final DcMotorEx leftShooter;
     private final DcMotorEx rightShooter;
-    private final PIDFController pidfController;
+    private final PIDFController pidfController;       // Primary PIDF (coarse control)
+    private final PIDFController pidfController2;      // Secondary PIDF (fine control)
     private final Telemetry telemetry;
     private final VoltageSensor voltageSensor;
 
     // Nominal voltage for Kf compensation
     private static final double NOMINAL_VOLTAGE = 12.5;
 
-    // Base Kf value (before voltage compensation)
+    // Base Kf values (before voltage compensation)
     private final double baseKf;
+    private final double baseKf2;
+
+
+    // Track which controller is active for debugging
+    private volatile boolean usingSecondaryPID = false;
 
     // Parallel thread variables
     private volatile boolean pidfRunning = false;
@@ -43,7 +51,7 @@ public class ShooterController {
      * Maintains backwards compatibility with existing code using PID tuner.
      */
     public ShooterController(DcMotorEx leftShooter, DcMotorEx rightShooter, double Kp, double Ki, double Kd, Telemetry telemetry) {
-        this(leftShooter, rightShooter, Kp, Ki, Kd, 0, null, telemetry);
+        this(leftShooter, rightShooter, Kp, Ki, Kd, 0, Kp, Ki, Kd, 0, null, telemetry);
     }
 
     /**
@@ -51,23 +59,48 @@ public class ShooterController {
      * @deprecated Use constructor with VoltageSensor for voltage compensation
      */
     public ShooterController(DcMotorEx leftShooter, DcMotorEx rightShooter, double Kp, double Ki, double Kd, double Kf, Telemetry telemetry) {
-        this(leftShooter, rightShooter, Kp, Ki, Kd, Kf, null, telemetry);
+        this(leftShooter, rightShooter, Kp, Ki, Kd, Kf, Kp, Ki, Kd, Kf, null, telemetry);
     }
 
     /**
      * Constructor for ShooterController using PIDF with voltage compensation.
+     * Uses same PIDF values for both primary and secondary.
      *
      * @param voltageSensor VoltageSensor for voltage compensation (can be null to disable)
      */
     public ShooterController(DcMotorEx leftShooter, DcMotorEx rightShooter, double Kp, double Ki, double Kd, double Kf, VoltageSensor voltageSensor, Telemetry telemetry) {
+        this(leftShooter, rightShooter, Kp, Ki, Kd, Kf, Kp, Ki, Kd, Kf, voltageSensor, telemetry);
+    }
+
+    /**
+     * Constructor for ShooterController using dual PIDF with voltage compensation.
+     * Primary PIDF for coarse control (far from target), Secondary PIDF for fine control (close to target).
+     * Threshold is read from TuningVars.shooterDualPIDThreshold for live tuning via FTC Dashboard.
+     *
+     * @param Kp Primary proportional constant
+     * @param Ki Primary integral constant
+     * @param Kd Primary derivative constant
+     * @param Kf Primary feedforward constant
+     * @param Kp2 Secondary proportional constant (fine control)
+     * @param Ki2 Secondary integral constant (fine control)
+     * @param Kd2 Secondary derivative constant (fine control)
+     * @param Kf2 Secondary feedforward constant (fine control)
+     * @param voltageSensor VoltageSensor for voltage compensation (can be null to disable)
+     */
+    public ShooterController(DcMotorEx leftShooter, DcMotorEx rightShooter,
+                            double Kp, double Ki, double Kd, double Kf,
+                            double Kp2, double Ki2, double Kd2, double Kf2,
+                            VoltageSensor voltageSensor, Telemetry telemetry) {
         this.leftShooter = leftShooter;
         this.rightShooter = rightShooter;
         this.telemetry = telemetry;
         this.voltageSensor = voltageSensor;
         this.baseKf = Kf;
+        this.baseKf2 = Kf2;
 
-        // Initialize PIDF controller
+        // Initialize PIDF controllers
         this.pidfController = new PIDFController(Kp, Ki, Kd, Kf, telemetry);
+        this.pidfController2 = new PIDFController(Kp2, Ki2, Kd2, Kf2, telemetry);
 
         // Set motor directions - rightShooter is reversed so both spin the flywheel the same way
         this.leftShooter.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -76,31 +109,48 @@ public class ShooterController {
         this.rightShooter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
+
     /**
-     * Runs the shooter motors at the desired velocity using PIDF control.
+     * Runs the shooter motors at the desired velocity using dual PIDF control.
+     * Uses primary PIDF when far from target, secondary PIDF when close to target.
      *
      * @param desiredVelocity The target velocity in ticks per second.
      */
     public void runShooter(double desiredVelocity) {
+        // Use Math.abs() because rightShooter has reversed direction, so getVelocity() returns negative
+        double leftVel = leftShooter.getVelocity();
+        double rightVel = rightShooter.getVelocity();
+        double currentVelocity = (Math.abs(leftVel) + Math.abs(rightVel)) / 2.0;
+        double error = Math.abs(desiredVelocity - currentVelocity);
+
+        // Select which controller to use based on error (threshold from TuningVars for live tuning)
+        PIDFController activeController;
+        double activeBaseKf;
+        if (error <= shooterDualPIDThreshold) {
+            activeController = pidfController2;
+            activeBaseKf = baseKf2;
+            usingSecondaryPID = true;
+        } else {
+            activeController = pidfController;
+            activeBaseKf = baseKf;
+            usingSecondaryPID = false;
+        }
+
         // Apply voltage compensation to Kf
         // Lower voltage = need more power = higher Kf
-        double compensatedKf = baseKf;
+        double compensatedKf = activeBaseKf;
         if (voltageSensor != null) {
             double currentVoltage = voltageSensor.getVoltage();
             debugVoltage = currentVoltage;
             // Prevent division by very low voltage
             if (currentVoltage > 8.0) {
-                compensatedKf = baseKf * (NOMINAL_VOLTAGE / currentVoltage);
-                pidfController.setKf(compensatedKf);
+                compensatedKf = activeBaseKf * (NOMINAL_VOLTAGE / currentVoltage);
+                activeController.setKf(compensatedKf);
             }
         }
         debugCompensatedKf = compensatedKf;
 
-        // Use Math.abs() because rightShooter has reversed direction, so getVelocity() returns negative
-        double leftVel = leftShooter.getVelocity();
-        double rightVel = rightShooter.getVelocity();
-        double currentVelocity = (Math.abs(leftVel) + Math.abs(rightVel)) / 2.0;
-        double powerAdjustment = pidfController.calculate(desiredVelocity, currentVelocity);
+        double powerAdjustment = activeController.calculate(desiredVelocity, currentVelocity);
 
         // Clamp power to valid range
         powerAdjustment = Math.max(-1.0, Math.min(1.0, powerAdjustment));
@@ -120,8 +170,9 @@ public class ShooterController {
      */
     @SuppressLint("DefaultLocale")
     public String getDebugInfo() {
-        return String.format("L=%.0f R=%.0f Avg=%.0f Pwr=%.2f V=%.1f Kf=%.6f",
-                debugLeftVel, debugRightVel, debugAvgVel, debugPower, debugVoltage, debugCompensatedKf);
+        String pidMode = usingSecondaryPID ? "FINE" : "COARSE";
+        return String.format("L=%.0f R=%.0f Avg=%.0f Pwr=%.2f V=%.1f [%s]",
+                debugLeftVel, debugRightVel, debugAvgVel, debugPower, debugVoltage, pidMode);
     }
 
     /**
@@ -140,13 +191,14 @@ public class ShooterController {
         targetVelocity = desiredVelocity;
         pidfRunning = true;
         pidfController.reset();
+        pidfController2.reset();
 
         pidfThread = new Thread(() -> {
             while (pidfRunning && !Thread.currentThread().isInterrupted()) {
                 runShooter(targetVelocity);
 
                 try {
-                    Thread.sleep(12); // ~80Hz update rate
+                    Thread.sleep(10); // ~80Hz update rate
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
@@ -174,15 +226,15 @@ public class ShooterController {
      */
     public void stopVelocityPIDF() {
         pidfRunning = false;
+        // Stop motors immediately
+        leftShooter.setPower(0);
+        rightShooter.setPower(0);
+        // Interrupt the thread to exit quickly
         if (pidfThread != null) {
             pidfThread.interrupt();
-            try {
-                pidfThread.join(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            // Don't join them
+            pidfThread = null;
         }
-        stopShooter();
     }
 
     /**
@@ -238,6 +290,17 @@ public class ShooterController {
     }
 
     /**
+     * Sets raw power to the shooter motors (bypasses PIDF control).
+     * Use this for idle spinning when not actively shooting.
+     *
+     * @param power Raw power value from -1.0 to 1.0
+     */
+    public void setRawPower(double power) {
+        leftShooter.setPower(power);
+        rightShooter.setPower(power);
+    }
+
+    /**
      * Resets the PIDF controller.
      */
     public void resetPIDF() {
@@ -259,6 +322,18 @@ public class ShooterController {
     public void setPIDFConstants(double Kp, double Ki, double Kd, double Kf) {
         pidfController.setPIDFConstants(Kp, Ki, Kd, Kf);
     }
+
+    /**
+     * Updates the PIDF constants for live tuning via FTC Dashboard.
+     * Alias for setPIDFConstants.
+     */
+    public void updatePIDFConstants(double Kp, double Ki, double Kd, double Kf) {
+        pidfController.setKp(Kp);
+        pidfController.setKi(Ki);
+        pidfController.setKd(Kd);
+        pidfController.setKf(Kf);
+    }
+
     public double getDistanceFromGoal(Pose2D pos, boolean targetIsRed) {
 
         double x = pos.getX(DistanceUnit.INCH);

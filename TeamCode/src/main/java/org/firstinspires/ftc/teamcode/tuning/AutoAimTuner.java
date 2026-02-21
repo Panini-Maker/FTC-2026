@@ -6,6 +6,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -43,6 +44,7 @@ import org.firstinspires.ftc.teamcode.lib.Turret;
  * 4. Drive the robot around - turret stays at same angle
  * 5. Press A or B again to recalculate based on new position
  */
+@Disabled
 @TeleOp(name = "Auto Aim Tuner", group = "Tuning")
 public class AutoAimTuner extends LinearOpMode {
 

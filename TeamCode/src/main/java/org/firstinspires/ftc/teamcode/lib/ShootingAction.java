@@ -2,7 +2,6 @@ package org.firstinspires.ftc.teamcode.lib;
 
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.idle;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shootingToleranceAuto;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniper;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.sniperAuto;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -13,19 +12,39 @@ public class ShootingAction {
     public DcMotorEx leftShooter, rightShooter;
     public DcMotor intake;
     public DcMotor turret;
-    public Servo hoodServo, leftLatch, rightLatch;
+    public Servo hoodServo, leftLatch;
     public ShooterController controller;
+    public Turret turretController;
+    public AutoAim autoAim;
 
     public ShootingAction(DcMotorEx leftShooter, DcMotorEx rightShooter, DcMotor intake, DcMotor turret,
-                          Servo hoodServo, Servo leftLatch, Servo rightLatch, ShooterController controller) {
+                          Servo hoodServo, Servo leftLatch, ShooterController controller) {
         this.leftShooter = leftShooter;
         this.rightShooter = rightShooter;
         this.intake = intake;
         this.turret = turret;
         this.hoodServo = hoodServo;
         this.leftLatch = leftLatch;
-        this.rightLatch = rightLatch;
         this.controller = controller;
+        this.turretController = null;
+        this.autoAim = null;
+    }
+
+    /**
+     * Constructor with turret controller for continuous turret updates during shooting.
+     */
+    public ShootingAction(DcMotorEx leftShooter, DcMotorEx rightShooter, DcMotor intake, DcMotor turret,
+                          Servo hoodServo, Servo leftLatch, ShooterController controller,
+                          Turret turretController, AutoAim autoAim) {
+        this.leftShooter = leftShooter;
+        this.rightShooter = rightShooter;
+        this.intake = intake;
+        this.turret = turret;
+        this.hoodServo = hoodServo;
+        this.leftLatch = leftLatch;
+        this.controller = controller;
+        this.turretController = turretController;
+        this.autoAim = autoAim;
     }
 
     public void shoot(double shooterVelocity, int shootDurationMs, int rampUpTimeMs, double hoodAngle, double tolerance, boolean useToleranceShooting) throws InterruptedException {
@@ -38,9 +57,8 @@ public class ShootingAction {
         // Open latches after shooter is up to speed
         try {
             leftLatch.setPosition(0);
-            rightLatch.setPosition(1);
         } catch (Exception e) {
-            // Latch servos disconnected, continue
+            // Latch servo disconnected, continue
         }
 
         // Set hood position
@@ -52,17 +70,18 @@ public class ShootingAction {
 
         // Start shooter PID
         try {
-            controller.setVelocityPID(shooterVelocity);
+            controller.setVelocityPIDF(shooterVelocity);
         } catch (Exception e) {
             // Shooter disconnected, continue
         }
 
         // Wait for shooter to reach target velocity (within tolerance) or timeout
         long startTime = System.currentTimeMillis();
-        long maxRampUpTime = rampUpTimeMs > 0 ? rampUpTimeMs : 3500; // Default 3 seconds max
+        long maxRampUpTime = rampUpTimeMs > 0 ? rampUpTimeMs : 2000; // Default 2 seconds max (reduced from 3.5s)
         while (System.currentTimeMillis() - startTime < maxRampUpTime) {
             try {
-                double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
+                // Use Math.abs() because one motor is reversed
+                double avgVelocity = (Math.abs(leftShooter.getVelocity()) + Math.abs(rightShooter.getVelocity())) / 2.0;
                 if (Math.abs(shooterVelocity - avgVelocity) <= tolerance) {
                     break; // Shooter is within tolerance of target
                 }
@@ -81,7 +100,8 @@ public class ShootingAction {
         long shootStartTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - shootStartTime < shootDurationMs) {
             try {
-                double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
+                // Use Math.abs() because one motor is reversed
+                double avgVelocity = (Math.abs(leftShooter.getVelocity()) + Math.abs(rightShooter.getVelocity())) / 2.0;
                 if (Math.abs(shooterVelocity - avgVelocity) <= tolerance) {
                     try {
                         intake.setPower(1); // Safe to feed
@@ -106,7 +126,7 @@ public class ShootingAction {
             Thread.sleep(10);
         }
 
-        // Stop everything
+        // Stop intake but keep shooter at idle for faster next shot
         try {
             intake.setPower(0);
         } catch (Exception e) {
@@ -114,16 +134,15 @@ public class ShootingAction {
         }
 
         try {
-            controller.setVelocityPID(idle);
+            controller.setVelocityPIDF(idle); // Keep at idle speed for faster ramp-up next time
         } catch (Exception e) {
             // Shooter disconnected
         }
 
         try {
             leftLatch.setPosition(1); // Close latches
-            rightLatch.setPosition(0);
         } catch (Exception e) {
-            // Latch servos disconnected
+            // Latch servo disconnected
         }
     }
 
@@ -147,17 +166,18 @@ public class ShootingAction {
 
         // Start shooter PID
         try {
-            controller.setVelocityPID(shooterVelocity);
+            controller.setVelocityPIDF(shooterVelocity);
         } catch (Exception e) {
             // Shooter disconnected, continue
         }
 
         // Wait for shooter to reach target velocity (within tolerance) or timeout
         long startTime = System.currentTimeMillis();
-        long maxRampUpTime = rampUpTimeMs > 0 ? rampUpTimeMs : 3500; // Default 3 seconds max
+        long maxRampUpTime = rampUpTimeMs > 0 ? rampUpTimeMs : 2000; // Default 2 seconds max (reduced from 3.5s)
         while (System.currentTimeMillis() - startTime < maxRampUpTime) {
             try {
-                double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
+                // Use Math.abs() because one motor is reversed
+                double avgVelocity = (Math.abs(leftShooter.getVelocity()) + Math.abs(rightShooter.getVelocity())) / 2.0;
                 if (Math.abs(shooterVelocity - avgVelocity) <= shootingToleranceAuto) {
                     break; // Shooter is within tolerance of target
                 }
@@ -171,17 +191,17 @@ public class ShootingAction {
         // Open latches after shooter is up to speed
         try {
             leftLatch.setPosition(0);
-            rightLatch.setPosition(1);
         } catch (Exception e) {
-            // Latch servos disconnected, continue
+            // Latch servo disconnected, continue
         }
-        Thread.sleep(2000); // Wait for latches to fully open
+        // Removed 2-second wait - latches open quickly
 
         // Run intake for shoot duration, but only feed when shooter is at speed
         long shootStartTime = System.currentTimeMillis();
         while (System.currentTimeMillis() - shootStartTime < shootDurationMs) {
             try {
-                double avgVelocity = (leftShooter.getVelocity() + rightShooter.getVelocity()) / 2.0;
+                // Use Math.abs() because one motor is reversed
+                double avgVelocity = (Math.abs(leftShooter.getVelocity()) + Math.abs(rightShooter.getVelocity())) / 2.0;
                 if (Math.abs(shooterVelocity - avgVelocity) <= 50) {
                     try {
                         intake.setPower(1); // Safe to feed
@@ -206,7 +226,7 @@ public class ShootingAction {
             Thread.sleep(10);
         }
 
-        // Stop everything
+        // Stop intake but keep shooter at idle for faster next shot
         try {
             intake.setPower(0);
         } catch (Exception e) {
@@ -214,16 +234,15 @@ public class ShootingAction {
         }
 
         try {
-            controller.setVelocityPID(idle);
+            controller.setVelocityPIDF(idle); // Keep at idle speed for faster ramp-up next time
         } catch (Exception e) {
             // Shooter disconnected
         }
 
         try {
             leftLatch.setPosition(1); // Close latches
-            rightLatch.setPosition(0);
         } catch (Exception e) {
-            // Latch servos disconnected
+            // Latch servo disconnected
         }
     }
 }

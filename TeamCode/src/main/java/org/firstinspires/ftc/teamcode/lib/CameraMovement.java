@@ -25,7 +25,6 @@ public class CameraMovement {
     public DcMotor turret;
     public Servo hoodServo;
     public Servo leftLatch;
-    public Servo rightLatch;
     public VoltageSensor voltageSensor;
     public double forward;
     public double right;
@@ -37,7 +36,7 @@ public class CameraMovement {
     public SimpleDriveActions drive;
 
     public CameraMovement(DcMotor frontLeftMotor, DcMotor frontRightMotor, DcMotor backRightMotor, DcMotor backLeftMotor,
-                          DcMotorEx leftShooter, DcMotorEx rightShooter, Servo hoodServo, Servo leftLatch, Servo rightLatch,
+                          DcMotorEx leftShooter, DcMotorEx rightShooter, Servo hoodServo, Servo leftLatch,
                           DcMotor turret, GoBildaPinpointDriver odo, DcMotor intake, VoltageSensor voltageSensor,
                           Telemetry telemetry, AprilTagProcessor tagProcessor) {
         this.tagProcessor = tagProcessor;
@@ -49,7 +48,6 @@ public class CameraMovement {
         this.rightShooter = rightShooter;
         this.hoodServo = hoodServo;
         this.leftLatch = leftLatch;
-        this.rightLatch = rightLatch;
         this.turret = turret;
         this.odo = odo;
         this.intake = intake;

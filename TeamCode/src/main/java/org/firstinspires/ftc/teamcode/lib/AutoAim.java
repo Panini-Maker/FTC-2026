@@ -77,7 +77,6 @@ public class AutoAim {
 
         // Calculate absolute angle to target (in degrees, 0 = positive X axis)
         // atan2 returns angle where 0 = positive X axis, CCW is positive
-        // Negate both dx and dy to correct for coordinate system differences
         double absoluteAngle = Math.toDegrees(Math.atan2(dy, dx));
 
         // Adjust robot heading for odometry convention
@@ -97,6 +96,16 @@ public class AutoAim {
         // Normalize to -180 to 180
         while (turretTargetAngle > 180) turretTargetAngle -= 360;
         while (turretTargetAngle < -180) turretTargetAngle += 360;
+
+        // Debug output
+        if (telemetry != null) {
+            telemetry.addData("AA: target", "(%s) %.1f, %.1f", isRed ? "RED" : "BLUE", target.x, target.y);
+            telemetry.addData("AA: dx, dy", "%.1f, %.1f", dx, dy);
+            telemetry.addData("AA: absAngle", "%.1f", absoluteAngle);
+            telemetry.addData("AA: robotHeading", "%.1f", robotHeading);
+            telemetry.addData("AA: relAngle", "%.1f", relativeAngleToRobotFront);
+            telemetry.addData("AA: turretAngle (pre-clamp)", "%.1f", turretTargetAngle);
+        }
 
         // Clamp to turret limits (CCW is positive, CW is negative)
         if (turretTargetAngle > turretLimitCCW) {

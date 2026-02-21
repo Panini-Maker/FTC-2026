@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.autonomous;
 
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.idle;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd2;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKf;
@@ -38,7 +37,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
 @Autonomous
 
-public class AutoBlueLong15Artifacts extends OpMode {
+public class AutoRedLong15Artifacts extends OpMode {
 
     public Follower follower;
     public ShootingAction shooter;
@@ -48,7 +47,7 @@ public class AutoBlueLong15Artifacts extends OpMode {
     AutoAim autoAim;
     private Timer pathTimer, actionTimer, opmodeTimer;
     private int pathState;
-    private final Pose startPose = new Pose(63.5, 6, Math.toRadians(180)); // Start Pose of our robot.
+    private final Pose startPose = new Pose(80.5, 6, Math.toRadians(0)); // Start Pose of our robot.
     private final Pose scoreClosePose = new Pose(56, 76, Math.toRadians(180)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
     private final Pose scoreFarPose = new Pose(61.5, 69.5, Math.toRadians(180));
     public double shooterVelocity = 0;
@@ -56,17 +55,17 @@ public class AutoBlueLong15Artifacts extends OpMode {
     public double distanceFromGoal = 0;
     public Pose2D currentPose;
     public double turretAngle = 0;
-    public int shootDuration = 1500;
+    public int shootDuration = 1450;
     public int rampUpDuration = 0;
     int tolerance = 50; // Tolerance in shooting velocity
-    // TODO: Changes here should go to Red Long Auto as well
+    // TODO: Changes here should go to Blue Long Auto as well
     private static final int PRE_RAMP_SHOOTER_VELOCITY = 1850; // Shooter velocity to hold between shots in RPM
     private static final int SHOOT_VELOCITY = 1850; // Target shooter velocity in RPM (adjust based on distance)
     private static final int SETTLE_TIME_MS = 600; // Time to wait for Pedro to fully correct position
     private static final int TURRET_AIM_TIME_MS = 200; // Time for turret to aim before shooting
     private static final int LATCH_RELEASE_TIME_MS = 100; // Time to wait after releasing latches before shooting
     private static final int INTAKE_EXTRA_MS = 200; // Additional time to run intake after path finishes
-    private static final int OVERFLOW_COLLECT_TIME_MS = 250; // Time to wait while collecting overflow before shooting
+    private static final int OVERFLOW_COLLECT_TIME_MS = 500; // Time to wait while collecting overflow before shooting
 
 
     // Hardware devices
@@ -97,101 +96,101 @@ public class AutoBlueLong15Artifacts extends OpMode {
     public void buildPaths() {
         Shoot1 = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(63.500, 6.000),
+                                new Pose(80.500, 6.000),
 
-                                new Pose(60.000, 12.000)
+                                new Pose(84.000, 12.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
 
                 .build();
 
         TakeHumanArtifacts = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(60.000, 12.000),
+                                new Pose(84.000, 12.000),
 
-                                new Pose(9.000, 13.000)
+                                new Pose(135.000, 13.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
 
                 .build();
 
         BackUpHumanPlayer = follower.pathBuilder().addPath(
                         new BezierCurve(
-                                new Pose(9.000, 13.000),
-                                new Pose(16.000, 12.000),
-                                new Pose(16.000, 7.000)
+                                new Pose(135.000, 13.000),
+                                new Pose(128.000, 12.000),
+                                new Pose(128.000, 7.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
 
                 .build();
 
         CollectLastArtifact = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(16.000, 7.000),
+                                new Pose(128.000, 7.000),
 
-                                new Pose(9.000, 7.000)
+                                new Pose(135.000, 7.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
 
                 .build();
 
         Shoot2 = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(9.000, 7.000),
+                                new Pose(135.000, 7.000),
 
-                                new Pose(60.000, 12.000)
+                                new Pose(84.000, 12.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
 
                 .build();
 
         Collect3rdRow = follower.pathBuilder().addPath(
                         new BezierCurve(
-                                new Pose(60.000, 12.000),
-                                new Pose(60.000, 36.000),
-                                new Pose(13.000, 36.000)
+                                new Pose(84.000, 12.000),
+                                new Pose(84.000, 36.000),
+                                new Pose(131.000, 36.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
 
                 .build();
 
         Shoot3 = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(13.000, 36.000),
+                                new Pose(131.000, 36.000),
 
-                                new Pose(60.000, 12.000)
+                                new Pose(84.000, 12.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
 
                 .build();
 
         CollectOverflow = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(60.000, 12.000),
-                                //new Pose(13.000, 12.000),
-                                new Pose(9.000, 12.000) // 13, 20
+                                new Pose(84.000, 12.000),
+                                //new Pose(131.000, 12.000),
+                                new Pose(135.000, 12.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
 
                 .build();
 
         ShootOverflow = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(9.000, 12.000), // 13, 20
+                                new Pose(135.000, 12.000),
 
-                                new Pose(60.000, 12.000)
+                                new Pose(84.000, 12.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(180))
+                ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(0))
 
                 .build();
 
         Park = follower.pathBuilder().addPath(
                         new BezierLine(
-                                new Pose(60.000, 12.000),
+                                new Pose(84.000, 12.000),
 
-                                new Pose(36.000, 12.000)
+                                new Pose(108.000, 12.000)
                         )
-                ).setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(90))
+                ).setLinearHeadingInterpolation(Math.toRadians(0), Math.toRadians(90))
 
                 .build();
     }
@@ -204,7 +203,7 @@ public class AutoBlueLong15Artifacts extends OpMode {
                 hoodServo.setPosition(0.3); // Hood in advance
                 controller.setVelocityPIDF(PRE_RAMP_SHOOTER_VELOCITY);
                 follower.followPath(Shoot1, true);
-                turretControl.spinToHeadingLoop(110, turretSpeedAuto);
+                turretControl.spinToHeadingLoop(-110, turretSpeedAuto);
                 setPathState(1);
                 break;
             case 1:
@@ -225,21 +224,21 @@ public class AutoBlueLong15Artifacts extends OpMode {
                 /* Collect from Human Player */
                 if (!follower.isBusy()) {
                     intake.setPower(1);
-                    follower.followPath(TakeHumanArtifacts, false);
+                    follower.followPath(TakeHumanArtifacts, true);
                     setPathState(3);
                 }
                 break;
             case 3:
                 /* Back up from Human Player */
                 if (!follower.isBusy()) {
-                    follower.followPath(BackUpHumanPlayer, false);
+                    follower.followPath(BackUpHumanPlayer, true);
                     setPathState(4);
                 }
                 break;
             case 4:
                 /* Collect Last Artifact */
                 if (!follower.isBusy()) {
-                    follower.followPath(CollectLastArtifact, false);
+                    follower.followPath(CollectLastArtifact, true);
                     setPathState(5);
                 }
                 break;
@@ -281,7 +280,7 @@ public class AutoBlueLong15Artifacts extends OpMode {
                 /* Collect Near Row */
                 if (!follower.isBusy()) {
                     intake.setPower(1);
-                    follower.followPath(Collect3rdRow, false);
+                    follower.followPath(Collect3rdRow, true);
                     setPathState(8);
                 }
                 break;
@@ -323,7 +322,7 @@ public class AutoBlueLong15Artifacts extends OpMode {
                 /* Collect Overflow */
                 if (!follower.isBusy()) {
                     intake.setPower(1);
-                    follower.followPath(CollectOverflow, false);
+                    follower.followPath(CollectOverflow, true);
                     setPathState(110);
                 }
                 break;
@@ -373,7 +372,7 @@ public class AutoBlueLong15Artifacts extends OpMode {
                     shooter.shoot(SHOOT_VELOCITY, shootDuration, rampUpDuration, 0.3, tolerance, true);
                     // Check remaining time - if less than 4 seconds, park. Otherwise, loop back to collect overflow
                     double remainingTime = 30.0 - opmodeTimer.getElapsedTimeSeconds();
-                    if (remainingTime < 5.5) {
+                    if (remainingTime < 5.0) {
                         setPathState(13); // Go to Park
                     } else {
                         setPathState(10); // Loop back to collect more overflow
@@ -401,7 +400,6 @@ public class AutoBlueLong15Artifacts extends OpMode {
                 telemetry.addData("Time Remaining", "%.1f seconds", Math.max(0, remainingSeconds));
                 telemetry.addData("Total Time", "%.1f seconds", elapsedSeconds);
                 telemetry.addLine("═══════════════════════════════");
-                stop();
                 break;
         }
     }
@@ -426,8 +424,55 @@ public class AutoBlueLong15Artifacts extends OpMode {
         // Check if we should stop early to save position
         if (!autoStopped && opmodeTimer.getElapsedTimeSeconds() >= AUTO_SAFETY_STOP_SECONDS) {
             autoStopped = true;
-            // Call stop
-            stop();
+
+            // Stop Pedro Pathing follower first to get accurate final pose
+            try {
+                follower.breakFollowing();
+            } catch (Exception e) {
+                // Ignore
+            }
+
+            // Give a moment for the robot to settle
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                // Ignore
+            }
+
+            // Update follower one last time to get final position
+            try {
+                follower.update();
+            } catch (Exception e) {
+                // Ignore
+            }
+
+            // Stop all motors immediately
+            try {
+                intake.setPower(0);
+                controller.stopVelocityPIDF();
+                turretControl.stopVelocityPID();
+            } catch (Exception e) {
+                // Ignore
+            }
+
+            // Save position now while we still can
+            try {
+                Pose endPose = follower.getPose();
+                org.firstinspires.ftc.teamcode.lib.TuningVars.saveEndPosition(
+                        (endPose.getX() - 72),
+                        (endPose.getY() - 72),
+                        Math.toDegrees(endPose.getHeading()),
+                        turretControl.getCurrentHeading()
+                );
+                telemetry.addLine("═══════════════════════════════");
+                telemetry.addLine("   POSITION SAVED SUCCESSFULLY");
+                telemetry.addLine("═══════════════════════════════");
+                telemetry.update();
+            } catch (Exception e) {
+                telemetry.addLine(">>> FAILED TO SAVE POSITION <<<");
+                telemetry.update();
+            }
+            return;
         }
 
         // If already stopped, just show status
@@ -442,13 +487,13 @@ public class AutoBlueLong15Artifacts extends OpMode {
 
         try {
             // These loop the movements of the robot, these must be called continuously in order to work
-            follower.update();
             currentPose = new Pose2D(DistanceUnit.INCH, (follower.getPose().getX() - 72), (follower.getPose().getY() - 72), AngleUnit.RADIANS, follower.getPose().getHeading());
-            distanceFromGoal = robot.getDistanceFromGoal(currentPose, false);
+            distanceFromGoal = robot.getDistanceFromGoal(currentPose, true);
             shooterVelocity = robot.getShooterRPM(distanceFromGoal);
             hoodAngle = robot.getShooterAngle(distanceFromGoal);
             turretAngle = autoAim.calculateTargetAngle(currentPose.getX(DistanceUnit.INCH), currentPose.getY(DistanceUnit.INCH), currentPose.getHeading(AngleUnit.DEGREES));
 
+            follower.update();
             try {
                 autonomousPathUpdate();
             } catch (InterruptedException e) {
@@ -474,7 +519,7 @@ public class AutoBlueLong15Artifacts extends OpMode {
      **/
     @Override
     public void init() {
-        targetIsRed = false;
+        targetIsRed = true;
 
         pathTimer = new Timer();
         actionTimer = new Timer();
@@ -533,7 +578,7 @@ public class AutoBlueLong15Artifacts extends OpMode {
         robot = new RobotActions(frontLeft, frontRight, backLeft, backRight,
                 rightShooter, leftShooter, turret, intake, leftLatch, hoodServo, light);
 
-        autoAim = new AutoAim(turret, telemetry, false);
+        autoAim = new AutoAim(turret, telemetry, true);
     }
 
     /**
@@ -569,6 +614,13 @@ public class AutoBlueLong15Artifacts extends OpMode {
             turretControl.stopVelocityPID();
         } catch (Exception e) {
             // Ignore - hardware may be disconnected
+        }
+
+        // Stop all motors safely
+        try {
+            intake.setPower(0);
+        } catch (Exception e) {
+            // Ignore
         }
 
         // Save final position even on manual termination

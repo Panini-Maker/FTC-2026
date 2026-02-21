@@ -5,6 +5,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKf;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -13,11 +14,12 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
 
+@Disabled
 @TeleOp
 public class ShooterRegression extends LinearOpMode {
-
     @Override
     public void runOpMode() throws InterruptedException {
 
@@ -39,7 +41,6 @@ public class ShooterRegression extends LinearOpMode {
         intakeMotor.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
-        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
         Servo hood = hardwareMap.get(Servo.class, "hood");
         hood.setDirection(Servo.Direction.REVERSE);
@@ -56,6 +57,17 @@ public class ShooterRegression extends LinearOpMode {
         boolean pulseIntakeMode = true;
         double shootingTolerance = 50; // RPM tolerance for pulse mode
 
+        // Intake current monitoring
+        double intakeCurrent = 0;
+        double maxIntakeCurrent = 0;
+        double minIntakeCurrent = Double.MAX_VALUE;
+        double avgIntakeCurrent = 0;
+        int currentSampleCount = 0;
+        double currentSum = 0;
+
+        // Intake jam detection threshold (tune this value based on observations)
+        double intakeFullThreshold = 3.0; // Amps - adjust based on your data
+
         telemetry.addData("Status", "Initialized");
         telemetry.update();
 
@@ -68,6 +80,36 @@ public class ShooterRegression extends LinearOpMode {
                 pulseIntakeMode = !pulseIntakeMode;
                 sleep(200); // Debounce
             }
+
+            // Reset current stats with gamepad1 left bumper
+            if (gamepad1.left_bumper) {
+                maxIntakeCurrent = 0;
+                minIntakeCurrent = Double.MAX_VALUE;
+                currentSum = 0;
+                currentSampleCount = 0;
+                avgIntakeCurrent = 0;
+                sleep(200); // Debounce
+            }
+
+            // Monitor intake current when intake is running
+            intakeCurrent = intakeMotor.getCurrent(CurrentUnit.AMPS);
+
+            // Only track stats when intake is actually running
+            if (intakeMotor.getPower() > 0) {
+                currentSampleCount++;
+                currentSum += intakeCurrent;
+                avgIntakeCurrent = currentSum / currentSampleCount;
+
+                if (intakeCurrent > maxIntakeCurrent) {
+                    maxIntakeCurrent = intakeCurrent;
+                }
+                if (intakeCurrent < minIntakeCurrent) {
+                    minIntakeCurrent = intakeCurrent;
+                }
+            }
+
+            // Detect if intake is full/jammed
+            boolean intakeFull = intakeCurrent > intakeFullThreshold && intakeMotor.getPower() > 0;
 
             if (gamepad2.aWasPressed()) {
                 shooterSpeed += 10;
@@ -107,11 +149,11 @@ public class ShooterRegression extends LinearOpMode {
             }
 
             if (gamepad2.dpadUpWasPressed()) {
-                if (hoodState < 0.54) {
+                if (hoodState < 0.33) {
                     hoodState += 0.03;
                 }
             } else if (gamepad2.dpadDownWasPressed()) {
-                if (hoodState > 0.15) {
+                if (hoodState > 0.0) {
                     hoodState -= 0.03;
                 }
             }
@@ -122,7 +164,7 @@ public class ShooterRegression extends LinearOpMode {
                 light.setPosition(0.28);
             }
 
-            rightLatch.setPosition(latchState);
+            leftLatch.setPosition(latchState);
 
             hood.setPosition(hoodState);
 
@@ -134,7 +176,17 @@ public class ShooterRegression extends LinearOpMode {
             telemetry.addData("Pulse Intake Mode", pulseIntakeMode ? "ON" : "OFF");
             telemetry.addData("Shooter At Speed", shooterAtSpeed ? "YES" : "NO");
             telemetry.addData("PIDF Debug", shooter.getDebugInfo());
+            telemetry.addLine("--- INTAKE CURRENT MONITORING ---");
+            telemetry.addData("Current Draw", "%.3f A", intakeCurrent);
+            telemetry.addData("Max Current", "%.3f A", maxIntakeCurrent);
+            telemetry.addData("Min Current", "%.3f A", minIntakeCurrent == Double.MAX_VALUE ? 0 : minIntakeCurrent);
+            telemetry.addData("Avg Current", "%.3f A", avgIntakeCurrent);
+            telemetry.addData("Sample Count", currentSampleCount);
+            telemetry.addData("Full Threshold", "%.2f A", intakeFullThreshold);
+            telemetry.addData("INTAKE FULL?", intakeFull ? ">>> YES <<<" : "No");
+            telemetry.addLine("---");
             telemetry.addLine("GP1 Right Bumper: Toggle Pulse Mode");
+            telemetry.addLine("GP1 Left Bumper: Reset Current Stats");
             telemetry.update();
 
         }

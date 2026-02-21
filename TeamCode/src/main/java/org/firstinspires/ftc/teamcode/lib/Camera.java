@@ -81,7 +81,6 @@ public class Camera {
      *
      * 6. Robot position = camera position - camera offset (rotated by robot heading)
      *
-     * @param yawDegrees AprilTag yaw in degrees (rotation of tag face, positive CCW)
      * @param turretHeadingDegrees Turret heading relative to robot in degrees (positive CCW)
      * @param robotHeadingDegrees Robot heading on field in degrees (positive CCW)
      * @param xRelativeInches Horizontal offset of tag from camera in inches (positive = right)
@@ -90,7 +89,6 @@ public class Camera {
      * @return Calculated robot pose on field, or null if calculation fails
      */
     public Pose2D calculateRobotPose(
-            double yawDegrees,
             double turretHeadingDegrees,
             double robotHeadingDegrees,
             double xRelativeInches,
@@ -139,6 +137,57 @@ public class Camera {
     }
 
     /**
+     * Overloaded method that assumes turret is facing directly backward and calculates x, y, and heading.
+     * @param xRelativeInches Horizontal offset of tag from camera in inches (positive = right)
+     * @param yRelativeInches Forward distance to tag in inches (positive = forward)
+     * @param isRedGoal True if detecting red goal AprilTag, false for blue
+     * @return Calculated robot pose on field, or null if calculation fails
+     */
+    public Pose2D calculateRobotPoseAndHeading(
+            double xRelativeInches,
+            double yRelativeInches,
+            boolean isRedGoal) {
+
+        // ==================== STEP 1: Get goal position ====================
+        double tagX, tagY;
+        if (isRedGoal) {
+            tagX = redGoalPosition.x - 15; // Adjust for tag being 15 inches in front of goal corner
+            tagY = redGoalPosition.y - 11; // Adjust for tag being 11 inches to the right of goal corner
+        } else {
+            tagX = blueGoalPosition.x + 15; // Adjust for tag being 15 inches in front of goal corner
+            tagY = blueGoalPosition.y - 11; // Adjust for tag being 11 inches to the right of goal corner
+        }
+
+        // ==================== STEP 2: Calculate Robot Heading ====================
+        // Assume turret is facing directly backward (180 degrees from forward)
+        //This is equivalent to robot heading
+        // Apriltag heading: 36.02737
+
+        double rawHeadingDegrees = 36.02737 - Math.toDegrees(Math.atan(xRelativeInches / yRelativeInches));
+        double headingDegrees = 0;
+        double aprilTagHeading = 0;
+
+        if (isRedGoal) {
+            headingDegrees = rawHeadingDegrees - 180;
+            aprilTagHeading = 37.02737;
+        } else {
+            headingDegrees = -rawHeadingDegrees;
+            aprilTagHeading = 180 - 37.02737;
+        }
+
+        // ==================== STEP 3: Calculate robot position on field ====================
+        double r = Math.sqrt(xRelativeInches * xRelativeInches + yRelativeInches * yRelativeInches);
+        double robotX = 0;
+        double robotY = 0;
+
+        robotX = tagX - r * Math.cos(Math.toRadians(aprilTagHeading)) + cameraToShooterCenter * Math.cos(Math.toRadians(headingDegrees)) + shooterCenterToRobotCenter * Math.cos(Math.toRadians(headingDegrees));
+        robotY = tagY - r * Math.sin(Math.toRadians(aprilTagHeading)) + cameraToShooterCenter * Math.sin(Math.toRadians(headingDegrees)) + shooterCenterToRobotCenter * Math.sin(Math.toRadians(headingDegrees));
+
+        //Change this later
+        return new Pose2D(DistanceUnit.INCH, robotX, robotY, AngleUnit.DEGREES, headingDegrees);
+    }
+
+    /**
      * Simplified version that uses IMU for robot heading.
      * Call this when you trust the IMU heading and just need X, Y from AprilTag.
      *
@@ -157,7 +206,7 @@ public class Camera {
             boolean isRedGoal) {
 
         // Use 0 for yaw since we're trusting IMU for heading
-        return calculateRobotPose(0, turretHeadingDegrees, robotHeadingFromIMU,
+        return calculateRobotPose(turretHeadingDegrees, robotHeadingFromIMU,
                                    xRelativeInches, zRelativeInches, isRedGoal);
     }
 

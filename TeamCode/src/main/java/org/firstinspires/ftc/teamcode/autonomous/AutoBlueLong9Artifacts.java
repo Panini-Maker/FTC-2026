@@ -25,6 +25,7 @@ import com.acmerobotics.roadrunner.SequentialAction;
 import com.acmerobotics.roadrunner.Vector2d;
 import com.acmerobotics.roadrunner.ftc.Actions;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -39,6 +40,7 @@ import org.firstinspires.ftc.teamcode.lib.ShootingAction;
 import org.firstinspires.ftc.teamcode.lib.Turret;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
+@Disabled
 @Autonomous
 public class AutoBlueLong9Artifacts extends LinearOpMode {
     @Override
@@ -74,7 +76,6 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
-        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
         hoodServo.setDirection(Servo.Direction.REVERSE);
 
 
@@ -85,7 +86,6 @@ public class AutoBlueLong9Artifacts extends LinearOpMode {
                 turret,
                 hoodServo,
                 leftLatch,
-                rightLatch,
                 shooterController
         );
 

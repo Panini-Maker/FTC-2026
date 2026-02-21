@@ -26,7 +26,6 @@ public class ShooterLogic {
     private Telemetry telemetry;
 
     private Servo hood;
-    private Servo rightLatch;
     private Servo leftLatch;
     private ShooterController shooter = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, telemetry);
 
@@ -47,7 +46,6 @@ public class ShooterLogic {
         turret = hardwareMap.get(DcMotorEx.class, "turret");
         intake = hardwareMap.get(DcMotorEx.class, "intake");
         hood = hardwareMap.get(Servo.class, "hood");
-        rightLatch = hardwareMap.get(Servo.class, "rightLatch");
         leftLatch = hardwareMap.get(Servo.class, "leftLatch");
 
     }
