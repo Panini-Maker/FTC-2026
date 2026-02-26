@@ -24,6 +24,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.targetIsRed;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -44,6 +45,7 @@ import org.firstinspires.ftc.teamcode.lib.Camera;
 import org.firstinspires.ftc.teamcode.lib.RobotActions;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
 import org.firstinspires.ftc.teamcode.lib.Turret;
+import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
@@ -71,8 +73,9 @@ import java.util.List;
  * - Red (0.28): MANUAL mode
  * - Green (0.5): Shooter ready (overrides mode color when shooting)
  */
-@TeleOp(name = "TeleOp V3", group = "Competition")
-public class TeleOpV3 extends LinearOpMode {
+@Disabled
+@TeleOp(name = "TeleOp V3.1", group = "Competition")
+public class TeleOpV3_1 extends LinearOpMode {
 
     // Operating modes
     private enum OperatingMode {
@@ -105,12 +108,10 @@ public class TeleOpV3 extends LinearOpMode {
     private static final long INTAKE_FULL_DURATION_MS = 300; // Must be above threshold for this long to be considered full
     private static final long LIGHT_FLASH_INTERVAL_MS = 500; // Flash interval in milliseconds
 
-    // Camera relocalization toggle - set to true to enable background relocalization in STANDARD mode
-    private static final boolean ENABLE_BACKGROUND_RELOCALIZATION = false;
-
-    // Relocalization method toggle:
+    // Relocalization method toggle (used in MANUAL mode corner reset):
     // false = Use calculateRobotPose (uses current turret heading and robot heading from odometry)
     // true = Use calculateRobotPoseAndHeading (sets turret to 0 and calculates heading from AprilTag)
+    // NOT toggleable by drivers to prevent accidental camera streaming
     private static final boolean USE_HEADING_FROM_APRILTAG = false;
 
     // Shooter idle power - raw power when not actively shooting
@@ -167,10 +168,16 @@ public class TeleOpV3 extends LinearOpMode {
 
         // Initialize AprilTag processor for relocalization
         AprilTagProcessor aprilTagProcessor = null;
-        boolean aprilTagAvailable = false;
+        VisionPortal visionPortal = null;
+        boolean aprilTagAvailable;
         try {
             aprilTagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
-            aprilTagAvailable = (aprilTagProcessor != null);
+            visionPortal = AprilTag.getVisionPortal();
+            aprilTagAvailable = (aprilTagProcessor != null && visionPortal != null);
+            // Immediately stop streaming - camera is initialized but not actively capturing
+            if (aprilTagAvailable) {
+                visionPortal.stopStreaming();
+            }
         } catch (Exception e) {
             telemetry.addLine("WARNING: AprilTag initialization failed!");
             telemetry.addData("Error", e.getMessage());
@@ -202,6 +209,7 @@ public class TeleOpV3 extends LinearOpMode {
 
         // Operating mode
         OperatingMode currentMode = OperatingMode.STANDARD;
+        OperatingMode previousMode = OperatingMode.STANDARD;
         boolean shootingWhileMoving = true;
 
         // Alliance selection (during init)
@@ -368,6 +376,27 @@ public class TeleOpV3 extends LinearOpMode {
                 }
             }
 
+            // ==================== MODE TRANSITION: CAMERA STREAMING ====================
+            // Resume streaming when entering RELOCALIZATION, stop when leaving
+            if (currentMode != previousMode) {
+                if (currentMode == OperatingMode.RELOCALIZATION && aprilTagAvailable) {
+                    // Entering relocalization - resume camera stream
+                    try {
+                        visionPortal.resumeStreaming();
+                    } catch (Exception e) {
+                        telemetry.addLine("WARNING: Camera resume failed!");
+                    }
+                } else if (previousMode == OperatingMode.RELOCALIZATION && aprilTagAvailable) {
+                    // Leaving relocalization - stop camera stream
+                    try {
+                        visionPortal.stopStreaming();
+                    } catch (Exception e) {
+                        // Ignore
+                    }
+                }
+                previousMode = currentMode;
+            }
+
             // ==================== LOCALIZATION ====================
             // Wrap in try-catch so driving can continue even if odometry fails
             // Declare adjusted pose variables at higher scope for use later
@@ -413,51 +442,17 @@ public class TeleOpV3 extends LinearOpMode {
                 // Use last known values (already set above)
             }
 
-            // ==================== RELOCALIZATION MODE ====================
             // ==================== CAMERA RELOCALIZATION ====================
-            // In STANDARD mode: Run quietly in background to update odometry (if enabled)
-            // In RELOCALIZATION mode: Set turret to 0 and use calculateRobotPoseAndHeading
+            // Only active in RELOCALIZATION mode - camera only streams during this mode
             try {
-                if (currentMode == OperatingMode.STANDARD && ENABLE_BACKGROUND_RELOCALIZATION) {
-                // Quiet background relocalization - only when nearly stationary
-                if (aprilTagAvailable && aprilTagProcessor != null) {
-                    double linearSpeed = Math.sqrt(x_velocity * x_velocity + y_velocity * y_velocity);
-                    double rotationalSpeed = Math.abs(heading_velocity);
-
-                    if (linearSpeed < RELOCALIZATION_SPEED_THRESHOLD && rotationalSpeed < RELOCALIZATION_ROTATION_THRESHOLD) {
-                        List<AprilTagDetection> detections = aprilTagProcessor.getDetections();
-                        for (AprilTagDetection detection : detections) {
-                            if (detection.id == RED_GOAL_TAG_ID || detection.id == BLUE_GOAL_TAG_ID) {
-                                boolean isRedGoal = (detection.id == RED_GOAL_TAG_ID);
-                                double tagX = detection.ftcPose.x;
-                                double tagY = detection.ftcPose.y;
-                                double turretHeading = autoAimController.getCurrentTurretHeading();
-
-                                Pose2D calculatedPose = cameraRelocalization.calculateRobotPose(
-                                        turretHeading,
-                                        currentHeadingOdo,
-                                        tagX,
-                                        tagY,
-                                        isRedGoal
-                                );
-
-                                // Quietly update odometry if pose is valid
-                                if (calculatedPose != null && cameraRelocalization.isPoseValid(calculatedPose)) {
-                                    odo.setPosition(calculatedPose);
-                                }
-                                break;
-                            }
-                        }
-                    }
-                }
-            } else if (currentMode == OperatingMode.RELOCALIZATION) {
+                if (currentMode == OperatingMode.RELOCALIZATION) {
                 // Stop turret motor completely in relocalization mode - let it stay where it is
                 // This prevents strain and oscillation while searching for AprilTag
                 turretController.stopVelocityPID();
                 turretController.stopTurret();
 
                 // Check if AprilTag is available
-                if (!aprilTagAvailable || aprilTagProcessor == null) {
+                if (!aprilTagAvailable || aprilTagProcessor == null || visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
                     telemetry.addLine(">>> RELOCALIZATION UNAVAILABLE <<<");
                     telemetry.addLine("AprilTag processor not initialized.");
                     telemetry.addLine("Press DPad Down to switch to MANUAL mode.");
@@ -481,27 +476,15 @@ public class TeleOpV3 extends LinearOpMode {
                                 double tagX = detection.ftcPose.x;
                                 double tagY = detection.ftcPose.y;
 
-                                Pose2D calculatedPose;
-                                if (USE_HEADING_FROM_APRILTAG) {
-                                    // Use calculateRobotPoseAndHeading since turret is at 0 (facing backward)
-                                    // This assumes turret/IMU might be incorrect and calculates heading from AprilTag
-                                    calculatedPose = cameraRelocalization.calculateRobotPoseAndHeading(
-                                            tagX,
-                                            tagY,
-                                            isRedGoal
-                                    );
-                                } else {
-                                    // Use calculateRobotPose with current turret heading and robot heading
-                                    // This trusts the current turret encoder and IMU/odometry heading
-                                    double turretHeading = autoAimController.getCurrentTurretHeading();
-                                    calculatedPose = cameraRelocalization.calculateRobotPose(
-                                            turretHeading,
-                                            currentHeadingOdo,
-                                            tagX,
-                                            tagY,
-                                            isRedGoal
-                                    );
-                                }
+                                // Use calculateRobotPose with current turret heading and robot heading
+                                double turretHeading = autoAimController.getCurrentTurretHeading();
+                                Pose2D calculatedPose = cameraRelocalization.calculateRobotPose(
+                                        turretHeading,
+                                        currentHeadingOdo,
+                                        tagX,
+                                        tagY,
+                                        isRedGoal
+                                );
 
                                 telemetry.addData(">> AprilTag Detected: ID ", detection.id);
 
@@ -536,7 +519,7 @@ public class TeleOpV3 extends LinearOpMode {
                         telemetry.addData("Relocalization", "Moving too fast! Stop to relocalize.");
                     }
                 }
-            }
+                }
             } catch (Exception e) {
                 systemError = true;
                 telemetry.addLine(">>> CAMERA ERROR <<<");
@@ -642,15 +625,9 @@ public class TeleOpV3 extends LinearOpMode {
                     }
                     rx = gamepad1.right_stick_x;
 
-                    // Set turret target angle based on relocalization method
-                    if (USE_HEADING_FROM_APRILTAG) {
-                        // Turret is set to 0 in the relocalization section above
-                        calculatedTargetAngle = 0;
-                    } else {
-                        // Turret is locked at current position in the relocalization section above
-                        // Just display the current heading (don't auto-aim)
-                        calculatedTargetAngle = autoAimController.getCurrentTurretHeading();
-                    }
+                    // Turret is locked at current position in the relocalization section above
+                    // Just display the current heading (don't auto-aim)
+                    calculatedTargetAngle = autoAimController.getCurrentTurretHeading();
 
                     // Shooter controls same as standard
                     if (gamepad1.right_trigger > 0) {

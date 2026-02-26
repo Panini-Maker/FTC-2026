@@ -79,8 +79,7 @@ public class AprilTag {
                 .setCamera(hardwareMap.get(WebcamName.class, CAMERA_NAME))
                 .setCameraResolution(new Size(cameraResolutionWidth, cameraResolutionHeight))
                 .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
-                .setLiveViewContainerId(hardwareMap.appContext.getResources().getIdentifier(
-                        "cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName()))
+                .enableLiveView(false)
                 .build();
 
         return tagProcessor;
