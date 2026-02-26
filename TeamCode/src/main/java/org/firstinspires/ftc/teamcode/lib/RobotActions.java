@@ -26,13 +26,14 @@ public class RobotActions {
     private final DcMotor intake;
 
     private final Servo leftLatch;
+    private final Servo rightLatch;
     private final Servo hood;
 
     private final Servo light;
 
     public RobotActions(DcMotor frontLeft, DcMotor frontRight, DcMotor backLeft, DcMotor backRight,
                         DcMotorEx rightShooter, DcMotorEx leftShooter, DcMotorEx turret, DcMotor intake,
-                        Servo leftLatch, Servo hood, Servo light) {
+                        Servo leftLatch, Servo rightLatch, Servo hood, Servo light) {
         this.frontLeft = frontLeft;
         this.frontRight = frontRight;
         this.backLeft = backLeft;
@@ -42,6 +43,7 @@ public class RobotActions {
         this.turret = turret;
         this.intake = intake;
         this.leftLatch = leftLatch;
+        this.rightLatch = rightLatch;
         this.hood = hood;
         this.light = light;
 
@@ -89,6 +91,7 @@ public class RobotActions {
 
     public void setLatch(double pos) {
         leftLatch.setPosition(1 - pos);
+        rightLatch.setPosition(1 - pos);  // Servo is reversed at init
     }
 
     public double getDistanceFromGoal(Pose2D pos, boolean targetIsRed) {
@@ -112,11 +115,11 @@ public class RobotActions {
     }
 
     public double getShooterRPM(double distance) {
-        return 288 + distance * 19.3 + distance * distance * -0.0558; // was distance * 6.9 + 1029
+        return 1061 + distance * 5.68;
     }
 
     public double getShooterAngle(double distance) {
-        return -0.245 + 0.00756 * distance - 0.000056 * distance * distance;
+        return 0.136 + 0.00391 * distance - 0.00000992 * distance * distance;
         //-0.725 + 0.0181 * distance - 0.0000781 * distance * distance; // was 0.061 + 0.00602 * distance - 0.0000207 * distance * distance
     }
 

@@ -76,6 +76,8 @@ public class QuanTeleOp extends LinearOpMode {
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
+        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        rightLatch.setDirection(Servo.Direction.REVERSE);
         Servo light = hardwareMap.get(Servo.class, "light");
 
         hoodServo.setDirection(Servo.Direction.REVERSE);
@@ -90,7 +92,7 @@ public class QuanTeleOp extends LinearOpMode {
 
         RobotActions robot = new RobotActions(frontLeft, frontRight, backLeft, backRight,
                 rightShooter, leftShooter, turret, intake,
-                leftLatch, hoodServo, light);
+                leftLatch, rightLatch, hoodServo, light);
 
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 

@@ -5,6 +5,8 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretKp;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretKv;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretTicksPerDegree;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
@@ -86,12 +88,20 @@ public class Turret {
     }
 
     public void spinToPosition (int position, double power) {
+        // Clamp target position to turret limits to prevent wire damage
+        int minPosition = (int)(turretLimitCW * ticksPerDegree);
+        int maxPosition = (int)(turretLimitCCW * ticksPerDegree);
+        position = Math.max(minPosition, Math.min(maxPosition, position));
+
         turret.setTargetPosition(position);
         turret.setMode(DcMotorEx.RunMode.RUN_TO_POSITION);
         turret.setPower(power);
     }
 
     public double spinToHeading (double headingDegrees, double power) {
+        // Clamp target heading to turret limits to prevent wire damage
+        headingDegrees = Math.max(turretLimitCW, Math.min(turretLimitCCW, headingDegrees));
+
         // Apply encoder offset to get corrected current position
         double currentHeadingDegrees = (turret.getCurrentPosition() / ticksPerDegree) - encoderOffsetDegrees;
         double error = headingDegrees - currentHeadingDegrees;
@@ -141,6 +151,9 @@ public class Turret {
     }
 
     public void spinToHeadingLoop (double desiredHeading, double power) {
+        // Clamp target heading to turret limits to prevent wire damage
+        desiredHeading = Math.max(turretLimitCW, Math.min(turretLimitCCW, desiredHeading));
+
         // If already running, just update target velocity
         if (pidRunning) {
             targetPosition = desiredHeading;
@@ -153,7 +166,12 @@ public class Turret {
 
         pidThread = new Thread(() -> {
             while (pidRunning && !Thread.currentThread().isInterrupted()) {
-                spinToHeading(targetPosition, power);
+                try {
+                    spinToHeading(targetPosition, power);
+                } catch (Exception e) {
+                    // Hardware disconnected or OpMode stopped, exit loop
+                    break;
+                }
 
                 try {
                     Thread.sleep(10); // ~80Hz update rate
@@ -163,7 +181,11 @@ public class Turret {
                 }
             }
             // Ensure motors are stopped when thread exits
-            turret.setPower(0);
+            try {
+                turret.setPower(0);
+            } catch (Exception e) {
+                // Hardware may be disconnected, ignore
+            }
         });
         pidThread.setDaemon(true); // Thread will stop when main program ends
         pidThread.start();
@@ -174,13 +196,18 @@ public class Turret {
      */
     public void stopVelocityPID() {
         pidRunning = false;
-        // Immediately stop the turret motors
-        turret.setPower(0);
-        // Interrupt the PID thread to exit quickly
+
+        // Interrupt the PID thread to exit quickly (non-blocking)
         if (pidThread != null) {
             pidThread.interrupt();
-            // Don't join them
             pidThread = null;
+        }
+
+        // Stop the turret motor
+        try {
+            turret.setPower(0);
+        } catch (Exception e) {
+            // Motor may already be disconnected during OpMode stop
         }
     }
 
@@ -199,6 +226,9 @@ public class Turret {
      * Waits until the turret reaches the target position before returning.
      */
     public double spinToHeadingBlocking(double headingDegrees, double power, long timeoutMs) {
+        // Clamp target heading to turret limits to prevent wire damage
+        headingDegrees = Math.max(turretLimitCW, Math.min(turretLimitCCW, headingDegrees));
+
         double tolerance = 2.0; // 2 degree tolerance
         double slowDownZone = 10.0; // 10 degrees from target
         double kP = 0.01;

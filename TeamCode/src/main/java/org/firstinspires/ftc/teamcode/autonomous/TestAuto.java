@@ -59,6 +59,8 @@ public class TestAuto extends LinearOpMode {
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
+        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        rightLatch.setDirection(Servo.Direction.REVERSE);
 
 
         ShootingAction shooter = new ShootingAction(
@@ -68,6 +70,7 @@ public class TestAuto extends LinearOpMode {
                 turret,
                 hoodServo,
                 leftLatch,
+                rightLatch,
                 controller
         );
 

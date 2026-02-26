@@ -86,6 +86,10 @@ public class AprilTag {
         return tagProcessor;
     }
 
+    public static VisionPortal getVisionPortal() {
+        return visionPortal;
+    }
+
     public static void close() {
         if (visionPortal != null) {
             visionPortal.close();

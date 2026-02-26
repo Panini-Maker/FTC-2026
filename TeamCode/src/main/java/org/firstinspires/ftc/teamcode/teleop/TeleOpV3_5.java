@@ -45,7 +45,6 @@ import org.firstinspires.ftc.teamcode.lib.Camera;
 import org.firstinspires.ftc.teamcode.lib.RobotActions;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
 import org.firstinspires.ftc.teamcode.lib.Turret;
-import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 
@@ -73,8 +72,9 @@ import java.util.List;
  * - Red (0.28): MANUAL mode
  * - Green (0.5): Shooter ready (overrides mode color when shooting)
  */
-@TeleOp(name = "TeleOp V3", group = "Competition")
-public class TeleOpV3 extends LinearOpMode {
+@Disabled
+@TeleOp(name = "TeleOp V3.5", group = "Competition")
+public class TeleOpV3_5 extends LinearOpMode {
 
     // Operating modes
     private enum OperatingMode {
@@ -107,11 +107,7 @@ public class TeleOpV3 extends LinearOpMode {
     private static final long INTAKE_FULL_DURATION_MS = 300; // Must be above threshold for this long to be considered full
     private static final long LIGHT_FLASH_INTERVAL_MS = 500; // Flash interval in milliseconds
 
-    // Relocalization method toggle (used in MANUAL mode corner reset):
-    // false = Use calculateRobotPose (uses current turret heading and robot heading from odometry)
-    // true = Use calculateRobotPoseAndHeading (sets turret to 0 and calculates heading from AprilTag)
-    // NOT toggleable by drivers to prevent accidental camera streaming
-    private static final boolean USE_HEADING_FROM_APRILTAG = false;
+    // (Camera is only initialized when entering RELOCALIZATION mode and closed when leaving)
 
     // Shooter idle power - raw power when not actively shooting
     private static final double SHOOTER_IDLE_POWER = 0.5;
@@ -165,30 +161,18 @@ public class TeleOpV3 extends LinearOpMode {
                 rightShooter, leftShooter, turret, intake,
                 leftLatch, rightLatch, hoodServo, light);
 
-        // Initialize AprilTag processor for relocalization
+        // AprilTag processor - initialized lazily when entering RELOCALIZATION mode
         AprilTagProcessor aprilTagProcessor = null;
-        VisionPortal visionPortal = null;
-        boolean aprilTagAvailable;
-        try {
-            aprilTagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
-            visionPortal = AprilTag.getVisionPortal();
-            aprilTagAvailable = (aprilTagProcessor != null && visionPortal != null);
-            // Immediately stop streaming - camera is initialized but not actively capturing
-            if (aprilTagAvailable) {
-                visionPortal.stopStreaming();
-            }
-        } catch (Exception e) {
-            telemetry.addLine("WARNING: AprilTag initialization failed!");
-            telemetry.addData("Error", e.getMessage());
-            telemetry.update();
-            aprilTagAvailable = false;
-        }
+        boolean aprilTagAvailable = false;
+
+        // Track previous mode to detect mode transitions
+        OperatingMode previousMode = null;
 
         // Initialize Camera for pose calculation (set camera offsets as needed)
         Camera cameraRelocalization = new Camera(5.6349839, 0.78702);
 
         // Presets
-        double drivetrainPower = 0.8; // Slightly reduced from 0.9 to save battery
+        double drivetrainPower = 0.85; // Slightly reduced from 0.9 to save battery
         double turretPower = 1.0;
         double manualTurretHeading = 0.0;
 
@@ -208,7 +192,6 @@ public class TeleOpV3 extends LinearOpMode {
 
         // Operating mode
         OperatingMode currentMode = OperatingMode.STANDARD;
-        OperatingMode previousMode = OperatingMode.STANDARD;
         boolean shootingWhileMoving = true;
 
         // Alliance selection (during init)
@@ -375,27 +358,6 @@ public class TeleOpV3 extends LinearOpMode {
                 }
             }
 
-            // ==================== MODE TRANSITION: CAMERA STREAMING ====================
-            // Resume streaming when entering RELOCALIZATION, stop when leaving
-            if (currentMode != previousMode) {
-                if (currentMode == OperatingMode.RELOCALIZATION && aprilTagAvailable) {
-                    // Entering relocalization - resume camera stream
-                    try {
-                        visionPortal.resumeStreaming();
-                    } catch (Exception e) {
-                        telemetry.addLine("WARNING: Camera resume failed!");
-                    }
-                } else if (previousMode == OperatingMode.RELOCALIZATION && aprilTagAvailable) {
-                    // Leaving relocalization - stop camera stream
-                    try {
-                        visionPortal.stopStreaming();
-                    } catch (Exception e) {
-                        // Ignore
-                    }
-                }
-                previousMode = currentMode;
-            }
-
             // ==================== LOCALIZATION ====================
             // Wrap in try-catch so driving can continue even if odometry fails
             // Declare adjusted pose variables at higher scope for use later
@@ -441,8 +403,36 @@ public class TeleOpV3 extends LinearOpMode {
                 // Use last known values (already set above)
             }
 
+            // ==================== MODE TRANSITION: CAMERA INIT/CLOSE ====================
+            // Initialize camera when entering RELOCALIZATION, close when leaving
+            try {
+                if (currentMode == OperatingMode.RELOCALIZATION && previousMode != OperatingMode.RELOCALIZATION) {
+                    // Entering relocalization mode - initialize camera
+                    try {
+                        aprilTagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
+                        aprilTagAvailable = (aprilTagProcessor != null);
+                    } catch (Exception e) {
+                        aprilTagAvailable = false;
+                        telemetry.addLine("WARNING: AprilTag initialization failed!");
+                    }
+                } else if (currentMode != OperatingMode.RELOCALIZATION && previousMode == OperatingMode.RELOCALIZATION) {
+                    // Leaving relocalization mode - close camera
+                    try {
+                        AprilTag.close();
+                    } catch (Exception e) {
+                        // Ignore - camera may already be closed
+                    }
+                    aprilTagProcessor = null;
+                    aprilTagAvailable = false;
+                }
+                previousMode = currentMode;
+            } catch (Exception e) {
+                systemError = true;
+                telemetry.addLine(">>> CAMERA INIT/CLOSE ERROR <<<");
+            }
+
             // ==================== CAMERA RELOCALIZATION ====================
-            // Only active in RELOCALIZATION mode - camera only streams during this mode
+            // Only active in RELOCALIZATION mode - camera is only streaming in this mode
             try {
                 if (currentMode == OperatingMode.RELOCALIZATION) {
                 // Stop turret motor completely in relocalization mode - let it stay where it is
@@ -451,7 +441,7 @@ public class TeleOpV3 extends LinearOpMode {
                 turretController.stopTurret();
 
                 // Check if AprilTag is available
-                if (!aprilTagAvailable || aprilTagProcessor == null || visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
+                if (!aprilTagAvailable || aprilTagProcessor == null) {
                     telemetry.addLine(">>> RELOCALIZATION UNAVAILABLE <<<");
                     telemetry.addLine("AprilTag processor not initialized.");
                     telemetry.addLine("Press DPad Down to switch to MANUAL mode.");
@@ -518,7 +508,7 @@ public class TeleOpV3 extends LinearOpMode {
                         telemetry.addData("Relocalization", "Moving too fast! Stop to relocalize.");
                     }
                 }
-                }
+            }
             } catch (Exception e) {
                 systemError = true;
                 telemetry.addLine(">>> CAMERA ERROR <<<");

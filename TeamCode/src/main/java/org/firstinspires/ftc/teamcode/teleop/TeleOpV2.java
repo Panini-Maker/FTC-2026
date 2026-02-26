@@ -71,6 +71,8 @@ public class TeleOpV2 extends LinearOpMode {
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
+        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        rightLatch.setDirection(Servo.Direction.REVERSE);
         Servo light = hardwareMap.get(Servo.class, "light");
 
         hoodServo.setDirection(Servo.Direction.REVERSE);
@@ -89,7 +91,7 @@ public class TeleOpV2 extends LinearOpMode {
         AutoAim autoAimController = new AutoAim(turret, telemetry, targetIsRed);
         RobotActions robot = new RobotActions(frontLeft, frontRight, backLeft, backRight,
                 rightShooter, leftShooter, turret, intake,
-                leftLatch, hoodServo, light);
+                leftLatch, rightLatch, hoodServo, light);
 
         // Presets
         double drivetrainPower = 0.9;

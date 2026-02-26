@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.hardware.ServoImplEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 /**
@@ -19,9 +20,9 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 @TeleOp(name = "Latch Test", group = "Test")
 public class LatchTest extends LinearOpMode {
 
-    private Servo leftLatch;
-    private Servo rightLatch;
-    private double currentPosition = 0.5; // Start at middle position
+    private ServoImplEx leftLatch;
+    private ServoImplEx rightLatch;
+    private double currentPosition = 0; // Start at middle position
     private boolean lastAPressed = false;
     private boolean lastBPressed = false;
     private boolean lastXPressed = false;
@@ -36,11 +37,36 @@ public class LatchTest extends LinearOpMode {
     private ElapsedTime toggleTimer = new ElapsedTime();
     private double lastToggleTime = 0;
 
+    /**
+     * Sets position only on active servo(s).
+     * Inactive servos have PWM disabled so they won't hold position.
+     */
+    private void setActiveServoPosition(double position) {
+        if (testingBothLatches) {
+            // Enable both servos and set position
+            leftLatch.setPwmEnable();
+            rightLatch.setPwmEnable();
+            leftLatch.setPosition(position);
+            rightLatch.setPosition(position);
+        } else if (testingLeftLatch) {
+            // Enable left, disable right
+            leftLatch.setPwmEnable();
+            leftLatch.setPosition(position);
+            rightLatch.setPwmDisable();
+        } else {
+            // Enable right, disable left
+            rightLatch.setPwmEnable();
+            rightLatch.setPosition(position);
+            leftLatch.setPwmDisable();
+        }
+    }
+
     @Override
     public void runOpMode() {
-        // Initialize hardware
-        leftLatch = hardwareMap.get(Servo.class, "leftLatch");
-        rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        // Initialize hardware as ServoImplEx for PWM control
+        leftLatch = hardwareMap.get(ServoImplEx.class, "leftLatch");
+        rightLatch = hardwareMap.get(ServoImplEx.class, "rightLatch");
+        rightLatch.setDirection(Servo.Direction.REVERSE);
 
         telemetry.addLine("Latch Test Initialized");
         telemetry.addLine("Controls:");
@@ -59,9 +85,8 @@ public class LatchTest extends LinearOpMode {
             if (gamepad1.left_bumper && !lastLeftBumperPressed) {
                 testingBothLatches = !testingBothLatches;
                 // Reset position when switching modes
-                currentPosition = 0.5;
-                leftLatch.setPosition(currentPosition);
-                rightLatch.setPosition(currentPosition);
+                currentPosition = 0;
+                setActiveServoPosition(currentPosition);
                 isOpen = false;
             }
             lastLeftBumperPressed = gamepad1.left_bumper;
@@ -70,12 +95,8 @@ public class LatchTest extends LinearOpMode {
             if (gamepad1.right_bumper && !lastRightBumperPressed && !testingBothLatches) {
                 testingLeftLatch = !testingLeftLatch;
                 // Reset position to current servo's needs
-                currentPosition = 0.5;
-                if (testingLeftLatch) {
-                    leftLatch.setPosition(currentPosition);
-                } else {
-                    rightLatch.setPosition(currentPosition);
-                }
+                currentPosition = 0;
+                setActiveServoPosition(currentPosition);
                 isOpen = false;
             }
             lastRightBumperPressed = gamepad1.right_bumper;
@@ -83,14 +104,7 @@ public class LatchTest extends LinearOpMode {
             // A button - Open latch (position 1)
             if (gamepad1.a && !lastAPressed) {
                 currentPosition = 1;
-                if (testingBothLatches) {
-                    leftLatch.setPosition(currentPosition);
-                    rightLatch.setPosition(currentPosition);
-                } else if (testingLeftLatch) {
-                    leftLatch.setPosition(currentPosition);
-                } else {
-                    rightLatch.setPosition(currentPosition);
-                }
+                setActiveServoPosition(currentPosition);
                 isOpen = true;
                 lastToggleTime = toggleTimer.milliseconds();
             }
@@ -99,14 +113,7 @@ public class LatchTest extends LinearOpMode {
             // B button - Close latch (position 0)
             if (gamepad1.b && !lastBPressed) {
                 currentPosition = 0;
-                if (testingBothLatches) {
-                    leftLatch.setPosition(currentPosition);
-                    rightLatch.setPosition(currentPosition);
-                } else if (testingLeftLatch) {
-                    leftLatch.setPosition(currentPosition);
-                } else {
-                    rightLatch.setPosition(currentPosition);
-                }
+                setActiveServoPosition(currentPosition);
                 isOpen = false;
                 lastToggleTime = toggleTimer.milliseconds();
             }
@@ -116,14 +123,7 @@ public class LatchTest extends LinearOpMode {
             if (gamepad1.x && !lastXPressed) {
                 isOpen = !isOpen;
                 currentPosition = isOpen ? 1 : 0;
-                if (testingBothLatches) {
-                    leftLatch.setPosition(currentPosition);
-                    rightLatch.setPosition(currentPosition);
-                } else if (testingLeftLatch) {
-                    leftLatch.setPosition(currentPosition);
-                } else {
-                    rightLatch.setPosition(currentPosition);
-                }
+                setActiveServoPosition(currentPosition);
                 lastToggleTime = toggleTimer.milliseconds();
             }
             lastXPressed = gamepad1.x;
@@ -131,14 +131,7 @@ public class LatchTest extends LinearOpMode {
             // DPad Up - Increase position
             if (gamepad1.dpad_up && !lastDPadUpPressed) {
                 currentPosition = Math.min(1.0, currentPosition + 0.05);
-                if (testingBothLatches) {
-                    leftLatch.setPosition(currentPosition);
-                    rightLatch.setPosition(currentPosition);
-                } else if (testingLeftLatch) {
-                    leftLatch.setPosition(currentPosition);
-                } else {
-                    rightLatch.setPosition(currentPosition);
-                }
+                setActiveServoPosition(currentPosition);
                 lastToggleTime = toggleTimer.milliseconds();
             }
             lastDPadUpPressed = gamepad1.dpad_up;
@@ -146,14 +139,7 @@ public class LatchTest extends LinearOpMode {
             // DPad Down - Decrease position
             if (gamepad1.dpad_down && !lastDPadDownPressed) {
                 currentPosition = Math.max(0.0, currentPosition - 0.05);
-                if (testingBothLatches) {
-                    leftLatch.setPosition(currentPosition);
-                    rightLatch.setPosition(currentPosition);
-                } else if (testingLeftLatch) {
-                    leftLatch.setPosition(currentPosition);
-                } else {
-                    rightLatch.setPosition(currentPosition);
-                }
+                setActiveServoPosition(currentPosition);
                 lastToggleTime = toggleTimer.milliseconds();
             }
             lastDPadDownPressed = gamepad1.dpad_down;
@@ -169,7 +155,7 @@ public class LatchTest extends LinearOpMode {
             if (testingBothLatches) {
                 activeServoStr = "BOTH LATCHES";
             } else {
-                activeServoStr = testingLeftLatch ? "LEFT LATCH" : "RIGHT LATCH";
+                activeServoStr = testingLeftLatch ? "LEFT LATCH (right free)" : "RIGHT LATCH (left free)";
             }
             telemetry.addData("Active Servo", activeServoStr);
             telemetry.addData("Current Position", "%.2f", currentPosition);

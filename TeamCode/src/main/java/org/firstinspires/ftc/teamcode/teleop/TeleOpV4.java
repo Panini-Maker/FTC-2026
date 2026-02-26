@@ -4,10 +4,8 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndHeading;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndTurretHeading;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndX;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.autoEndY;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.blueTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoXOffset;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.odoYOffset;
-import static org.firstinspires.ftc.teamcode.lib.TuningVars.redTagID;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.saveEndPosition;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd2;
@@ -39,20 +37,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
 import org.firstinspires.ftc.teamcode.GoBildaPinpointDriver;
-import org.firstinspires.ftc.teamcode.lib.AprilTag;
 import org.firstinspires.ftc.teamcode.lib.AutoAim;
-import org.firstinspires.ftc.teamcode.lib.Camera;
 import org.firstinspires.ftc.teamcode.lib.RobotActions;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
 import org.firstinspires.ftc.teamcode.lib.Turret;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-
-import java.util.List;
 
 /**
- * TeleOpV3 - Enhanced TeleOp with multiple operating modes
+ * TeleOpV4 - Enhanced TeleOp with multiple operating modes
  *
  * ALLIANCE SELECTION (during init):
  * - DPad Up/Down to scroll between RED and BLUE alliance
@@ -60,27 +51,25 @@ import java.util.List;
  *
  * OPERATING MODES:
  * - STANDARD: Full auto-aim, field-centric driving, 1 driver
- * - RELOCALIZATION: Camera searching for AprilTag to reset pose
  * - MANUAL: Robot-centric driving, 2 drivers, turret presets
  *
  * MODE SWITCHING (during OpMode):
- * - DPad Up: Go up ranking (MANUAL -> RELOCALIZATION -> STANDARD)
- * - DPad Down: Go down ranking (STANDARD -> RELOCALIZATION -> MANUAL)
+ * - DPad Up: Switch to STANDARD
+ * - DPad Down: Switch to MANUAL
  *
  * LIGHT COLORS:
  * - Blue (0.611): STANDARD mode
- * - Yellow (0.388): RELOCALIZATION mode
  * - Red (0.28): MANUAL mode
  * - Green (0.5): Shooter ready (overrides mode color when shooting)
  */
-@TeleOp(name = "TeleOp V3", group = "Competition")
-public class TeleOpV3 extends LinearOpMode {
+@Disabled
+@TeleOp(name = "TeleOp V4", group = "Competition")
+public class TeleOpV4 extends LinearOpMode {
 
     // Operating modes
     private enum OperatingMode {
         MANUAL,         // Rank 0: Robot-centric, 2 drivers, presets
-        RELOCALIZATION, // Rank 1: Searching for AprilTag
-        STANDARD        // Rank 2: Full auto-aim, field-centric
+        STANDARD        // Rank 1: Full auto-aim, field-centric
     }
 
     // Movement types
@@ -91,31 +80,17 @@ public class TeleOpV3 extends LinearOpMode {
 
     // Light colors for each mode
     private static final double LIGHT_BLUE = 0.611;    // Standard mode
-    private static final double LIGHT_YELLOW = 0.388;  // Relocalization mode
     private static final double LIGHT_RED = 0.28;      // Manual mode
     private static final double LIGHT_GREEN = 0.5;     // Shooter ready
     private static final double LIGHT_PINK = 0.72;     // System disconnected/error
 
-    // Relocalization thresholds
-    private static final double RELOCALIZATION_SPEED_THRESHOLD = 0.1; // inches/second for linear velocity
-    private static final double RELOCALIZATION_ROTATION_THRESHOLD = 0.1; // degrees/second for rotational velocity
-    private static final int RED_GOAL_TAG_ID = 24;  // AprilTag ID for red goal
-    private static final int BLUE_GOAL_TAG_ID = 20; // AprilTag ID for blue goal
-
     // Intake full detection
-    private static final double INTAKE_FULL_CURRENT_THRESHOLD = 3.0; // Amps - tune via ShooterRegression
+    private static final double INTAKE_FULL_CURRENT_THRESHOLD = 3.5; // Amps - tune via ShooterRegression
     private static final long INTAKE_FULL_DURATION_MS = 300; // Must be above threshold for this long to be considered full
-    private static final long LIGHT_FLASH_INTERVAL_MS = 500; // Flash interval in milliseconds
-
-    // Relocalization method toggle (used in MANUAL mode corner reset):
-    // false = Use calculateRobotPose (uses current turret heading and robot heading from odometry)
-    // true = Use calculateRobotPoseAndHeading (sets turret to 0 and calculates heading from AprilTag)
-    // NOT toggleable by drivers to prevent accidental camera streaming
-    private static final boolean USE_HEADING_FROM_APRILTAG = false;
+    private static final long LIGHT_FLASH_INTERVAL_MS = 250; // Flash interval in milliseconds
 
     // Shooter idle power - raw power when not actively shooting
     private static final double SHOOTER_IDLE_POWER = 0.5;
-
     GoBildaPinpointDriver odo;
 
     @Override
@@ -165,30 +140,8 @@ public class TeleOpV3 extends LinearOpMode {
                 rightShooter, leftShooter, turret, intake,
                 leftLatch, rightLatch, hoodServo, light);
 
-        // Initialize AprilTag processor for relocalization
-        AprilTagProcessor aprilTagProcessor = null;
-        VisionPortal visionPortal = null;
-        boolean aprilTagAvailable;
-        try {
-            aprilTagProcessor = AprilTag.defineCameraFunctions(hardwareMap);
-            visionPortal = AprilTag.getVisionPortal();
-            aprilTagAvailable = (aprilTagProcessor != null && visionPortal != null);
-            // Immediately stop streaming - camera is initialized but not actively capturing
-            if (aprilTagAvailable) {
-                visionPortal.stopStreaming();
-            }
-        } catch (Exception e) {
-            telemetry.addLine("WARNING: AprilTag initialization failed!");
-            telemetry.addData("Error", e.getMessage());
-            telemetry.update();
-            aprilTagAvailable = false;
-        }
-
-        // Initialize Camera for pose calculation (set camera offsets as needed)
-        Camera cameraRelocalization = new Camera(5.6349839, 0.78702);
-
         // Presets
-        double drivetrainPower = 0.8; // Slightly reduced from 0.9 to save battery
+        double drivetrainPower = 0.85; // Slightly reduced from 0.9 to save battery
         double turretPower = 1.0;
         double manualTurretHeading = 0.0;
 
@@ -202,13 +155,11 @@ public class TeleOpV3 extends LinearOpMode {
         double shooterSpeed = 0;
 
         // Info Variables
-        int target = redTagID;
         double currentHeading = 0.0;
         double distanceToGoal = 0;
 
         // Operating mode
         OperatingMode currentMode = OperatingMode.STANDARD;
-        OperatingMode previousMode = OperatingMode.STANDARD;
         boolean shootingWhileMoving = true;
 
         // Alliance selection (during init)
@@ -323,13 +274,6 @@ public class TeleOpV3 extends LinearOpMode {
             odo.setPosition(new Pose2D(DistanceUnit.INCH, autoEndX, autoEndY, AngleUnit.DEGREES, autoEndHeading));
         }
 
-        // Set target based on alliance
-        if (targetIsRed) {
-            target = redTagID;
-        } else {
-            target = blueTagID;
-        }
-
         // Initialize turret heading from autonomous
         currentHeading = autoEndTurretHeading;
 
@@ -343,57 +287,16 @@ public class TeleOpV3 extends LinearOpMode {
                 systemError = false;
 
                 // ==================== MODE SWITCHING ====================
-            // DPad Up: Go up ranking (MANUAL -> RELOCALIZATION -> STANDARD)
-            // DPad Down: Go down ranking (STANDARD -> RELOCALIZATION -> MANUAL)
+            // DPad Up: Switch to STANDARD
+            // DPad Down: Switch to MANUAL
             if (debounceTimer.milliseconds() > 300) {
                 if (gamepad1.dpad_up) {
-                    switch (currentMode) {
-                        case MANUAL:
-                            currentMode = OperatingMode.RELOCALIZATION;
-                            break;
-                        case RELOCALIZATION:
-                            currentMode = OperatingMode.STANDARD;
-                            break;
-                        case STANDARD:
-                            // Already at top, stay here
-                            break;
-                    }
+                    currentMode = OperatingMode.STANDARD;
                     debounceTimer.reset();
                 } else if (gamepad1.dpad_down) {
-                    switch (currentMode) {
-                        case STANDARD:
-                            currentMode = OperatingMode.RELOCALIZATION;
-                            break;
-                        case RELOCALIZATION:
-                            currentMode = OperatingMode.MANUAL;
-                            break;
-                        case MANUAL:
-                            // Already at bottom, stay here
-                            break;
-                    }
+                    currentMode = OperatingMode.MANUAL;
                     debounceTimer.reset();
                 }
-            }
-
-            // ==================== MODE TRANSITION: CAMERA STREAMING ====================
-            // Resume streaming when entering RELOCALIZATION, stop when leaving
-            if (currentMode != previousMode) {
-                if (currentMode == OperatingMode.RELOCALIZATION && aprilTagAvailable) {
-                    // Entering relocalization - resume camera stream
-                    try {
-                        visionPortal.resumeStreaming();
-                    } catch (Exception e) {
-                        telemetry.addLine("WARNING: Camera resume failed!");
-                    }
-                } else if (previousMode == OperatingMode.RELOCALIZATION && aprilTagAvailable) {
-                    // Leaving relocalization - stop camera stream
-                    try {
-                        visionPortal.stopStreaming();
-                    } catch (Exception e) {
-                        // Ignore
-                    }
-                }
-                previousMode = currentMode;
             }
 
             // ==================== LOCALIZATION ====================
@@ -439,89 +342,6 @@ public class TeleOpV3 extends LinearOpMode {
                 systemError = true;
                 telemetry.addLine(">>> ODOMETRY ERROR <<<");
                 // Use last known values (already set above)
-            }
-
-            // ==================== CAMERA RELOCALIZATION ====================
-            // Only active in RELOCALIZATION mode - camera only streams during this mode
-            try {
-                if (currentMode == OperatingMode.RELOCALIZATION) {
-                // Stop turret motor completely in relocalization mode - let it stay where it is
-                // This prevents strain and oscillation while searching for AprilTag
-                turretController.stopVelocityPID();
-                turretController.stopTurret();
-
-                // Check if AprilTag is available
-                if (!aprilTagAvailable || aprilTagProcessor == null || visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
-                    telemetry.addLine(">>> RELOCALIZATION UNAVAILABLE <<<");
-                    telemetry.addLine("AprilTag processor not initialized.");
-                    telemetry.addLine("Press DPad Down to switch to MANUAL mode.");
-                } else {
-                    // Calculate total speed (linear and rotational)
-                    double linearSpeed = Math.sqrt(x_velocity * x_velocity + y_velocity * y_velocity);
-                    double rotationalSpeed = Math.abs(heading_velocity);
-
-                    // Get AprilTag detections regardless of speed (for telemetry)
-                    List<AprilTagDetection> detections = aprilTagProcessor.getDetections();
-
-                    // Only attempt relocalization when robot is nearly stationary
-                    if (linearSpeed < RELOCALIZATION_SPEED_THRESHOLD && rotationalSpeed < RELOCALIZATION_ROTATION_THRESHOLD) {
-                        for (AprilTagDetection detection : detections) {
-                            // Check if this is a valid goal tag (ID 20 for blue, ID 24 for red)
-                            if (detection.id == RED_GOAL_TAG_ID || detection.id == BLUE_GOAL_TAG_ID) {
-                                // Determine if this is the red or blue goal
-                                boolean isRedGoal = (detection.id == RED_GOAL_TAG_ID);
-
-                                // Get AprilTag pose data
-                                double tagX = detection.ftcPose.x;
-                                double tagY = detection.ftcPose.y;
-
-                                // Use calculateRobotPose with current turret heading and robot heading
-                                double turretHeading = autoAimController.getCurrentTurretHeading();
-                                Pose2D calculatedPose = cameraRelocalization.calculateRobotPose(
-                                        turretHeading,
-                                        currentHeadingOdo,
-                                        tagX,
-                                        tagY,
-                                        isRedGoal
-                                );
-
-                                telemetry.addData(">> AprilTag Detected: ID ", detection.id);
-
-                                if (!cameraRelocalization.isPoseValid(calculatedPose)) {
-                                    telemetry.addLine(">>> RELOCALIZATION FAILED <<<");
-                                    telemetry.addLine("Calculated pose is invalid.");
-                                    telemetry.addData("Calculated Pose", "X=%.1f, Y=%.1f, H=%.1f",
-                                            calculatedPose.getX(DistanceUnit.INCH),
-                                            calculatedPose.getY(DistanceUnit.INCH),
-                                            calculatedPose.getHeading(AngleUnit.DEGREES));
-                                }
-
-                                // Validate and apply the new pose
-                                if (calculatedPose != null && cameraRelocalization.isPoseValid(calculatedPose)) {
-                                    // Reset odometry to the calculated pose
-                                    odo.setPosition(calculatedPose);
-
-                                    // Successfully relocalized - switch to STANDARD mode
-                                    currentMode = OperatingMode.STANDARD;
-
-                                    telemetry.addLine(">>> RELOCALIZATION SUCCESSFUL <<<");
-                                    telemetry.addData("New Pose", "X=%.1f, Y=%.1f, H=%.1f",
-                                            calculatedPose.getX(DistanceUnit.INCH),
-                                            calculatedPose.getY(DistanceUnit.INCH),
-                                            calculatedPose.getHeading(AngleUnit.DEGREES));
-                                    break;
-                                }
-                            }
-                        }
-                    } else {
-                        // Robot is moving too fast for relocalization
-                        telemetry.addData("Relocalization", "Moving too fast! Stop to relocalize.");
-                    }
-                }
-                }
-            } catch (Exception e) {
-                systemError = true;
-                telemetry.addLine(">>> CAMERA ERROR <<<");
             }
 
             // ==================== CALCULATIONS ====================
@@ -606,51 +426,11 @@ public class TeleOpV3 extends LinearOpMode {
                     }
                     break;
 
-                case RELOCALIZATION:
-                    // Driving based on selected movement type while searching for AprilTag
-                    if (selectedMovementType == MovementType.FIELD_CENTRIC) {
-                        // Field-centric driving
-                        if (!targetIsRed) {
-                            y = gamepad1.left_stick_y;
-                            x = -gamepad1.left_stick_x * 1.1;
-                        } else {
-                            y = -gamepad1.left_stick_y;
-                            x = gamepad1.left_stick_x * 1.1;
-                        }
-                    } else {
-                        // Quan TeleOp V2: Robot-centric driving
-                        y = -gamepad1.left_stick_y;
-                        x = gamepad1.left_stick_x * 1.1;
-                    }
-                    rx = gamepad1.right_stick_x;
-
-                    // Turret is locked at current position in the relocalization section above
-                    // Just display the current heading (don't auto-aim)
-                    calculatedTargetAngle = autoAimController.getCurrentTurretHeading();
-
-                    // Shooter controls same as standard
-                    if (gamepad1.right_trigger > 0) {
-                        shooterSpeed = robot.getShooterRPM(distanceToGoal);
-                    } else {
-                        shooter.stopVelocityPIDF();
-                        shooter.setRawPower(SHOOTER_IDLE_POWER);
-                        shooterSpeed = 0;
-                    }
-
-                    // Drive based on selected movement type
-                    if (selectedMovementType == MovementType.FIELD_CENTRIC) {
-                        robot.driveFieldCentric(pos, y, x, rx, drivetrainPower);
-                    } else {
-                        robot.driveRobotCentric(y, x, rx, drivetrainPower);
-                    }
-                    break;
-
                 case MANUAL:
                     // Manual mode driving depends on movement type selection
                     // Field Centric: Gamepad 2 drives, Gamepad 1 controls shooter
                     // Quan TeleOp V2: Gamepad 1 drives, Gamepad 2 controls turret
 
-                    // TODO: Change corner reset button to driver preference
                     // Corner pose reset for manual mode - resets to corner position as last resort for auto aim
                     // Movement driver presses DPad Left + Back to reset pose to corner
                     // Field Centric: Gamepad 2, Quan TeleOp V2: Gamepad 1
@@ -873,9 +653,6 @@ public class TeleOpV3 extends LinearOpMode {
                 case STANDARD:
                     modeColor = LIGHT_BLUE;
                     break;
-                case RELOCALIZATION:
-                    modeColor = LIGHT_YELLOW;
-                    break;
                 case MANUAL:
                 default:
                     modeColor = LIGHT_RED;
@@ -999,14 +776,6 @@ public class TeleOpV3 extends LinearOpMode {
         }
 
         // Cleanup
-        try {
-            if (aprilTagAvailable) {
-                AprilTag.close();
-            }
-        } catch (Exception e) {
-            // Ignore - camera may already be closed
-        }
-
         try {
             autoAimController.stopAutoAim();
         } catch (Exception e) {

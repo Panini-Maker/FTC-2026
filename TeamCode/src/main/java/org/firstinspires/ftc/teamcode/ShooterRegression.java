@@ -4,6 +4,10 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKf;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKp2;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKi2;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKd2;
+import static org.firstinspires.ftc.teamcode.lib.TuningVars.shooterKf2;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -17,7 +21,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.lib.ShooterController;
 
-@Disabled
+//@Disabled
 @TeleOp
 public class ShooterRegression extends LinearOpMode {
     @Override
@@ -34,7 +38,10 @@ public class ShooterRegression extends LinearOpMode {
 
         VoltageSensor voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        ShooterController shooter = new ShooterController(leftShooter, rightShooter, shooterKp, shooterKi, shooterKd, shooterKf, voltageSensor, telemetry);
+        ShooterController shooter = new ShooterController(leftShooter, rightShooter,
+                shooterKp, shooterKi, shooterKd, shooterKf,
+                shooterKp2, shooterKi2, shooterKd2, shooterKf2,
+                voltageSensor, telemetry);
 
         DcMotorEx intakeMotor = hardwareMap.get(DcMotorEx.class, "intake");
         intakeMotor.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -42,6 +49,8 @@ public class ShooterRegression extends LinearOpMode {
         intakeMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
+        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        rightLatch.setDirection(Servo.Direction.REVERSE);
         Servo hood = hardwareMap.get(Servo.class, "hood");
         hood.setDirection(Servo.Direction.REVERSE);
 
@@ -132,16 +141,16 @@ public class ShooterRegression extends LinearOpMode {
                 } else {
                     intakeMotor.setPower(1);
                 }
-                latchState = 0;
+                latchState = 1;
             } else if (gamepad2.left_bumper) {
                 intakeMotor.setPower(0.6);
-                latchState = 0;
+                latchState = 1;
             } else {
                 intakeMotor.setPower(0);
             }
 
             if (gamepad2.right_trigger > 0) {
-                latchState = 1;
+                latchState = 0;
                 shooter.runShooter(shooterSpeed);
             } else {
                 shooter.resetPIDF();
@@ -149,11 +158,11 @@ public class ShooterRegression extends LinearOpMode {
             }
 
             if (gamepad2.dpadUpWasPressed()) {
-                if (hoodState < 0.33) {
+                if (hoodState < 0.66) {
                     hoodState += 0.03;
                 }
             } else if (gamepad2.dpadDownWasPressed()) {
-                if (hoodState > 0.0) {
+                if (hoodState > 0.31) {
                     hoodState -= 0.03;
                 }
             }
@@ -165,6 +174,7 @@ public class ShooterRegression extends LinearOpMode {
             }
 
             leftLatch.setPosition(latchState);
+            rightLatch.setPosition(latchState);
 
             hood.setPosition(hoodState);
 

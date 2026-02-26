@@ -81,6 +81,8 @@ public class AutoBlueShort9Artifacts extends LinearOpMode {
 
         Servo hoodServo = hardwareMap.get(Servo.class, "hood");
         Servo leftLatch = hardwareMap.get(Servo.class, "leftLatch");
+        Servo rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        rightLatch.setDirection(Servo.Direction.REVERSE);
         hoodServo.setDirection(Servo.Direction.REVERSE);
 
 
@@ -91,6 +93,7 @@ public class AutoBlueShort9Artifacts extends LinearOpMode {
                 turret,
                 hoodServo,
                 leftLatch,
+                rightLatch,
                 controller
         );
 

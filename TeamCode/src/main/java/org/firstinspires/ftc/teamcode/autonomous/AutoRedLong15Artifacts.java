@@ -55,12 +55,13 @@ public class AutoRedLong15Artifacts extends OpMode {
     public double distanceFromGoal = 0;
     public Pose2D currentPose;
     public double turretAngle = 0;
-    public int shootDuration = 1450;
+    public int shootDuration = 2000;
     public int rampUpDuration = 0;
-    int tolerance = 50; // Tolerance in shooting velocity
+    int tolerance = 35; // Tolerance in shooting velocity
+    double setHoodAngle = 0.6; // Hood angle for shooting, adjust based on distance
     // TODO: Changes here should go to Blue Long Auto as well
-    private static final int PRE_RAMP_SHOOTER_VELOCITY = 1850; // Shooter velocity to hold between shots in RPM
-    private static final int SHOOT_VELOCITY = 1850; // Target shooter velocity in RPM (adjust based on distance)
+    private static final int PRE_RAMP_SHOOTER_VELOCITY = 1900; // Shooter velocity to hold between shots in RPM
+    private static final int SHOOT_VELOCITY = 1900; // Target shooter velocity in RPM (adjust based on distance)
     private static final int SETTLE_TIME_MS = 600; // Time to wait for Pedro to fully correct position
     private static final int TURRET_AIM_TIME_MS = 200; // Time for turret to aim before shooting
     private static final int LATCH_RELEASE_TIME_MS = 100; // Time to wait after releasing latches before shooting
@@ -79,6 +80,7 @@ public class AutoRedLong15Artifacts extends OpMode {
     private DcMotorEx turret;
     private Servo hoodServo;
     private Servo leftLatch;
+    private Servo rightLatch;
     private Servo light;
     private VoltageSensor voltageSensor;
 
@@ -195,12 +197,13 @@ public class AutoRedLong15Artifacts extends OpMode {
                 .build();
     }
 
-    public void autonomousPathUpdate() throws InterruptedException {
+    public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
                 /* Shoot 1st burst */
                 leftLatch.setPosition(0);
-                hoodServo.setPosition(0.3); // Hood in advance
+                rightLatch.setPosition(0);
+                hoodServo.setPosition(setHoodAngle); // Hood in advance
                 controller.setVelocityPIDF(PRE_RAMP_SHOOTER_VELOCITY);
                 follower.followPath(Shoot1, true);
                 turretControl.spinToHeadingLoop(-110, turretSpeedAuto);
@@ -216,7 +219,7 @@ public class AutoRedLong15Artifacts extends OpMode {
                 // Update turret aim, then wait for it to settle before shooting
                 turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
                 if (actionTimer.getElapsedTime() > SETTLE_TIME_MS + TURRET_AIM_TIME_MS) {
-                    shooter.shoot(SHOOT_VELOCITY, shootDuration, rampUpDuration, 0.3, tolerance, true);
+                    shooter.shoot(SHOOT_VELOCITY, shootDuration, rampUpDuration, setHoodAngle, tolerance, true);
                     setPathState(2);
                 }
                 break;
@@ -259,6 +262,7 @@ public class AutoRedLong15Artifacts extends OpMode {
                     intake.setPower(0.0); // Stop intake
                     if (actionTimer.getElapsedTime() > (LATCH_RELEASE_TIME_MS + INTAKE_EXTRA_MS)) {
                         leftLatch.setPosition(0);
+                        rightLatch.setPosition(0);
                         // Now wait for path to finish
                         if (!follower.isBusy()) {
                             actionTimer.resetTimer();
@@ -272,7 +276,7 @@ public class AutoRedLong15Artifacts extends OpMode {
                 intake.setPower(0.0);
                 turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
                 if (actionTimer.getElapsedTime() > SETTLE_TIME_MS + TURRET_AIM_TIME_MS) {
-                    shooter.shoot(SHOOT_VELOCITY, shootDuration, rampUpDuration, 0.3, tolerance, true);
+                    shooter.shoot(SHOOT_VELOCITY, shootDuration, rampUpDuration, setHoodAngle, tolerance, true);
                     setPathState(7);
                 }
                 break;
@@ -301,6 +305,7 @@ public class AutoRedLong15Artifacts extends OpMode {
                     intake.setPower(0.0); // Stop intake
                     if (actionTimer.getElapsedTime() > (LATCH_RELEASE_TIME_MS + INTAKE_EXTRA_MS)) {
                         leftLatch.setPosition(0);
+                        rightLatch.setPosition(0);
                         // Now wait for path to finish
                         if (!follower.isBusy()) {
                             actionTimer.resetTimer();
@@ -314,7 +319,7 @@ public class AutoRedLong15Artifacts extends OpMode {
                 intake.setPower(0.0);
                 turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
                 if (actionTimer.getElapsedTime() > SETTLE_TIME_MS + TURRET_AIM_TIME_MS) {
-                    shooter.shoot(SHOOT_VELOCITY, shootDuration, rampUpDuration, 0.3, tolerance, true);
+                    shooter.shoot(SHOOT_VELOCITY, shootDuration, rampUpDuration, setHoodAngle, tolerance, true);
                     setPathState(10);
                 }
                 break;
@@ -356,6 +361,7 @@ public class AutoRedLong15Artifacts extends OpMode {
                     intake.setPower(0.0); // Stop intake
                     if (actionTimer.getElapsedTime() > (LATCH_RELEASE_TIME_MS + INTAKE_EXTRA_MS)) {
                         leftLatch.setPosition(0);
+                        rightLatch.setPosition(0);
                         // Now wait for path to finish
                         if (!follower.isBusy()) {
                             actionTimer.resetTimer();
@@ -369,7 +375,7 @@ public class AutoRedLong15Artifacts extends OpMode {
                 intake.setPower(0.0);
                 turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
                 if (actionTimer.getElapsedTime() > SETTLE_TIME_MS + TURRET_AIM_TIME_MS) {
-                    shooter.shoot(SHOOT_VELOCITY, shootDuration, rampUpDuration, 0.3, tolerance, true);
+                    shooter.shoot(SHOOT_VELOCITY, shootDuration, rampUpDuration, setHoodAngle, tolerance, true);
                     // Check remaining time - if less than 4 seconds, park. Otherwise, loop back to collect overflow
                     double remainingTime = 30.0 - opmodeTimer.getElapsedTimeSeconds();
                     if (remainingTime < 5.0) {
@@ -412,79 +418,11 @@ public class AutoRedLong15Artifacts extends OpMode {
         pathTimer.resetTimer();
     }
 
-    // Safety margin - stop early to ensure position is saved before 30s force stop
-    private static final double AUTO_SAFETY_STOP_SECONDS = 29.75;
-    private volatile boolean autoStopped = false;
-
     /**
      * This is the main loop of the OpMode, it will run repeatedly after clicking "Play".
      **/
     @Override
     public void loop() {
-        // Check if we should stop early to save position
-        if (!autoStopped && opmodeTimer.getElapsedTimeSeconds() >= AUTO_SAFETY_STOP_SECONDS) {
-            autoStopped = true;
-
-            // Stop Pedro Pathing follower first to get accurate final pose
-            try {
-                follower.breakFollowing();
-            } catch (Exception e) {
-                // Ignore
-            }
-
-            // Give a moment for the robot to settle
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                // Ignore
-            }
-
-            // Update follower one last time to get final position
-            try {
-                follower.update();
-            } catch (Exception e) {
-                // Ignore
-            }
-
-            // Stop all motors immediately
-            try {
-                intake.setPower(0);
-                controller.stopVelocityPIDF();
-                turretControl.stopVelocityPID();
-            } catch (Exception e) {
-                // Ignore
-            }
-
-            // Save position now while we still can
-            try {
-                Pose endPose = follower.getPose();
-                org.firstinspires.ftc.teamcode.lib.TuningVars.saveEndPosition(
-                        (endPose.getX() - 72),
-                        (endPose.getY() - 72),
-                        Math.toDegrees(endPose.getHeading()),
-                        turretControl.getCurrentHeading()
-                );
-                telemetry.addLine("═══════════════════════════════");
-                telemetry.addLine("   POSITION SAVED SUCCESSFULLY");
-                telemetry.addLine("═══════════════════════════════");
-                telemetry.update();
-            } catch (Exception e) {
-                telemetry.addLine(">>> FAILED TO SAVE POSITION <<<");
-                telemetry.update();
-            }
-            return;
-        }
-
-        // If already stopped, just show status
-        if (autoStopped) {
-            telemetry.addLine("═══════════════════════════════");
-            telemetry.addLine("   AUTO COMPLETE - WAITING");
-            telemetry.addData("Time", "%.1f s", opmodeTimer.getElapsedTimeSeconds());
-            telemetry.addLine("═══════════════════════════════");
-            telemetry.update();
-            return;
-        }
-
         try {
             // These loop the movements of the robot, these must be called continuously in order to work
             currentPose = new Pose2D(DistanceUnit.INCH, (follower.getPose().getX() - 72), (follower.getPose().getY() - 72), AngleUnit.RADIANS, follower.getPose().getHeading());
@@ -494,12 +432,7 @@ public class AutoRedLong15Artifacts extends OpMode {
             turretAngle = autoAim.calculateTargetAngle(currentPose.getX(DistanceUnit.INCH), currentPose.getY(DistanceUnit.INCH), currentPose.getHeading(AngleUnit.DEGREES));
 
             follower.update();
-            try {
-                autonomousPathUpdate();
-            } catch (InterruptedException e) {
-                // Handle interruption gracefully - autonomous was force stopped
-                return;
-            }
+            autonomousPathUpdate();
             // Feedback to Driver Hub for debugging
             telemetry.addData("path state", pathState);
             telemetry.addData("x", follower.getPose().getX());
@@ -537,12 +470,12 @@ public class AutoRedLong15Artifacts extends OpMode {
         backRight.setDirection(DcMotor.Direction.REVERSE);
 
         intake = hardwareMap.dcMotor.get("intake");
-        intake = hardwareMap.dcMotor.get("intake");
+        intake.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         leftShooter = hardwareMap.get(DcMotorEx.class, "leftShooter");
-        leftShooter.setDirection(DcMotorSimple.Direction.REVERSE);
+        leftShooter.setDirection(DcMotorEx.Direction.REVERSE);
         leftShooter.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         leftShooter.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
@@ -561,9 +494,12 @@ public class AutoRedLong15Artifacts extends OpMode {
 
         hoodServo = hardwareMap.get(Servo.class, "hood");
         leftLatch = hardwareMap.get(Servo.class, "leftLatch");
+        rightLatch = hardwareMap.get(Servo.class, "rightLatch");
+        rightLatch.setDirection(Servo.Direction.REVERSE);
         hoodServo.setDirection(Servo.Direction.REVERSE);
         light = hardwareMap.get(Servo.class, "light");
 
+        autoAim = new AutoAim(turret, telemetry, true);
 
         shooter = new ShootingAction(
                 leftShooter,
@@ -572,13 +508,14 @@ public class AutoRedLong15Artifacts extends OpMode {
                 turret,
                 hoodServo,
                 leftLatch,
-                controller
+                rightLatch,
+                controller,
+                turretControl,
+                autoAim
         );
 
         robot = new RobotActions(frontLeft, frontRight, backLeft, backRight,
-                rightShooter, leftShooter, turret, intake, leftLatch, hoodServo, light);
-
-        autoAim = new AutoAim(turret, telemetry, true);
+                rightShooter, leftShooter, turret, intake, leftLatch, rightLatch, hoodServo, light);
     }
 
     /**
@@ -603,6 +540,14 @@ public class AutoRedLong15Artifacts extends OpMode {
      **/
     @Override
     public void stop() {
+        // FIRST: Signal any in-progress shoot() to bail out immediately
+        // This unblocks the loop() thread if it's stuck inside shoot()
+        try {
+            shooter.requestStop();
+        } catch (Exception e) {
+            // Ignore
+        }
+
         // Ensure PID threads stop when OpMode ends
         try {
             controller.stopVelocityPIDF();

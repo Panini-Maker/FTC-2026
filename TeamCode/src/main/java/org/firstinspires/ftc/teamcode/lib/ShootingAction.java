@@ -12,19 +12,23 @@ public class ShootingAction {
     public DcMotorEx leftShooter, rightShooter;
     public DcMotor intake;
     public DcMotor turret;
-    public Servo hoodServo, leftLatch;
+    public Servo hoodServo, leftLatch, rightLatch;
     public ShooterController controller;
     public Turret turretController;
     public AutoAim autoAim;
 
+    // Flag to signal shoot() to bail out immediately when OpMode is stopping
+    private volatile boolean stopRequested = false;
+
     public ShootingAction(DcMotorEx leftShooter, DcMotorEx rightShooter, DcMotor intake, DcMotor turret,
-                          Servo hoodServo, Servo leftLatch, ShooterController controller) {
+                          Servo hoodServo, Servo leftLatch, Servo rightLatch, ShooterController controller) {
         this.leftShooter = leftShooter;
         this.rightShooter = rightShooter;
         this.intake = intake;
         this.turret = turret;
         this.hoodServo = hoodServo;
         this.leftLatch = leftLatch;
+        this.rightLatch = rightLatch;
         this.controller = controller;
         this.turretController = null;
         this.autoAim = null;
@@ -34,7 +38,7 @@ public class ShootingAction {
      * Constructor with turret controller for continuous turret updates during shooting.
      */
     public ShootingAction(DcMotorEx leftShooter, DcMotorEx rightShooter, DcMotor intake, DcMotor turret,
-                          Servo hoodServo, Servo leftLatch, ShooterController controller,
+                          Servo hoodServo, Servo leftLatch, Servo rightLatch, ShooterController controller,
                           Turret turretController, AutoAim autoAim) {
         this.leftShooter = leftShooter;
         this.rightShooter = rightShooter;
@@ -42,21 +46,24 @@ public class ShootingAction {
         this.turret = turret;
         this.hoodServo = hoodServo;
         this.leftLatch = leftLatch;
+        this.rightLatch = rightLatch;
         this.controller = controller;
         this.turretController = turretController;
         this.autoAim = autoAim;
     }
 
-    public void shoot(double shooterVelocity, int shootDurationMs, int rampUpTimeMs, double hoodAngle, double tolerance, boolean useToleranceShooting) throws InterruptedException {
+    public void shoot(double shooterVelocity, int shootDurationMs, int rampUpTimeMs, double hoodAngle, double tolerance, boolean useToleranceShooting) {
+        stopRequested = false;
+
         try {
             intake.setPower(0); // Ensure intake is off
         } catch (Exception e) {
             // Intake disconnected, continue
         }
 
-        // Open latches after shooter is up to speed
         try {
             leftLatch.setPosition(0);
+            rightLatch.setPosition(0);
         } catch (Exception e) {
             // Latch servo disconnected, continue
         }
@@ -78,7 +85,7 @@ public class ShootingAction {
         // Wait for shooter to reach target velocity (within tolerance) or timeout
         long startTime = System.currentTimeMillis();
         long maxRampUpTime = rampUpTimeMs > 0 ? rampUpTimeMs : 2000; // Default 2 seconds max (reduced from 3.5s)
-        while (System.currentTimeMillis() - startTime < maxRampUpTime) {
+        while (System.currentTimeMillis() - startTime < maxRampUpTime && !stopRequested && !Thread.currentThread().isInterrupted()) {
             try {
                 // Use Math.abs() because one motor is reversed
                 double avgVelocity = (Math.abs(leftShooter.getVelocity()) + Math.abs(rightShooter.getVelocity())) / 2.0;
@@ -89,7 +96,20 @@ public class ShootingAction {
                 // Shooter disconnected, break out of wait loop
                 break;
             }
-            Thread.sleep(10);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                // OpMode stopped - clean up and return
+                stopShooting();
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+
+        // Check if stop was requested or interrupted before continuing
+        if (stopRequested || Thread.currentThread().isInterrupted()) {
+            stopShooting();
+            return;
         }
 
         if (!useToleranceShooting) {
@@ -98,13 +118,17 @@ public class ShootingAction {
 
         // Run intake for shoot duration, but only feed when shooter is at speed
         long shootStartTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - shootStartTime < shootDurationMs) {
+        while (System.currentTimeMillis() - shootStartTime < shootDurationMs && !stopRequested && !Thread.currentThread().isInterrupted()) {
             try {
                 // Use Math.abs() because one motor is reversed
                 double avgVelocity = (Math.abs(leftShooter.getVelocity()) + Math.abs(rightShooter.getVelocity())) / 2.0;
                 if (Math.abs(shooterVelocity - avgVelocity) <= tolerance) {
                     try {
-                        intake.setPower(1); // Safe to feed
+                        if (useToleranceShooting) {
+                            intake.setPower(0.7); //Slower when shooting longer range shots
+                        } else {
+                            intake.setPower(1); // Faster feeding when not checking shooter velocity
+                        }
                     } catch (Exception e) {
                         // Intake disconnected
                     }
@@ -123,7 +147,20 @@ public class ShootingAction {
                     // Intake also disconnected
                 }
             }
-            Thread.sleep(10);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                // OpMode stopped - clean up and return
+                stopShooting();
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+
+        // Check if stop was requested or interrupted
+        if (stopRequested || Thread.currentThread().isInterrupted()) {
+            stopShooting();
+            return;
         }
 
         // Stop intake but keep shooter at idle for faster next shot
@@ -141,12 +178,15 @@ public class ShootingAction {
 
         try {
             leftLatch.setPosition(1); // Close latches
+            rightLatch.setPosition(1);  // Servo is reversed at init
         } catch (Exception e) {
             // Latch servo disconnected
         }
     }
 
-    public void shoot(int shooterVelocity, int shootDurationMs, int rampUpTimeMs) throws InterruptedException {
+    public void shoot(int shooterVelocity, int shootDurationMs, int rampUpTimeMs) {
+        stopRequested = false;
+
         // Set hood position
         try {
             if (shooterVelocity == (sniperAuto)) {
@@ -174,7 +214,7 @@ public class ShootingAction {
         // Wait for shooter to reach target velocity (within tolerance) or timeout
         long startTime = System.currentTimeMillis();
         long maxRampUpTime = rampUpTimeMs > 0 ? rampUpTimeMs : 2000; // Default 2 seconds max (reduced from 3.5s)
-        while (System.currentTimeMillis() - startTime < maxRampUpTime) {
+        while (System.currentTimeMillis() - startTime < maxRampUpTime && !stopRequested && !Thread.currentThread().isInterrupted()) {
             try {
                 // Use Math.abs() because one motor is reversed
                 double avgVelocity = (Math.abs(leftShooter.getVelocity()) + Math.abs(rightShooter.getVelocity())) / 2.0;
@@ -185,12 +225,26 @@ public class ShootingAction {
                 // Shooter disconnected, break out of wait loop
                 break;
             }
-            Thread.sleep(10);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                // OpMode stopped - clean up and return
+                stopShooting();
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+
+        // Check if stop was requested or interrupted before continuing
+        if (stopRequested || Thread.currentThread().isInterrupted()) {
+            stopShooting();
+            return;
         }
 
         // Open latches after shooter is up to speed
         try {
             leftLatch.setPosition(0);
+            rightLatch.setPosition(0);  // Servo is reversed at init
         } catch (Exception e) {
             // Latch servo disconnected, continue
         }
@@ -198,7 +252,7 @@ public class ShootingAction {
 
         // Run intake for shoot duration, but only feed when shooter is at speed
         long shootStartTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - shootStartTime < shootDurationMs) {
+        while (System.currentTimeMillis() - shootStartTime < shootDurationMs && !stopRequested && !Thread.currentThread().isInterrupted()) {
             try {
                 // Use Math.abs() because one motor is reversed
                 double avgVelocity = (Math.abs(leftShooter.getVelocity()) + Math.abs(rightShooter.getVelocity())) / 2.0;
@@ -223,26 +277,38 @@ public class ShootingAction {
                     // Intake also disconnected
                 }
             }
-            Thread.sleep(10);
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                // OpMode stopped - clean up and return
+                stopShooting();
+                Thread.currentThread().interrupt();
+                return;
+            }
         }
 
-        // Stop intake but keep shooter at idle for faster next shot
-        try {
-            intake.setPower(0);
-        } catch (Exception e) {
-            // Intake disconnected
-        }
+        // Stop shooting (handles cleanup)
+        stopShooting();
+    }
+
+    /**
+     * Requests an immediate stop of any in-progress shoot() call.
+     * Call this from OpMode.stop() to make shoot() bail out instantly.
+     */
+    public void requestStop() {
+        stopRequested = true;
+    }
+
+    /**
+     * Stops all shooting operations safely. Call this when interrupted or finished shooting.
+     */
+    public void stopShooting() {
+        stopRequested = true;
 
         try {
-            controller.setVelocityPIDF(idle); // Keep at idle speed for faster ramp-up next time
+            controller.stopVelocityPIDF();
         } catch (Exception e) {
-            // Shooter disconnected
-        }
-
-        try {
-            leftLatch.setPosition(1); // Close latches
-        } catch (Exception e) {
-            // Latch servo disconnected
+            // Shooter controller disconnected
         }
     }
 }

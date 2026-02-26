@@ -195,7 +195,12 @@ public class ShooterController {
 
         pidfThread = new Thread(() -> {
             while (pidfRunning && !Thread.currentThread().isInterrupted()) {
-                runShooter(targetVelocity);
+                try {
+                    runShooter(targetVelocity);
+                } catch (Exception e) {
+                    // Hardware disconnected or OpMode stopped, exit loop
+                    break;
+                }
 
                 try {
                     Thread.sleep(10); // ~80Hz update rate
@@ -205,8 +210,12 @@ public class ShooterController {
                 }
             }
             // Ensure motors are stopped when thread exits
-            leftShooter.setPower(0);
-            rightShooter.setPower(0);
+            try {
+                leftShooter.setPower(0);
+                rightShooter.setPower(0);
+            } catch (Exception e) {
+                // Hardware may be disconnected, ignore
+            }
         });
         pidfThread.setDaemon(true); // Thread will stop when main program ends
         pidfThread.start();
@@ -226,14 +235,19 @@ public class ShooterController {
      */
     public void stopVelocityPIDF() {
         pidfRunning = false;
-        // Stop motors immediately
-        leftShooter.setPower(0);
-        rightShooter.setPower(0);
-        // Interrupt the thread to exit quickly
+
+        // Interrupt the thread to exit quickly (non-blocking)
         if (pidfThread != null) {
             pidfThread.interrupt();
-            // Don't join them
             pidfThread = null;
+        }
+
+        // Stop motors - safe because thread checks pidfRunning before accessing hardware
+        try {
+            leftShooter.setPower(0);
+            rightShooter.setPower(0);
+        } catch (Exception e) {
+            // Motors may already be disconnected during OpMode stop
         }
     }
 

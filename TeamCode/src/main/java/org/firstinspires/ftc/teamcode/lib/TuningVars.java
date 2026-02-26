@@ -35,8 +35,8 @@ public class TuningVars {
     public static double shooterDualPIDThreshold = 50; // RPM - switch to secondary PID when within this tolerance
     public static int shootingSlowDownSpeed = 200;
     public static int shotgun = 1550; //Was 1600
-    public static int shotgunTeleOp = 1800;
-    public static int sniper = 2000; //Was 1550
+    public static int shotgunTeleOp = 1600;
+    public static int sniper = 1900; //Was 1550
     public static int sniperAuto = 1900; // Was 2100 but shooter cannot reach that speed reliably, Changed to 1950
     // Was 1950, but not enough for autonomous shots
     // Shots too high at 1976 rpm, 1925 causes problem where it hits backboard sometimes
@@ -77,8 +77,8 @@ public class TuningVars {
     //Nope, CCW is positive
 
     //Camera Tuning Vars
-    public static int cameraResolutionWidth = 1280;
-    public static int cameraResolutionHeight = 800;
+    public static int cameraResolutionWidth = 640;//1280
+    public static int cameraResolutionHeight = 480;//800
     public static int redTagID = 24;
     public static int blueTagID = 20;
     //Mirror variables for blue side autonomous
@@ -106,4 +106,10 @@ public class TuningVars {
     public static Vector2d intermediatePressingLever = new Vector2d(48, -12);
     public static Vector2d pressLever = parkPositionShort;
     public static Vector2d odoResetPosRed = new Vector2d(-65.25, -65.25);
+
+    /**
+     * SOTM (Shoot on the Move) Tuning Vars - These are used to adjust the shooter's behavior when shooting while moving
+     */
+    public static double FLYWHEEL_MIN_SPEED = 800; // Minimum flywheel speed in RPM (this is equivalent to the "idle" speed, but can be adjusted separately if needed)
+    public static double FLYWHEEL_MAX_SPEED = 2500; // Maximum possible flywheel speed in RPM
 }
