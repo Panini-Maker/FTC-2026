@@ -22,6 +22,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.targetIsRed;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
 
+import com.acmerobotics.roadrunner.Vector2d;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -62,9 +63,9 @@ import org.firstinspires.ftc.teamcode.lib.Turret;
  * - Red (0.28): MANUAL mode
  * - Green (0.5): Shooter ready (overrides mode color when shooting)
  */
-@Disabled
-@TeleOp(name = "TeleOp No Camera", group = "Competition")
-public class TeleOpV4 extends LinearOpMode {
+//@Disabled
+@TeleOp(name = "TeleOp With SotM (No Camera)", group = "Competition")
+public class TeleOpV4SotM extends LinearOpMode {
 
     // Operating modes
     private enum OperatingMode {
@@ -304,11 +305,6 @@ public class TeleOpV4 extends LinearOpMode {
 
             // ==================== LOCALIZATION ====================
             // Wrap in try-catch so driving can continue even if odometry fails
-            // Declare adjusted pose variables at higher scope for use later
-            double adjustedX = currentXOdo;
-            double adjustedY = currentYOdo;
-            double adjustedHeading = currentHeadingOdo;
-            Pose2D adjustedPose = pos; // Default to last known pose
             boolean odoAvailable = true;
 
             try {
@@ -319,26 +315,11 @@ public class TeleOpV4 extends LinearOpMode {
                 y_velocity = odo.getVelY(DistanceUnit.INCH);
                 heading_velocity = odo.getHeadingVelocity(UnnormalizedAngleUnit.DEGREES);
 
-                // Get shoot-while-moving offsets and create adjusted pose (only in STANDARD mode)
-                double[] swmOffsets = {0, 0, 0};
-                if (currentMode == OperatingMode.STANDARD && shootingWhileMoving) {
-                    swmOffsets = robot.getShootWhileMovingOffsets(x_velocity, y_velocity, heading_velocity);
-                    adjustedPose = robot.applyShootWhileMovingOffsets(currentPose, swmOffsets);
-                } else {
-                    adjustedPose = currentPose;
-                }
-
                 // Current pose values (from odometry, unmodified)
                 currentXOdo = currentPose.getX(DistanceUnit.INCH);
                 currentYOdo = currentPose.getY(DistanceUnit.INCH);
                 currentHeadingOdo = currentPose.getHeading(AngleUnit.DEGREES);
 
-                // Adjusted pose values (for auto-aim calculations)
-                adjustedX = adjustedPose.getX(DistanceUnit.INCH);
-                adjustedY = adjustedPose.getY(DistanceUnit.INCH);
-                adjustedHeading = adjustedPose.getHeading(AngleUnit.DEGREES);
-
-                // Use currentPose for driving, adjustedPose for auto-aim
                 pos = currentPose;
             } catch (Exception e) {
                 odoAvailable = false;
@@ -348,11 +329,10 @@ public class TeleOpV4 extends LinearOpMode {
             }
 
             // ==================== CALCULATIONS ====================
-            // Use adjusted pose for auto-aim calculations
+            // Use real robot pose for auto-aim position tracking and distance
             try {
-                autoAimController.updateRobotPosition(adjustedX, adjustedY, adjustedHeading, autoAimController.getCurrentTurretHeading());
-                // Use adjusted pose for distance calculation too
-                distanceToGoal = robot.getDistanceFromGoal(adjustedPose, targetIsRed);
+                autoAimController.updateRobotPosition(currentXOdo, currentYOdo, currentHeadingOdo, autoAimController.getCurrentTurretHeading());
+                distanceToGoal = robot.getDistanceFromGoal(pos, targetIsRed);
                 hoodState = robot.getShooterAngle(distanceToGoal);
             } catch (Exception e) {
                 systemError = true;
@@ -372,8 +352,8 @@ public class TeleOpV4 extends LinearOpMode {
                 speedTogglePressed = gamepad1.a;
             }
             if (speedTogglePressed && debounceTimer.milliseconds() > 200) {
-                drivetrainPower = 0.6; // Reduced speed for precision for park
-                debounceTimer.reset();
+                //drivetrainPower = 0.6; // Reduced speed for precision for park
+                //debounceTimer.reset();
             }
 
             // ==================== MODE-SPECIFIC CONTROLS ====================
@@ -397,9 +377,21 @@ public class TeleOpV4 extends LinearOpMode {
                     }
                     rx = gamepad1.right_stick_x;
 
-                    // Auto-aim turret using adjusted pose (accounts for movement)
-                    // Apply 1.1 multiplier only for long-range shots (>125 inches)
-                    double rawTargetAngle = autoAimController.calculateTargetAngle(adjustedX, adjustedY, adjustedHeading);
+                    // Auto-aim turret with Shoot on the Move (SotM)
+                    // New approach: adjust the GOAL position based on robot velocity and air time,
+                    // rather than adjusting the robot pose. This accounts for ball drift during flight.
+                    double rawTargetAngle;
+                    if (shootingWhileMoving && (Math.abs(x_velocity) > 1 || Math.abs(y_velocity) > 1)) {
+                        // Robot is moving — compute adjusted goal using air time and velocity
+                        double airTimeSec = robot.getAirTime(distanceToGoal);
+                        Vector2d adjustedGoal = autoAimController.getAdjustedPose(airTimeSec, x_velocity, y_velocity);
+                        rawTargetAngle = autoAimController.calculateTargetAngleSotM(
+                                currentXOdo, currentYOdo, currentHeadingOdo, adjustedGoal);
+                    } else {
+                        // Robot is stationary — use standard auto-aim
+                        rawTargetAngle = autoAimController.calculateTargetAngle(
+                                currentXOdo, currentYOdo, currentHeadingOdo);
+                    }
 
                     calculatedTargetAngle = rawTargetAngle; // Start with raw angle by default
 

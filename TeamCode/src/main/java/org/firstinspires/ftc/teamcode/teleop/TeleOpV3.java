@@ -24,6 +24,7 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.targetIsRed;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -71,7 +72,8 @@ import java.util.List;
  * - Red (0.28): MANUAL mode
  * - Green (0.5): Shooter ready (overrides mode color when shooting)
  */
-@TeleOp(name = "TeleOp V3", group = "Competition")
+@Disabled
+@TeleOp(name = "TeleOp With Camera", group = "Competition")
 public class TeleOpV3 extends LinearOpMode {
 
     // Operating modes
@@ -177,6 +179,19 @@ public class TeleOpV3 extends LinearOpMode {
             telemetry.update();
             aprilTagAvailable = false;
         }
+
+        /*
+        // Set manual exposure to reduce camera FPS and free up CPU
+        if (aprilTagAvailable) {
+            // Wait for camera to reach STREAMING state (up to 2 seconds)
+            ElapsedTime exposureTimer = new ElapsedTime();
+            while (!isStopRequested() && exposureTimer.seconds() < 2
+                    && !AprilTag.setManualExposure(33, 1)) {
+                sleep(50);
+            }
+        }
+
+         */
 
         // Initialize Camera for pose calculation (set camera offsets as needed)
         Camera cameraRelocalization = new Camera(5.6349839, 0.78702);
@@ -451,10 +466,9 @@ public class TeleOpV3 extends LinearOpMode {
                     }
                 }
             } else if (currentMode == OperatingMode.RELOCALIZATION) {
-                // Stop turret motor completely in relocalization mode - let it stay where it is
-                // This prevents strain and oscillation while searching for AprilTag
-                turretController.stopVelocityPID();
-                turretController.stopTurret();
+                // Turret is held at current heading via calculatedTargetAngle in the
+                // RELOCALIZATION case below. The SET POWER section skips spinToHeadingLoop
+                // and just stops the turret motor so it doesn't jerk.
 
                 // Check if AprilTag is available
                 if (!aprilTagAvailable || aprilTagProcessor == null) {
@@ -969,7 +983,15 @@ public class TeleOpV3 extends LinearOpMode {
             // Turret
             try {
                 turretController.setRobotAngularVelocity(heading_velocity);
-                turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
+                if (currentMode == OperatingMode.RELOCALIZATION) {
+                    // Hold position: set target to current heading and stop the motor
+                    // so spinToHeadingLoop doesn't jerk the turret
+                    calculatedTargetAngle = autoAimController.getCurrentTurretHeading();
+                    turretController.stopVelocityPID();
+                    turretController.stopTurret();
+                } else {
+                    turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
+                }
             } catch (Exception e) {
                 systemError = true;
                 telemetry.addLine(">>> TURRET ERROR <<<");

@@ -106,10 +106,4 @@ public class TuningVars {
     public static Vector2d intermediatePressingLever = new Vector2d(48, -12);
     public static Vector2d pressLever = parkPositionShort;
     public static Vector2d odoResetPosRed = new Vector2d(-65.25, -65.25);
-
-    /**
-     * SOTM (Shoot on the Move) Tuning Vars - These are used to adjust the shooter's behavior when shooting while moving
-     */
-    public static double FLYWHEEL_MIN_SPEED = 800; // Minimum flywheel speed in RPM (this is equivalent to the "idle" speed, but can be adjusted separately if needed)
-    public static double FLYWHEEL_MAX_SPEED = 2500; // Maximum possible flywheel speed in RPM
 }

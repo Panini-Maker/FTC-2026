@@ -118,6 +118,84 @@ public class AutoAim {
     }
 
     /**
+     * Calculates the target turret angle for Shoot on the Move (SotM).
+     * Similar to {@link #calculateTargetAngle} but accepts an adjusted goal position
+     * that accounts for robot velocity and ball air time.
+     *
+     * @param robotX Robot X position in inches (field coordinates, origin at center)
+     * @param robotY Robot Y position in inches (field coordinates, origin at center)
+     * @param robotHeading Robot heading in degrees from odometry
+     * @param adjustedGoal The goal position adjusted for SotM (pre-computed by caller
+     *                     using the correct team goal as the base, offset by robot velocity * air time)
+     * @return The angle the turret needs to point at (in turret encoder degrees)
+     */
+    public double calculateTargetAngleSotM(double robotX, double robotY, double robotHeading, Vector2d adjustedGoal) {
+        // Calculate vector from robot to adjusted target
+        double dx = adjustedGoal.x - robotX;
+        double dy = adjustedGoal.y - robotY;
+
+        // Calculate absolute angle to target (in degrees, 0 = positive X axis)
+        double absoluteAngle = Math.toDegrees(Math.atan2(dy, dx));
+
+        // Adjust robot heading for odometry convention
+        double adjustedRobotHeading = robotHeading * odometryHeadingSign;
+
+        // Convert to angle relative to robot heading
+        double relativeAngleToRobotFront = absoluteAngle - adjustedRobotHeading;
+
+        // Turret encoder 0 = facing back of robot (180° from front)
+        double turretTargetAngle = relativeAngleToRobotFront + turretPhysicalOffset;
+
+        // Normalize to -180 to 180
+        while (turretTargetAngle > 180) turretTargetAngle -= 360;
+        while (turretTargetAngle < -180) turretTargetAngle += 360;
+
+        // Debug output
+        if (telemetry != null) {
+            Vector2d baseGoal = isRed ? redGoalPosition : blueGoalPosition;
+            telemetry.addData("SotM: base goal", "(%s) %.1f, %.1f", isRed ? "RED" : "BLUE", baseGoal.x, baseGoal.y);
+            telemetry.addData("SotM: adjusted goal", "%.1f, %.1f", adjustedGoal.x, adjustedGoal.y);
+            telemetry.addData("SotM: dx, dy", "%.1f, %.1f", dx, dy);
+            telemetry.addData("SotM: absAngle", "%.1f", absoluteAngle);
+            telemetry.addData("SotM: turretAngle (pre-clamp)", "%.1f", turretTargetAngle);
+        }
+
+        // Clamp to turret limits (CCW is positive, CW is negative)
+        if (turretTargetAngle > turretLimitCCW) {
+            turretTargetAngle = turretLimitCCW;
+        } else if (turretTargetAngle < turretLimitCW) {
+            turretTargetAngle = turretLimitCW;
+        }
+
+        return turretTargetAngle;
+    }
+
+    /**
+     * Computes an adjusted goal position for Shoot on the Move (SotM).
+     * <p>
+     * When the robot is moving, the ball inherits the robot's velocity upon launch.
+     * To compensate, we offset the goal opposite to the velocity contribution during
+     * the ball's air time. The turret should aim at this adjusted position so that
+     * the robot's motion carries the ball into the real goal.
+     *
+     * @param airTimeSec  Estimated ball air time in seconds
+     * @param velXInPerSec Robot X velocity in inches per second (field frame)
+     * @param velYInPerSec Robot Y velocity in inches per second (field frame)
+     * @return A {@link Vector2d} representing the adjusted goal the turret should aim at
+     */
+    public Vector2d getAdjustedPose(double airTimeSec, double velXInPerSec, double velYInPerSec) {
+        // Get the real goal based on team colour
+        Vector2d baseGoal = isRed ? redGoalPosition : blueGoalPosition;
+
+        // Velocity contribution the ball inherits while in the air
+        double driftX = velXInPerSec * airTimeSec;
+        double driftY = velYInPerSec * airTimeSec;
+
+        // Aim opposite to the drift so the inherited velocity sends the ball into the goal
+        return new Vector2d(baseGoal.x - driftX, baseGoal.y - driftY);
+    }
+
+    /**
      * Updates the robot position for auto aim calculations.
      * Call this frequently with odometry data.
      */

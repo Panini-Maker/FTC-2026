@@ -8,6 +8,8 @@ import android.util.Size;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.ExposureControl;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.controls.GainControl;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.R;
@@ -15,6 +17,8 @@ import org.firstinspires.ftc.vision.VisionPortal;
 import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+
+import java.util.concurrent.TimeUnit;
 
 public class AprilTag {
     private static final String CAMERA_NAME = "Webcam 1";
@@ -87,6 +91,40 @@ public class AprilTag {
 
     public static VisionPortal getVisionPortal() {
         return visionPortal;
+    }
+
+    /**
+     * Set manual exposure to limit effective FPS.
+     * exposureMs = 33 → ~30fps, exposureMs = 50 → ~20fps, etc.
+     * Must be called AFTER the camera is streaming (not while stopped).
+     * @param exposureMs exposure time in milliseconds
+     * @param gain       camera gain (higher = brighter but noisier)
+     * @return true if exposure was set successfully
+     */
+    public static boolean setManualExposure(int exposureMs, int gain) {
+        if (visionPortal == null) return false;
+
+        // Wait for camera to be streaming before setting controls
+        if (visionPortal.getCameraState() != VisionPortal.CameraState.STREAMING) {
+            return false;
+        }
+
+        // Set manual exposure mode
+        ExposureControl exposureControl = visionPortal.getCameraControl(ExposureControl.class);
+        if (exposureControl != null && exposureControl.getMode() != ExposureControl.Mode.Manual) {
+            exposureControl.setMode(ExposureControl.Mode.Manual);
+        }
+        if (exposureControl != null) {
+            exposureControl.setExposure(exposureMs, TimeUnit.MILLISECONDS);
+        }
+
+        // Set gain
+        GainControl gainControl = visionPortal.getCameraControl(GainControl.class);
+        if (gainControl != null) {
+            gainControl.setGain(gain);
+        }
+
+        return true;
     }
 
     public static void close() {

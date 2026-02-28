@@ -20,7 +20,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * - Left Bumper: Disable PWM (release servo)
  * - Right Bumper: Enable PWM (hold position)
  */
-@Disabled
+//@Disabled
 @TeleOp(name = "Hood Test", group = "Test")
 public class HoodTest extends LinearOpMode {
 
