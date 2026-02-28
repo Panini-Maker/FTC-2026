@@ -23,7 +23,6 @@ import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCCW;
 import static org.firstinspires.ftc.teamcode.lib.TuningVars.turretLimitCW;
 
 import com.acmerobotics.roadrunner.Vector2d;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -88,13 +87,18 @@ public class TeleOpV4SotM extends LinearOpMode {
     // Intake full detection
     private static final double INTAKE_FULL_CURRENT_THRESHOLD = 3.5; // Amps - tune via ShooterRegression
     private static final long INTAKE_FULL_DURATION_MS = 300; // Must be above threshold for this long to be considered full
-    private static final long LIGHT_FLASH_INTERVAL_MS = 250; // Flash interval in milliseconds
+    private static final long LIGHT_FLASH_INTERVAL_MS = 100; // Flash interval in milliseconds
 
     // Shooter idle power - raw power when not actively shooting
     private static final double SHOOTER_IDLE_POWER = 0.5;
 
+    // Trigger deadzone - prevents analog trigger float from accidentally opening latch
+    private static final double TRIGGER_DEADZONE = 0.1;
+
     // Set to true to enable telemetry during the main loop (disabled to save CPU/bandwidth)
     private static final boolean ENABLE_TELEMETRY = true;
+
+    private static final double MANUAL_TURRET_SPEED = 6.7; // Speed multiplier for manual turret control
     GoBildaPinpointDriver odo;
 
     @Override
@@ -405,7 +409,7 @@ public class TeleOpV4SotM extends LinearOpMode {
                      */
 
                     // Dynamic shooter speed based on distance
-                    if (gamepad1.right_trigger > 0) {
+                    if (gamepad1.right_trigger > TRIGGER_DEADZONE) {
                         shooterSpeed = robot.getShooterRPM(distanceToGoal);
                     } else {
                         shooter.stopVelocityPIDF();
@@ -488,8 +492,15 @@ public class TeleOpV4SotM extends LinearOpMode {
                         double turretInput = gamepad2.right_stick_x;
                         if (Math.abs(turretInput) > 0.1) {
                             double currentTurretHeading = autoAimController.getCurrentTurretHeading();
-                            manualTurretHeading = currentTurretHeading + (turretInput * 3.0);
+                            manualTurretHeading = currentTurretHeading + (turretInput * MANUAL_TURRET_SPEED);
                             manualTurretHeading = Math.max(turretLimitCW, Math.min(turretLimitCCW, manualTurretHeading));
+                        }
+
+                        // Gamepad 2: Set turret zero - calibrates current position as 0
+                        if (gamepad2.y) {
+                            turretController.resetEncoderOffset();
+                            turretController.calibrateCurrentPosition(0);
+                            manualTurretHeading = 0;
                         }
 
                         // Gamepad 2: Shooter presets
@@ -500,13 +511,13 @@ public class TeleOpV4SotM extends LinearOpMode {
                         }
 
                         // Gamepad 2: Shooter trigger (non-movement gamepad)
-                        if (gamepad2.right_trigger > 0) {
+                        if (gamepad2.right_trigger > TRIGGER_DEADZONE) {
                             if (usingSniperPreset) {
                                 shooterSpeed = sniper;
-                                hoodState = 0.5;
+                                hoodState = 0.35;
                             } else {
                                 shooterSpeed = shotgunTeleOp;
-                                hoodState = 0.42;
+                                hoodState = 0.35;
                             }
                         } else {
                             shooter.stopVelocityPIDF();
@@ -523,8 +534,15 @@ public class TeleOpV4SotM extends LinearOpMode {
                         double turretInput = gamepad1.right_stick_x;
                         if (Math.abs(turretInput) > 0.1) {
                             double currentTurretHeading = autoAimController.getCurrentTurretHeading();
-                            manualTurretHeading = currentTurretHeading + (turretInput * 3.0);
+                            manualTurretHeading = currentTurretHeading + (turretInput * MANUAL_TURRET_SPEED);
                             manualTurretHeading = Math.max(turretLimitCW, Math.min(turretLimitCCW, manualTurretHeading));
+                        }
+
+                        // Gamepad 1: Set turret zero - calibrates current position as 0
+                        if (gamepad1.y) {
+                            turretController.resetEncoderOffset();
+                            turretController.calibrateCurrentPosition(0);
+                            manualTurretHeading = 0;
                         }
 
                         // Gamepad 1: Shooter presets
@@ -535,13 +553,13 @@ public class TeleOpV4SotM extends LinearOpMode {
                         }
 
                         // Gamepad 1: Shooter trigger (non-movement gamepad)
-                        if (gamepad1.right_trigger > 0) {
+                        if (gamepad1.right_trigger > TRIGGER_DEADZONE) {
                             if (usingSniperPreset) {
                                 shooterSpeed = sniper;
-                                hoodState = 0.5;
+                                hoodState = 0.35;
                             } else {
                                 shooterSpeed = shotgunTeleOp;
-                                hoodState = 0.42;
+                                hoodState = 0.35;
                             }
                         } else {
                             shooter.stopVelocityPIDF();
@@ -595,7 +613,7 @@ public class TeleOpV4SotM extends LinearOpMode {
                 if (isLongRangeShot && shooterSpeed > 0) {
                     intakePower = 0.6; // Base power for pulsing
                 } else {
-                    intakePower = 1; // Full power when not pulsing
+                    intakePower = 0.9; // Full power when not pulsing
                 }
             } else if (intakeReverse) {
                 intakePower = -0.5;
@@ -603,11 +621,23 @@ public class TeleOpV4SotM extends LinearOpMode {
                 intakePower = 0;
             }
 
-            // Latch control: only close when flywheel is not running
-            if (shooterSpeed > 0) {
-                latchState = 1;  // Open latch when shooter is running
+            // Latch control: use actual trigger state with deadzone, not shooterSpeed
+            // shooterSpeed alone is vulnerable to single-frame glitches from trigger float
+            boolean shootIntentActive;
+            if (currentMode == OperatingMode.MANUAL) {
+                if (selectedMovementType == MovementType.QUAN_TELEOP_V2) {
+                    shootIntentActive = gamepad2.right_trigger > TRIGGER_DEADZONE;
+                } else {
+                    shootIntentActive = gamepad1.right_trigger > TRIGGER_DEADZONE;
+                }
             } else {
-                latchState = 0;  // Close latch when shooter is off
+                shootIntentActive = gamepad1.right_trigger > TRIGGER_DEADZONE;
+            }
+
+            if (shootIntentActive) {
+                latchState = 1;  // Open latch when actively shooting
+            } else {
+                latchState = 0;  // Close latch when not shooting
             }
 
             // ==================== LIGHT COLOR ====================

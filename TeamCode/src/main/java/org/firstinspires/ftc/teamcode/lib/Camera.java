@@ -249,9 +249,16 @@ public class Camera {
 
         // Field is roughly 144" x 144" centered at origin
         // Allow some margin for measurement error
-        double fieldHalfSize = 72 + 6; // 6 inch margin
+        //double fieldHalfSize = 72 + 6; // 6 inch margin
+        //return Math.abs(x) <= fieldHalfSize && Math.abs(y) <= fieldHalfSize;
 
-        return Math.abs(x) <= fieldHalfSize && Math.abs(y) <= fieldHalfSize;
+        double yMax = 48;
+        double yMin = -24;
+
+        double xMax = 48;
+        double xMin = -48;
+
+        return (x >= xMin && x <= xMax && y >= yMin && y <= yMax);
     }
 }
 

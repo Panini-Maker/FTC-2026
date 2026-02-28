@@ -58,7 +58,7 @@ public class AutoRedShort15Artifacts extends OpMode {
     int shootDuration = 750; // Duration of the shooting action in milliseconds
     int rampUpDuration = 0; // Duration of the ramp up in milliseconds
     int tolerance = 50; // Tolerance in shooting velocity
-    double setHoodAngle = 0.45; // Hood angle for shooting, adjust based on distance
+    double setHoodAngle = 0.25; // Hood angle for shooting, adjust based on distance
     // TODO: Changes here should go to Blue Short Auto as well
     private static final int PRE_RAMP_SHOOTER_VELOCITY = 1600; // Shooter velocity to hold between shots in RPM
     private static final int SHOOT_VELOCITY = 1600; // Target shooter velocity in RPM (adjust based on distance)
@@ -472,7 +472,7 @@ public class AutoRedShort15Artifacts extends OpMode {
                 intake.setPower(0.0);
                 turretControl.spinToHeadingLoop(turretAngle, turretSpeedAuto);
                 if (actionTimer.getElapsedTime() > SETTLE_TIME_MS + TURRET_AIM_TIME_MS) {
-                    shooter.shoot(1550, shootDuration, rampUpDuration, 0.4, tolerance, false);
+                    shooter.shoot(1550, shootDuration, rampUpDuration, setHoodAngle, tolerance, false);
                     double remainingTime = 30.0 - opmodeTimer.getElapsedTimeSeconds();
                     if (remainingTime < 6.5) {
                         setPathState(-1); // Go to Park

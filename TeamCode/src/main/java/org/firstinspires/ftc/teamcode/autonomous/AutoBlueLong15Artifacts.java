@@ -59,7 +59,7 @@ public class AutoBlueLong15Artifacts extends OpMode {
     public int shootDuration = 2000;
     public int rampUpDuration = 0;
     int tolerance = 35; // Tolerance in shooting velocity
-    double setHoodAngle = 0.6; // Hood angle for shooting, adjust based on distance
+    double setHoodAngle = 0.35; // Hood angle for shooting, adjust based on distance
     // TODO: Changes here should go to Red Long Auto as well
     private static final int PRE_RAMP_SHOOTER_VELOCITY = 1900; // Shooter velocity to hold between shots in RPM
     private static final int SHOOT_VELOCITY = 1900; // Target shooter velocity in RPM (adjust based on distance)
@@ -379,7 +379,7 @@ public class AutoBlueLong15Artifacts extends OpMode {
                     shooter.shoot(SHOOT_VELOCITY, shootDuration, rampUpDuration, setHoodAngle, tolerance, true);
                     // Check remaining time - if less than 4 seconds, park. Otherwise, loop back to collect overflow
                     double remainingTime = 30.0 - opmodeTimer.getElapsedTimeSeconds();
-                    if (remainingTime < 5.5) {
+                    if (remainingTime < 7.0) {
                         setPathState(13); // Go to Park
                     } else {
                         setPathState(10); // Loop back to collect more overflow

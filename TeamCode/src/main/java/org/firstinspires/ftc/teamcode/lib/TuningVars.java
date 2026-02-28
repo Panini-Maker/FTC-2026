@@ -23,7 +23,7 @@ public class TuningVars {
     }
     //Shooter Tuning Vars
     // Primary PIDF - used when far from target (coarse control)
-    public static double shooterKp = 0.0035;
+    public static double shooterKp = 0.01; // 0.0035
     public static double shooterKi = 0.0;
     public static double shooterKd = 0.0;
     public static double shooterKf = 0.00041;
@@ -66,7 +66,7 @@ public class TuningVars {
     public static double turretPhysicalOffset = 180.0; // Turret encoder 0 faces back of robot (180° from front)
 
     // Auto Aim Target Positions (center of field is origin 0,0)
-    public static Vector2d redGoalPosition = new Vector2d(72, 72); // Red goal corner
+    public static Vector2d redGoalPosition = new Vector2d(72, 70); // Red goal corner (was 72, 72 but adjusted for goal center)
     public static Vector2d blueGoalPosition = new Vector2d(-72, 72); // Blue goal corner
     public static boolean targetIsRed = true;
 
