@@ -74,7 +74,7 @@ import java.util.List;
  * - Green (0.5): Shooter ready (overrides mode color when shooting)
  */
 //@Disabled
-@TeleOp(name = "TeleOp With Camera", group = "Competition")
+@TeleOp(name = "TeleOp With Camera And SotM", group = "Competition")
 public class TeleOpV3 extends LinearOpMode {
 
     // Operating modes
@@ -121,6 +121,7 @@ public class TeleOpV3 extends LinearOpMode {
 
     // Trigger deadzone - prevents analog trigger float from accidentally opening latch
     private static final double TRIGGER_DEADZONE = 0.1;
+    private static final double MANUAL_TURRET_SPEED = 6.7; // Speed multiplier for manual turret control
 
     GoBildaPinpointDriver odo;
 
@@ -201,7 +202,7 @@ public class TeleOpV3 extends LinearOpMode {
         Camera cameraRelocalization = new Camera(5.6349839, 0.78702);
 
         // Presets
-        double drivetrainPower = 0.8; // Slightly reduced from 0.9 to save battery
+        double drivetrainPower = 0.85; // Slightly reduced from 0.9 to save battery
         double turretPower = 1.0;
         double manualTurretHeading = 0.0;
 
@@ -237,6 +238,7 @@ public class TeleOpV3 extends LinearOpMode {
 
         // Manual mode turret preset tracking
         boolean usingSniperPreset = false;
+        double manualTurretRawPower = 0; // Raw power for manual turret control (0 = use PID hold)
 
         // Intake current monitoring and light flashing
         double intakeCurrent = 0;
@@ -564,8 +566,8 @@ public class TeleOpV3 extends LinearOpMode {
                 speedTogglePressed = gamepad1.a;
             }
             if (speedTogglePressed && debounceTimer.milliseconds() > 200) {
-                drivetrainPower = 0.6; // Reduced speed for precision for park
-                debounceTimer.reset();
+                //drivetrainPower = 0.6; // Reduced speed for precision for park
+                //debounceTimer.reset();
             }
 
             // ==================== MODE-SPECIFIC CONTROLS ====================
@@ -743,11 +745,23 @@ public class TeleOpV3 extends LinearOpMode {
                         rx = gamepad1.right_stick_x;
 
                         // Gamepad 2: Turret manual control with right stick X (non-movement gamepad)
+                        // Direct raw power control - stick value sets motor power directly
                         double turretInput = gamepad2.right_stick_x;
-                        if (Math.abs(turretInput) > 0.1) {
-                            double currentTurretHeading = autoAimController.getCurrentTurretHeading();
-                            manualTurretHeading = currentTurretHeading + (turretInput * 3.0);
-                            manualTurretHeading = Math.max(turretLimitCW, Math.min(turretLimitCCW, manualTurretHeading));
+                        if (Math.abs(turretInput) > 0.01) {
+                            manualTurretRawPower = turretInput;
+                        } else {
+                            // Stick released - hold current position
+                            if (manualTurretRawPower != 0) {
+                                manualTurretHeading = autoAimController.getCurrentTurretHeading();
+                                manualTurretRawPower = 0;
+                            }
+                        }
+
+                        // Gamepad 2: Set turret zero - calibrates current position as 0
+                        if (gamepad2.y) {
+                            turretController.resetEncoderOffset();
+                            turretController.calibrateCurrentPosition(0);
+                            manualTurretHeading = 0;
                         }
 
                         // Gamepad 2: Shooter presets
@@ -778,11 +792,23 @@ public class TeleOpV3 extends LinearOpMode {
                         rx = gamepad2.right_stick_x;
 
                         // Gamepad 1: Turret manual control with right stick X (non-movement gamepad)
+                        // Direct raw power control - stick value sets motor power directly
                         double turretInput = gamepad1.right_stick_x;
-                        if (Math.abs(turretInput) > 0.1) {
-                            double currentTurretHeading = autoAimController.getCurrentTurretHeading();
-                            manualTurretHeading = currentTurretHeading + (turretInput * 3.0);
-                            manualTurretHeading = Math.max(turretLimitCW, Math.min(turretLimitCCW, manualTurretHeading));
+                        if (Math.abs(turretInput) > 0.01) {
+                            manualTurretRawPower = turretInput;
+                        } else {
+                            // Stick released - hold current position
+                            if (manualTurretRawPower != 0) {
+                                manualTurretHeading = autoAimController.getCurrentTurretHeading();
+                                manualTurretRawPower = 0;
+                            }
+                        }
+
+                        // Gamepad 1: Set turret zero - calibrates current position as 0
+                        if (gamepad1.y) {
+                            turretController.resetEncoderOffset();
+                            turretController.calibrateCurrentPosition(0);
+                            manualTurretHeading = 0;
                         }
 
                         // Gamepad 1: Shooter presets
@@ -996,6 +1022,10 @@ public class TeleOpV3 extends LinearOpMode {
                     calculatedTargetAngle = autoAimController.getCurrentTurretHeading();
                     turretController.stopVelocityPID();
                     turretController.stopTurret();
+                } else if (currentMode == OperatingMode.MANUAL && manualTurretRawPower != 0) {
+                    // Manual mode with stick active: set raw power directly, bypass PID
+                    turretController.stopVelocityPID();
+                    turret.setPower(manualTurretRawPower);
                 } else {
                     turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
                 }

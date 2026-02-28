@@ -97,7 +97,6 @@ public class TeleOpV4SotM extends LinearOpMode {
 
     // Set to true to enable telemetry during the main loop (disabled to save CPU/bandwidth)
     private static final boolean ENABLE_TELEMETRY = true;
-
     private static final double MANUAL_TURRET_SPEED = 6.7; // Speed multiplier for manual turret control
     GoBildaPinpointDriver odo;
 
@@ -184,6 +183,7 @@ public class TeleOpV4SotM extends LinearOpMode {
 
         // Manual mode turret preset tracking
         boolean usingSniperPreset = false;
+        double manualTurretRawPower = 0; // Raw power for manual turret control (0 = use PID hold)
 
         // Intake current monitoring and light flashing
         double intakeCurrent = 0;
@@ -489,11 +489,16 @@ public class TeleOpV4SotM extends LinearOpMode {
                         rx = gamepad1.right_stick_x;
 
                         // Gamepad 2: Turret manual control with right stick X (non-movement gamepad)
+                        // Direct raw power control - stick value sets motor power directly
                         double turretInput = gamepad2.right_stick_x;
-                        if (Math.abs(turretInput) > 0.1) {
-                            double currentTurretHeading = autoAimController.getCurrentTurretHeading();
-                            manualTurretHeading = currentTurretHeading + (turretInput * MANUAL_TURRET_SPEED);
-                            manualTurretHeading = Math.max(turretLimitCW, Math.min(turretLimitCCW, manualTurretHeading));
+                        if (Math.abs(turretInput) > 0.01) {
+                            manualTurretRawPower = turretInput;
+                        } else {
+                            // Stick released - hold current position
+                            if (manualTurretRawPower != 0) {
+                                manualTurretHeading = autoAimController.getCurrentTurretHeading();
+                                manualTurretRawPower = 0;
+                            }
                         }
 
                         // Gamepad 2: Set turret zero - calibrates current position as 0
@@ -531,11 +536,16 @@ public class TeleOpV4SotM extends LinearOpMode {
                         rx = gamepad2.right_stick_x;
 
                         // Gamepad 1: Turret manual control with right stick X (non-movement gamepad)
+                        // Direct raw power control - stick value sets motor power directly
                         double turretInput = gamepad1.right_stick_x;
-                        if (Math.abs(turretInput) > 0.1) {
-                            double currentTurretHeading = autoAimController.getCurrentTurretHeading();
-                            manualTurretHeading = currentTurretHeading + (turretInput * MANUAL_TURRET_SPEED);
-                            manualTurretHeading = Math.max(turretLimitCW, Math.min(turretLimitCCW, manualTurretHeading));
+                        if (Math.abs(turretInput) > 0.01) {
+                            manualTurretRawPower = turretInput;
+                        } else {
+                            // Stick released - hold current position
+                            if (manualTurretRawPower != 0) {
+                                manualTurretHeading = autoAimController.getCurrentTurretHeading();
+                                manualTurretRawPower = 0;
+                            }
                         }
 
                         // Gamepad 1: Set turret zero - calibrates current position as 0
@@ -747,7 +757,13 @@ public class TeleOpV4SotM extends LinearOpMode {
             // Turret
             try {
                 turretController.setRobotAngularVelocity(heading_velocity);
-                turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
+                if (currentMode == OperatingMode.MANUAL && manualTurretRawPower != 0) {
+                    // Manual mode with stick active: set raw power directly, bypass PID
+                    turretController.stopVelocityPID();
+                    turret.setPower(manualTurretRawPower);
+                } else {
+                    turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
+                }
             } catch (Exception e) {
                 systemError = true;
                 if (ENABLE_TELEMETRY) telemetry.addLine(">>> TURRET ERROR <<<");
