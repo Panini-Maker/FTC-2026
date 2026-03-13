@@ -148,7 +148,7 @@ public class TeleOpV4SotM extends LinearOpMode {
                 leftLatch, rightLatch, hoodServo, light);
 
         // Presets
-        double drivetrainPower = 0.85; // Slightly reduced from 0.9 to save battery
+        double drivetrainPower = 0.9; // Default, will be set based on movement type after init
         double turretPower = 1.0;
         double manualTurretHeading = 0.0;
 
@@ -184,6 +184,8 @@ public class TeleOpV4SotM extends LinearOpMode {
         // Manual mode turret preset tracking
         boolean usingSniperPreset = false;
         double manualTurretRawPower = 0; // Raw power for manual turret control (0 = use PID hold)
+        boolean manualTurretReachedZero = false; // Tracks if turret has reached zero after entering manual mode
+        OperatingMode previousMode = OperatingMode.STANDARD; // For detecting mode transitions
 
         // Intake current monitoring and light flashing
         double intakeCurrent = 0;
@@ -285,6 +287,14 @@ public class TeleOpV4SotM extends LinearOpMode {
         // Initialize turret heading from autonomous
         currentHeading = autoEndTurretHeading;
 
+        // Set drivetrain power based on movement type
+        // Field Centric naturally moves slower, so give it more power
+        if (selectedMovementType == MovementType.FIELD_CENTRIC) {
+            drivetrainPower = 1.0;
+        } else {
+            drivetrainPower = 1.0;
+        }
+
         // ==================== MAIN OPMODE LOOP ====================
         resetRuntime();
         debounceTimer.reset();
@@ -306,6 +316,14 @@ public class TeleOpV4SotM extends LinearOpMode {
                     debounceTimer.reset();
                 }
             }
+
+            // Detect transition into MANUAL mode - command turret to go to zero first
+            if (currentMode == OperatingMode.MANUAL && previousMode != OperatingMode.MANUAL) {
+                manualTurretHeading = 0;
+                manualTurretReachedZero = false;
+                manualTurretRawPower = 0;
+            }
+            previousMode = currentMode;
 
             // ==================== LOCALIZATION ====================
             // Wrap in try-catch so driving can continue even if odometry fails
@@ -506,6 +524,7 @@ public class TeleOpV4SotM extends LinearOpMode {
                             turretController.resetEncoderOffset();
                             turretController.calibrateCurrentPosition(0);
                             manualTurretHeading = 0;
+                            manualTurretReachedZero = true; // Already at zero by definition
                         }
 
                         // Gamepad 2: Shooter presets
@@ -553,6 +572,7 @@ public class TeleOpV4SotM extends LinearOpMode {
                             turretController.resetEncoderOffset();
                             turretController.calibrateCurrentPosition(0);
                             manualTurretHeading = 0;
+                            manualTurretReachedZero = true; // Already at zero by definition
                         }
 
                         // Gamepad 1: Shooter presets
@@ -757,10 +777,26 @@ public class TeleOpV4SotM extends LinearOpMode {
             // Turret
             try {
                 turretController.setRobotAngularVelocity(heading_velocity);
-                if (currentMode == OperatingMode.MANUAL && manualTurretRawPower != 0) {
-                    // Manual mode with stick active: set raw power directly, bypass PID
-                    turretController.stopVelocityPID();
-                    turret.setPower(manualTurretRawPower);
+                if (currentMode == OperatingMode.MANUAL) {
+                    if (manualTurretRawPower != 0) {
+                        // Manual mode with stick active: set raw power directly, bypass PID
+                        turretController.stopVelocityPID();
+                        turret.setPower(manualTurretRawPower);
+                    } else if (!manualTurretReachedZero) {
+                        // Turret hasn't reached zero yet - PID to zero
+                        turretController.spinToHeadingLoop(manualTurretHeading, turretPower);
+                        if (turretController.isWithinTolerance(manualTurretHeading)) {
+                            // Turret reached zero - stop PID so drivers can freely adjust
+                            manualTurretReachedZero = true;
+                            turretController.stopVelocityPID();
+                            turretController.stopTurret();
+                        }
+                    } else {
+                        // Turret already reached zero and stick is released - hold with no power
+                        // PID is off, drivers can use raw stick power to adjust
+                        turretController.stopVelocityPID();
+                        turretController.stopTurret();
+                    }
                 } else {
                     turretController.spinToHeadingLoop(calculatedTargetAngle, turretPower);
                 }

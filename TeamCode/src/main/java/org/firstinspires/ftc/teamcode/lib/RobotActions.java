@@ -119,7 +119,7 @@ public class RobotActions {
     }
 
     public double getShooterAngle(double distance) {
-        return -0.148 + 0.00608 * distance - 0.0000182 * distance * distance;
+        return -0.138 + 0.00608 * distance - 0.0000182 * distance * distance;
         //-0.725 + 0.0181 * distance - 0.0000781 * distance * distance; // was 0.061 + 0.00602 * distance - 0.0000207 * distance * distance
     }
 

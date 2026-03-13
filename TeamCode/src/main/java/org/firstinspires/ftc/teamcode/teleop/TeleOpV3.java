@@ -73,7 +73,7 @@ import java.util.List;
  * - Red (0.28): MANUAL mode
  * - Green (0.5): Shooter ready (overrides mode color when shooting)
  */
-//@Disabled
+@Disabled
 @TeleOp(name = "TeleOp With Camera And SotM", group = "Competition")
 public class TeleOpV3 extends LinearOpMode {
 

@@ -59,7 +59,7 @@ public class AutoBlueLong15Artifacts extends OpMode {
     public int shootDuration = 2000;
     public int rampUpDuration = 0;
     int tolerance = 35; // Tolerance in shooting velocity
-    double setHoodAngle = 0.35; // Hood angle for shooting, adjust based on distance
+    double setHoodAngle = 0.36; // Hood angle for shooting, adjust based on distance
     // TODO: Changes here should go to Red Long Auto as well
     private static final int PRE_RAMP_SHOOTER_VELOCITY = 1900; // Shooter velocity to hold between shots in RPM
     private static final int SHOOT_VELOCITY = 1900; // Target shooter velocity in RPM (adjust based on distance)
